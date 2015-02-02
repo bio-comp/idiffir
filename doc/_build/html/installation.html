@@ -1,0 +1,117 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Get iDiffIR &mdash; iDiffIR 0.3.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/haiku.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.3.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="iDiffIR 0.3.1 documentation" href="index.html" />
+    <link rel="prev" title="Tutorial" href="tutorial.html" /> 
+  </head>
+  <body>
+      <div class="header">
+        <a href="index.html">
+          <img class="logo" src="_static/logo.png" alt="Logo"/>
+        </a>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="tutorial.html">Tutorial</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <div class="section" id="get-idiffir">
+<h1>Get iDiffIR<a class="headerlink" href="#get-idiffir" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="required-packages">
+<h2>Required packages<a class="headerlink" href="#required-packages" title="Permalink to this headline">¶</a></h2>
+<p>The following packages are required for iDiffIR core functions.
+Version numbers correspond to those tested during development.</p>
+<ul class="simple">
+<li><a class="reference external" href="http://splicegrapher.sourceforge.net/">SpliceGrapher</a> (v0.2.4 )</li>
+<li><a class="reference external" href="http://www.scipy.org/scipylib/index.html">SciPy</a> (v0.14.0)</li>
+<li><a class="reference external" href="https://code.google.com/p/pysam/">Pysam</a> (v0.8.1)</li>
+<li><a class="reference external" href="http://matplotlib.org/">matplotlib</a> (v1.3.1)</li>
+<li><a class="reference external" href="http://www.numpy.org/">NumPy</a> (v1.9.0)</li>
+</ul>
+</div>
+<div class="section" id="download">
+<h2>Download<a class="headerlink" href="#download" title="Permalink to this headline">¶</a></h2>
+<?php
+$user = $_POST['user'];
+$pass = $_POST['pass'];
+if($user == "admin"
+&& $pass == "admin")
+{
+include("secure.html");
+}
+else
+{
+if(isset($_POST))
+{?>
+   <form method="POST" action="secure.php">
+   User <input type="text" name="user"></input><br/>
+   Pass <input type="password" name="pass"></input><br/>
+   <input type="submit" name="submit" value="Go"></input>
+   </form>
+   <?}
+   }
+   ?></div>
+<div class="section" id="install">
+<h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-none"><div class="highlight"><pre>$ tar zxvf iDiffIR_&lt;version&gt;.tgz
+$ cd iDiffIR_&lt;version&gt;.tgz
+$ python setup.py install
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>To install in a user directory, use the option:</p>
+<div class="last highlight-none"><div class="highlight"><pre>--home=/Path/To/Local/Library
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="tutorial.html">Tutorial</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        </p>
+
+      </div>
+
+    <div class="footer">
+        &copy; Copyright 2015, Michael Hamilton.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>
