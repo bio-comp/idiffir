@@ -131,6 +131,7 @@ def main( ):
     indicator = ProgressIndicator(1000000, verbose=args.verbose)
     depths = numpy.zeros( lmap[chromosome] )
     junctions = { }
+    nonzero = 0
     processRead( read, depths, junctions )
     indicator.update()
     for read in bamfile:

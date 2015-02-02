@@ -8,12 +8,11 @@ differntial intron retention from short read data.
 from distutils.core import setup
 import sys
 SCRIPTS  = ['scripts/analyze_introns.py',
-            'scripts/analyze_exons.py',
             'scripts/getDepths.py',
             'scripts/convertSam.py',
-            'scripts/get_gene_expression.py',
             'scripts/simulate_IR.py',
-            'scripts/make_MISO_IR_GFF.py'
+            'scripts/make_MISO_IR_GFF.py',
+            'scripts/make_MISO_AS_GFF.py'
             ]
 
 PACKAGES = [ 'iDiffIR'
