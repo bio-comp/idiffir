@@ -1,0 +1,6 @@
+# No emacs ~ files
+*~
+
+# ignore setup.py build directory
+build/
+

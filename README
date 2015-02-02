@@ -1,0 +1,14 @@
+INSTALL
+-------
+python setup.py build
+python setup.py install
+
+To install to a local set of python libraries
+use --home=/PATH/TO/LOCAL/LIBRARY
+
+REQUIRED PACKAGES
+-----------------
+SpliceGrapher
+scipy
+pysam
+matplotlib
