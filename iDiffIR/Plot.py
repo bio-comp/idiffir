@@ -88,13 +88,22 @@ def writeAll( geneRecords, aVals, odir=os.getcwd() ):
     """
     # iterate across all genes
     with open( os.path.join(odir, 'allIntrons.txt'), 'w' ) as fout:
+        ofile.write('\t'.join(['geneID', 'lowExonCoords', 
+                               'intronCoords', 'highExonCoords',
+                               'pValue', 'adjPValue', 
+                               'logFoldChange','intronExp', 'statistic', 
+                               'bestA','known']) + '\n')
         for gene in geneRecords:
             # iterate across all exons
 
             for i,intron in enumerate(gene.introns):
                 if not gene.intTested[i]: continue
-                fout.write('%s\t%s\t%s\t%s\t%f\t%f\t%f\t%f\t%f\t%d\t%s\n' % ( gene.gid, str(gene.exonsR[i]), str(gene.intronsR[i]), str(gene.exonsR[i+1]), min(1, min(gene.intPvals[i])),min( 1, min(gene.intQvals[i])), gene.intfc[i], gene.intexp[i], gene.intstat[i][numpy.argmin(gene.intQvals[i])], aVals[numpy.argmin(gene.intQvals[i])], str(gene.retained[i]) )) 
-
+                fout.write('%s\t%s\t%s\t%s\t%f\t%f\t%f\t%f\t%f\t%d\t%s\n' % \
+                           ( gene.gid, str(gene.exonsR[i]), str(gene.intronsR[i]), str(gene.exonsR[i+1]), 
+                             min(1, min(gene.intPvals[i])),min( 1, min(gene.intQvals[i])), gene.intfc[i], 
+                             gene.intexp[i], gene.intstat[i][numpy.argmin(gene.intQvals[i])], 
+                             aVals[numpy.argmin(gene.intQvals[i])], str(gene.retained[i]) )) 
+                
 def writeAllSE( geneRecords, aVals, odir=os.getcwd() ):
     """
     Write a file of all intron values 
@@ -102,10 +111,21 @@ def writeAllSE( geneRecords, aVals, odir=os.getcwd() ):
     # iterate across all genes
     with open( os.path.join(odir, 'allSEs.txt'), 'w' ) as fout:
         for gene in geneRecords:
+        ofile.write('\t'.join(['geneID', 'lowExonCoords', 
+                               'SECoords', 'highExonCoords',
+                               'pValue', 'adjPValue', 
+                               'logFoldChange','SEExp', 'statistic', 
+                               'bestA','known']) + '\n')
+
             # iterate across all exons
             for i,event in enumerate(gene.flavorDict['SE']):
                 if not gene.SETested[i]: continue
-                fout.write('%s\t%s\t%s\t%s\t%f\t%f\t%f\t%f\t%d\t\n' % ( gene.gid, str(event[0]), str(event[1]), str(event[2]), min(1, min(gene.SEPvals[i])),min( 1, min(gene.SEQvals[i])), gene.SEfc[i], gene.SEexp[i], aVals[numpy.argmin(gene.SEQvals[i])] )) 
+                fout.write('%s\t%s\t%s\t%s\t%f\t%f\t%f\t%f\t%d\t\n' % \
+                           ( gene.gid, str(event[0]), str(event[1]), 
+                             str(event[2]), min(1, min(gene.SEPvals[i])),
+                             min( 1, min(gene.SEQvals[i])), gene.SEfc[i], 
+                             gene.SEexp[i], gene.SEstat[i], 
+                             aVals[numpy.argmin(gene.SEQvals[i])] )) 
     
 def writeLists( summaryDict, odir=os.getcwd() ):
     """

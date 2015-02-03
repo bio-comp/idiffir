@@ -174,12 +174,11 @@ $getDepths.py -o mt_rep2_depths mt_rep2/filtered.bam
 </div>
 <div class="section" id="running-idiffir">
 <h2>Running <strong>iDiffIR</strong><a class="headerlink" href="#running-idiffir" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-text"><div class="highlight"><pre>$ analyze_introns.py --help
-usage: analyze_introns.py [-h] [-v] [-n] [-l FACTORLABEL FACTORLABEL]
-                          [-o OUTDIR] [-s] [-k KRANGE KRANGE] [-c COVERAGE]
-                          [-d DEXPTHRESH] [-f FDRLEVEL] [-g GRAPHDIRS]
-                          [-m {BF,BH,QV}] [-e {IR,SE}]
-                          genemodel factor1Dirs factor2Dirs
+<div class="highlight-text"><div class="highlight"><pre>$ idiffir.py --help
+usage: idiffir.py [-h] [-v] [-n] [-l FACTORLABEL FACTORLABEL] [-o OUTDIR] [-s]
+                  [-k KRANGE KRANGE] [-c COVERAGE] [-d DEXPTHRESH]
+                  [-f FDRLEVEL] [-g GRAPHDIRS] [-m {BF,BH,QV}] [-e {IR,SE}]
+                  genemodel factor1Dirs factor2Dirs
 
 Identify differentially expressed introns.
 
@@ -218,6 +217,142 @@ optional arguments:
                         AS event to test, IR: Intron Retention, SE: Exon
                         Skipping [default = IR]
 </pre></div>
+</div>
+<p>While <strong>iDiffIR</strong> offers many options, default values should work
+for most cases.  Using the above naming convention, a way to run
+<strong>iDiffIR</strong> would be:</p>
+<div class="highlight-none"><div class="highlight"><pre>$idiffir.py -l Mutant Wildtype -o my_result my_genome.gff mt_rep1_depths:mt_rep2_depths wt_rep1_depths:wt_rep2_depths
+</pre></div>
+</div>
+<p>The <strong>-l</strong> option provides titles for the reads and will be displayed
+on the splice graphs of genes containing significant differential IR
+events.    You may wish to use the <strong>-d</strong> option to lower the
+gene expression fold-change threshold. Introns in genes
+with a gene expression fold-change above this
+threshold will not be tested.  While <strong>iDiffIR</strong> does
+adjust for differential gene expression, in some extreme cases it may
+be necessary.</p>
+</div>
+<div class="section" id="interpreting-idiffir-output">
+<h2>Interpreting iDiffIR output<a class="headerlink" href="#interpreting-idiffir-output" title="Permalink to this headline">¶</a></h2>
+<p><strong>iDiffIR</strong> builds an output directory as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ tree my_result
+  my_result
+  ├── figures
+  │   ├── gene1.pdf
+  │   ├── gene2.pdf
+  │   ├── mva.pdf
+  │   └── pvalues.pdf
+  ├── figuresLog
+  │   ├── gene1.pdf
+  │   └── gene2.pdf
+  └── lists
+      ├── allDIRGenes.txt
+      └── allIntrons.txt
+
+  3 directories, 8 files
+</pre></div>
+</div>
+<p>Two figures directories <strong>figures</strong> and <strong>figuresLog</strong> are created
+and contain splice graphs figures of genes with at least
+one significant
+differential IR event.  The <strong>figuresLog</strong> directory contains
+graphs in <span class="math">\(\log\)</span> scale which can be helpful in cases where
+intronic expression is orders of magnitude less than the exonic
+expression within the gene.  The <strong>lists</strong> directory contain
+two important files.  <strong>allDIRGenes.txt</strong> contain the
+gene IDs for all genes containing a signficant differential IR
+event.  This is should allow convenient downstream analyses,
+such as GO term enrichment.  Finally, <strong>allIntrons.txt</strong> is a
+tab-delimited file containing intronic coordinates and statistics
+for all tested introns.  The fields of each row are:</p>
+<ol class="arabic">
+<li><dl class="first docutils">
+<dt><strong>geneID</strong></dt>
+<dd><p class="first last">the gene&#8217;s identifier</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><strong>lowExonCoords</strong></dt>
+<dd><p class="first last">the coordinates of the lowest (W.R.T. genomic
+position) flanking exon</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><strong>intronCoords</strong></dt>
+<dd><p class="first last">the coordinates of the intronic region tested</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><strong>highExonCoords</strong></dt>
+<dd><p class="first last">the coordinates of the highest (W.R.T. genomic
+position) flanking exon</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><strong>pValue</strong></dt>
+<dd><p class="first last">the <span class="math">\(p\)</span>-value of the tested intron (using a 2-sided
+<span class="math">\(Z\)</span>-score test).</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><strong>adjPValue</strong></dt>
+<dd><p class="first last">the multiple testing adjusted <cite>p</cite>-value</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><strong>logFoldChange</strong></dt>
+<dd><p class="first last">the <span class="math">\(\log\)</span>-fold change of the tested intron (w.r.t. the
+first-given condition)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><strong>intronExp</strong></dt>
+<dd><p class="first last">the expression of the intron, computed as
+<span class="math">\(\displaystyle\frac{1}{2}\log\left( x_1 + x_2\right)\)</span>,
+where <span class="math">\(x_1, x_2\)</span> are the average read depth of the intron
+in condition 1 and condition 2, respectively.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><strong>statistic</strong></dt>
+<dd><p class="first last">the test statistic (before z-score conversion)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><strong>bestA</strong></dt>
+<dd><p class="first last">the pseudo-count value (<span class="math">\(a\)</span>) that minimizes the
+<span class="math">\(p\)</span>-value</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><strong>known</strong></dt>
+<dd><p class="first last">whether this intron is known as a retained intron</p>
+</dd>
+</dl>
+</li>
+</ol>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Add differential exon skipping</p>
+</div>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<p class="last">Add miso script usage for testing Alt 5&#8217;, 3&#8217;</p>
+</div>
+<div class="admonition-todo admonition" id="index-2">
+<p class="first admonition-title">Todo</p>
+<p class="last">Add simulation</p>
 </div>
 <table class="docutils citation" frame="void" id="sg" rules="none">
 <colgroup><col class="label" /><col /></colgroup>

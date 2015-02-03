@@ -30,9 +30,11 @@ sys.path.insert(0, os.path.abspath('../iDiffIR'))
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.mathjax', 'sphinx.ext.autodoc', 'sphinxcontrib.programoutput'
+    'sphinx.ext.mathjax', 'sphinx.ext.todo',
+    'sphinx.ext.autodoc', 'sphinxcontrib.programoutput'
 ]
 
+todo_include_todos=True
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -184,16 +186,9 @@ htmlhelp_basename = 'iDiffIRdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
-latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+latex_elements = { 'classoptions': ',openany,oneside', 
+                   'babel' : '\\usepackage[english]{babel}' }
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
-
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
-}
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
@@ -209,7 +204,7 @@ latex_logo = '_static/logo.png'
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.
-#latex_use_parts = False
+#latex_use_parts = True
 
 # If true, show page references after internal links.
 #latex_show_pagerefs = False
