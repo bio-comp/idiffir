@@ -73,7 +73,7 @@ one genomic location).</p>
 alignments for false-positive junctions  before beginning
 transcriptome analysis of RNA-Seq.  Assuming your alignments
 are in a file named aligned.bam, run the following to extract
-only uniquely alinged reads:</p>
+only uniquely aligned reads:</p>
 <div class="highlight-none"><div class="highlight"><pre>$samtools view -h aligned.bam | grep -we &#39;NH:i:1&#39; -e &#39;^@*&#39; &gt; unique.sam
 </pre></div>
 </div>
@@ -140,7 +140,7 @@ has been indexed.</p>
 </div>
 <div class="section" id="getting-chromosomal-read-depths">
 <h3>Getting chromosomal read depths<a class="headerlink" href="#getting-chromosomal-read-depths" title="Permalink to this headline">¶</a></h3>
-<p>Now we are prepared to generate chromsomal read depths from the
+<p>Now we are prepared to generate chromosomal read depths from the
 alignments using <strong class="program">getDepths.py</strong>.</p>
 <div class="highlight-text"><div class="highlight"><pre>usage: getDepths.py [-h] [-o OUTDIR] [-v] bamfile_in
 
@@ -238,17 +238,17 @@ be necessary.</p>
 <p><strong>iDiffIR</strong> builds an output directory as follows:</p>
 <div class="highlight-python"><div class="highlight"><pre>$ tree my_result
   my_result
-  ├── figures
-  │   ├── gene1.pdf
-  │   ├── gene2.pdf
-  │   ├── mva.pdf
-  │   └── pvalues.pdf
-  ├── figuresLog
-  │   ├── gene1.pdf
-  │   └── gene2.pdf
-  └── lists
-      ├── allDIRGenes.txt
-      └── allIntrons.txt
+  |-- figures
+  |   |-- gene1.pdf
+  |   |-- gene2.pdf
+  |   |-- mva.pdf
+  |   |-- pvalues.pdf
+  |-- figuresLog
+  |   |-- gene1.pdf
+  |   |-- gene2.pdf
+  |-- lists
+      |-- allDIRGenes.txt
+      |-- allIntrons.txt
 
   3 directories, 8 files
 </pre></div>
@@ -261,7 +261,7 @@ graphs in <span class="math">\(\log\)</span> scale which can be helpful in cases
 intronic expression is orders of magnitude less than the exonic
 expression within the gene.  The <strong>lists</strong> directory contain
 two important files.  <strong>allDIRGenes.txt</strong> contain the
-gene IDs for all genes containing a signficant differential IR
+gene IDs for all genes containing a significant differential IR
 event.  This is should allow convenient downstream analyses,
 such as GO term enrichment.  Finally, <strong>allIntrons.txt</strong> is a
 tab-delimited file containing intronic coordinates and statistics
@@ -348,7 +348,7 @@ in condition 1 and condition 2, respectively.</p>
 </div>
 <div class="admonition-todo admonition" id="index-1">
 <p class="first admonition-title">Todo</p>
-<p class="last">Add miso script usage for testing Alt 5&#8217;, 3&#8217;</p>
+<p class="last">Add MISO script usage for testing Alt 5&#8217;, 3&#8217;</p>
 </div>
 <div class="admonition-todo admonition" id="index-2">
 <p class="first admonition-title">Todo</p>

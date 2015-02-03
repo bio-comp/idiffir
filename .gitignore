@@ -2,3 +2,5 @@
 build/
 doc/_build
 *.pyc
+release/
+iDiffIR_v*

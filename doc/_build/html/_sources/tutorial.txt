@@ -24,7 +24,7 @@ It is good practice to remove multi-reads and filter spliced
 alignments for false-positive junctions  before beginning 
 transcriptome analysis of RNA-Seq.  Assuming your alignments 
 are in a file named aligned.bam, run the following to extract 
-only uniquely alinged reads:
+only uniquely aligned reads:
 
 .. code-block:: none
    
@@ -65,7 +65,7 @@ has been indexed.
 
 Getting chromosomal read depths
 ...............................
-Now we are prepared to generate chromsomal read depths from the
+Now we are prepared to generate chromosomal read depths from the
 alignments using :program:`getDepths.py`.
 
 .. program-output:: getDepths.py --help
@@ -115,17 +115,17 @@ Interpreting iDiffIR output
 
    $ tree my_result
      my_result
-     ├── figures
-     │   ├── gene1.pdf
-     │   ├── gene2.pdf
-     │   ├── mva.pdf
-     │   └── pvalues.pdf
-     ├── figuresLog
-     │   ├── gene1.pdf
-     │   └── gene2.pdf
-     └── lists
-         ├── allDIRGenes.txt
-	 └── allIntrons.txt
+     |-- figures
+     |   |-- gene1.pdf
+     |   |-- gene2.pdf
+     |   |-- mva.pdf
+     |   |-- pvalues.pdf
+     |-- figuresLog
+     |   |-- gene1.pdf
+     |   |-- gene2.pdf
+     |-- lists
+         |-- allDIRGenes.txt
+	 |-- allIntrons.txt
 
      3 directories, 8 files
 
@@ -137,7 +137,7 @@ graphs in :math:`\log` scale which can be helpful in cases where
 intronic expression is orders of magnitude less than the exonic 
 expression within the gene.  The **lists** directory contain
 two important files.  **allDIRGenes.txt** contain the
-gene IDs for all genes containing a signficant differential IR
+gene IDs for all genes containing a significant differential IR
 event.  This is should allow convenient downstream analyses, 
 such as GO term enrichment.  Finally, **allIntrons.txt** is a
 tab-delimited file containing intronic coordinates and statistics
@@ -191,7 +191,7 @@ for all tested introns.  The fields of each row are:
 
 .. todo::
 
-   Add miso script usage for testing Alt 5', 3'
+   Add MISO script usage for testing Alt 5', 3'
 
 .. todo::
 

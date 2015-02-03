@@ -187,7 +187,8 @@ htmlhelp_basename = 'iDiffIRdoc'
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = { 'classoptions': ',openany,oneside', 
-                   'babel' : '\\usepackage[english]{babel}' }
+                   'babel' : '\\usepackage[english]{babel}',
+                   'utf8x' : '\\usepackage[utf8x]{inputenc}'}
 
 
 # Grouping the document tree into LaTeX files. List of tuples

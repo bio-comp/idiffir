@@ -4,7 +4,7 @@ Introduction
 
 Intron retention
 ----------------
-Intron retention (IR) is an alterntaive splicing (AS) form where
+Intron retention (IR) is an alternative splicing (AS) form where
 the intronic that separate the exonic components that make up
 mature mRNA remain in the final transcript.  On the left below is
 a figure of a pre-mRNA showing exons as shaded rectangles separated
