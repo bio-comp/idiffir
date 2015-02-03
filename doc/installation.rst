@@ -45,4 +45,4 @@ Install
 .. _Pysam: https://code.google.com/p/pysam/
 .. _matplotlib: http://matplotlib.org/
 .. _NumPy: http://www.numpy.org/
-.. .. _v0.3.1: _static/iDiffIR_v0.3.1.tgz
+.. _v0.3.1: _static/iDiffIR_v0.3.1.tgz

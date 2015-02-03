@@ -18,32 +18,9 @@ Version numbers correspond to those tested during development.
 
 Download
 ========
-.. raw:: html
+current release: v0.3.1_
 
-	 <?php
-	 $user = $_POST['user'];
-	 $pass = $_POST['pass'];
-	 if($user == "admin"
-	 && $pass == "admin")
-	 {
-         include("secure.html");
-	 }
-	 else
-	 {
-	 if(isset($_POST))
-	 {?>
-            <form method="POST" action="secure.php">
-            User <input type="text" name="user"></input><br/>
-            Pass <input type="password" name="pass"></input><br/>
-            <input type="submit" name="submit" value="Go"></input>
-            </form>
-	    <?}
-	    }
-	    ?>
-
-.. current release: v0.3.1_
-
-.. iDiffIR is hosted on bitbucket https://bitbucket.org/comp_bio/idiffir
+iDiffIR is hosted on bitbucket https://bitbucket.org/comp_bio/idiffir
 
 Install 
 =======
@@ -68,4 +45,4 @@ Install
 .. _Pysam: https://code.google.com/p/pysam/
 .. _matplotlib: http://matplotlib.org/
 .. _NumPy: http://www.numpy.org/
-.. .. _v0.3.1: _static/iDiffIR_v0.3.1.tgz
+.. _v0.3.1: _static/iDiffIR_v0.3.1.tgz

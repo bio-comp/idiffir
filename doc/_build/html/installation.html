@@ -23,8 +23,10 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="iDiffIR 0.3.1 documentation" href="index.html" />
-    <link rel="prev" title="Tutorial" href="tutorial.html" /> 
+    <link rel="next" title="Tutorial" href="tutorial.html" />
+    <link rel="prev" title="Method" href="method.html" /> 
   </head>
   <body>
       <div class="header">
@@ -35,9 +37,11 @@
       <div class="topnav">
       
         <p>
-        «&#160;&#160;<a href="tutorial.html">Tutorial</a>
+        «&#160;&#160;<a href="method.html">Method</a>
         &#160;&#160;::&#160;&#160;
         <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="tutorial.html">Tutorial</a>&#160;&#160;»
         </p>
 
       </div>
@@ -60,26 +64,9 @@ Version numbers correspond to those tested during development.</p>
 </div>
 <div class="section" id="download">
 <h2>Download<a class="headerlink" href="#download" title="Permalink to this headline">¶</a></h2>
-<?php
-$user = $_POST['user'];
-$pass = $_POST['pass'];
-if($user == "admin"
-&& $pass == "admin")
-{
-include("secure.html");
-}
-else
-{
-if(isset($_POST))
-{?>
-   <form method="POST" action="secure.php">
-   User <input type="text" name="user"></input><br/>
-   Pass <input type="password" name="pass"></input><br/>
-   <input type="submit" name="submit" value="Go"></input>
-   </form>
-   <?}
-   }
-   ?></div>
+<p>current release: <a class="reference external" href="_static/iDiffIR_v0.3.1.tgz">v0.3.1</a></p>
+<p>iDiffIR is hosted on bitbucket <a class="reference external" href="https://bitbucket.org/comp_bio/idiffir">https://bitbucket.org/comp_bio/idiffir</a></p>
+</div>
 <div class="section" id="install">
 <h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-none"><div class="highlight"><pre>$ tar zxvf iDiffIR_&lt;version&gt;.tgz
@@ -102,16 +89,17 @@ $ python setup.py install
       <div class="bottomnav">
       
         <p>
-        «&#160;&#160;<a href="tutorial.html">Tutorial</a>
+        «&#160;&#160;<a href="method.html">Method</a>
         &#160;&#160;::&#160;&#160;
         <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="tutorial.html">Tutorial</a>&#160;&#160;»
         </p>
 
       </div>
 
     <div class="footer">
         &copy; Copyright 2015, Michael Hamilton.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>

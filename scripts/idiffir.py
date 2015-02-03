@@ -1,4 +1,4 @@
-#!/bin/python
+#!/usr/bin/env python
 
 #
 #    iDiffIR- identifying differential intron retention (IR) from RNA-seq

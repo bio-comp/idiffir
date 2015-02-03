@@ -23,9 +23,10 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="iDiffIR 0.3.1 documentation" href="index.html" />
-    <link rel="next" title="Get iDiffIR" href="installation.html" />
-    <link rel="prev" title="Introduction" href="introduction.html" /> 
+    <link rel="next" title="Contact" href="contact.html" />
+    <link rel="prev" title="Get iDiffIR" href="installation.html" /> 
   </head>
   <body>
       <div class="header">
@@ -36,11 +37,11 @@
       <div class="topnav">
       
         <p>
-        «&#160;&#160;<a href="introduction.html">Introduction</a>
+        «&#160;&#160;<a href="installation.html">Get iDiffIR</a>
         &#160;&#160;::&#160;&#160;
         <a class="uplink" href="index.html">Contents</a>
         &#160;&#160;::&#160;&#160;
-        <a href="installation.html">Get iDiffIR</a>&#160;&#160;»
+        <a href="contact.html">Contact</a>&#160;&#160;»
         </p>
 
       </div>
@@ -49,6 +50,185 @@
         
   <div class="section" id="tutorial">
 <h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<p>This tutorial is meant as a complete walk-through for identifying
+differential IR from RNA-seq data.  The process is as follows:</p>
+<ol class="arabic simple">
+<li>Align reads</li>
+<li>Filter alignments</li>
+<li>Get read depths</li>
+<li>Analyze depths for differential IR</li>
+</ol>
+<div class="section" id="align-reads">
+<h2>Align reads<a class="headerlink" href="#align-reads" title="Permalink to this headline">¶</a></h2>
+<p><strong>iDiffIR</strong> accepts any sorted, indexed BAM file for single- or
+paired-end reads.  It may be helpful to use an aligner that
+provides an &#8220;NH&#8221; tag (such as <a class="reference external" href="https://code.google.com/p/rna-star/">STAR</a> or <a class="reference external" href="http://ccb.jhu.edu/software/tophat/index.shtml">TopHat</a>)
+to identify unique alignments; however, there are other ways of
+removing multi-reads (reads mapping to more than
+one genomic location).</p>
+</div>
+<div class="section" id="filtering-alignments">
+<h2>Filtering alignments<a class="headerlink" href="#filtering-alignments" title="Permalink to this headline">¶</a></h2>
+<p>It is good practice to remove multi-reads and filter spliced
+alignments for false-positive junctions  before beginning
+transcriptome analysis of RNA-Seq.  Assuming your alignments
+are in a file named aligned.bam, run the following to extract
+only uniquely alinged reads:</p>
+<div class="highlight-none"><div class="highlight"><pre>$samtools view -h aligned.bam | grep -we &#39;NH:i:1&#39; -e &#39;^@*&#39; &gt; unique.sam
+</pre></div>
+</div>
+<p>You may wish to filter out potential false-positive splice junctions
+using SpliceGrapher<a class="reference internal" href="#sg" id="id1">[SG]</a> <strong class="program">sam_filter.py</strong>
+from uniquely aligned reads.  While the presence
+of false-positive splice junctions may not adversely affect
+identifying differential IR analysis, it is a critical step for
+detecting all other forms of AS (exon skipping, alternative
+acceptor/donor events).</p>
+<div class="highlight-text"><div class="highlight"><pre>Usage: sam_filter.py SAM/BAM-file classifiers [options]
+
+Removes false-positive spliced alignments from a SAM or BAM file.
+The classifers may be given as a zip-file or as a list of classifier
+configuration (.cfg) files.
+
+Options:
+  -h, --help  show this help message and exit
+  -C CIGAR    File for storing unrecognized CIGAR strings [default: none]
+  -f FASTA    Reference genome FASTA [default: none]
+  -F FPSITES  File for storing false-positive SAM alignment records [default:
+              none]
+  -m MODEL    Gene model file (GTF/GFF3 format) [default: none]
+  -o OUTPUT   Output file [default: stdout]
+  -r REPORT   Write classifier scores to file [default: none]
+  -v          Verbose mode [default: False]
+  -z          Apply gzip compression to output [default: False]
+</pre></div>
+</div>
+</div>
+<div class="section" id="getting-read-depths">
+<h2>Getting read depths<a class="headerlink" href="#getting-read-depths" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="creating-indexed-sorted-bam-files">
+<h3>Creating indexed, sorted BAM files<a class="headerlink" href="#creating-indexed-sorted-bam-files" title="Permalink to this headline">¶</a></h3>
+<p>If your reads are in the SAM format, you can convert it to a indexed,
+sorted BAM file using <strong class="program">convertSam.py</strong>.</p>
+<div class="highlight-text"><div class="highlight"><pre>usage: convertSam.py [-h] [-o BAMFILE] [-p PROCS] [-m MEMORY] [-v] samfile
+
+Generate sorted BAM and index files for given SAM file
+
+positional arguments:
+  samfile               Samfile to convert
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o BAMFILE, --outfile BAMFILE
+                        Name of converted BAM file [default=&lt;sambase&gt;.bam]
+  -p PROCS, --procs PROCS
+                        Number of processors to use for BAM sorting (default
+                        1)
+  -m MEMORY, --memory MEMORY
+                        Max memory (in GBs) for each processor used for BAM
+                        sorting (default 2)
+  -v, --verbose         Print verbose output
+</pre></div>
+</div>
+<p>If your alignments are in a sorted BAM file, an index can be
+generated using:</p>
+<div class="highlight-none"><div class="highlight"><pre>$samtools index &lt;BAMFILE&gt;
+</pre></div>
+</div>
+<p>Both methods will produce .bai file, indicating that the BAM file
+has been indexed.</p>
+</div>
+<div class="section" id="getting-chromosomal-read-depths">
+<h3>Getting chromosomal read depths<a class="headerlink" href="#getting-chromosomal-read-depths" title="Permalink to this headline">¶</a></h3>
+<p>Now we are prepared to generate chromsomal read depths from the
+alignments using <strong class="program">getDepths.py</strong>.</p>
+<div class="highlight-text"><div class="highlight"><pre>usage: getDepths.py [-h] [-o OUTDIR] [-v] bamfile_in
+
+Get chromosomal read depths and junctions
+
+positional arguments:
+  bamfile_in            Name of sorted, indexed BAM file
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o OUTDIR, --output-dir OUTDIR
+                        output file directory name
+  -v, --verbose         verbose output
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>It is <em>strongly</em> recommended to use a clear naming system for
+the output directories (<strong>-o</strong> option) generated from
+<strong class="program">getDepths.py</strong>.  For instance if you have RNA-seq
+between an wildtype and mutant with 2 replicates,
+you may want to use a naming convention such as:</p>
+<div class="last highlight-none"><div class="highlight"><pre>$getDepths.py -o wt_rep1_depths wt_rep1/filtered.bam
+$getDepths.py -o wt_rep2_depths wt_rep2/filtered.bam
+$getDepths.py -o mt_rep1_depths mt_rep1/filtered.bam
+$getDepths.py -o mt_rep2_depths mt_rep2/filtered.bam
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="running-idiffir">
+<h2>Running <strong>iDiffIR</strong><a class="headerlink" href="#running-idiffir" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-text"><div class="highlight"><pre>$ analyze_introns.py --help
+usage: analyze_introns.py [-h] [-v] [-n] [-l FACTORLABEL FACTORLABEL]
+                          [-o OUTDIR] [-s] [-k KRANGE KRANGE] [-c COVERAGE]
+                          [-d DEXPTHRESH] [-f FDRLEVEL] [-g GRAPHDIRS]
+                          [-m {BF,BH,QV}] [-e {IR,SE}]
+                          genemodel factor1Dirs factor2Dirs
+
+Identify differentially expressed introns.
+
+positional arguments:
+  genemodel             gene model file: NAME.gtf[.gz] | NAME.gff[.gz]
+  factor1Dirs           colon-separated list of directories: PATH-TO-
+                        REPLICATE_1[:PATH-TO-REPLICATE_2,...]
+  factor2Dirs           colon-separated list of directories: PATH-TO-
+                        REPLICATE_1[:PATH-TO-REPLICATE_2,...]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -v, --verbose         verbose output [default is quiet running]
+  -n, --noplot          Do not plot figures [default is to make figures]
+  -l FACTORLABEL FACTORLABEL, --factorlabel FACTORLABEL FACTORLABEL
+                        factor labels, example: -f Mutant Wildtype
+  -o OUTDIR, --output-dir OUTDIR
+                        output file directory name
+  -s, --shrink_introns  shrink introns for depth plots [default is no
+                        shrinking]
+  -k KRANGE KRANGE, --krange KRANGE KRANGE
+                        kmin kmax; [default is to search for kmax]
+  -c COVERAGE, --coverage COVERAGE
+                        coverage cutoff, default = 0.99
+  -d DEXPTHRESH, --dexpThresh DEXPTHRESH
+                        differential gene expression threshold, [default = 10]
+  -f FDRLEVEL, --fdrlevel FDRLEVEL
+                        FDR test level, [default = 0.05]
+  -g GRAPHDIRS, --graph-dirs GRAPHDIRS
+                        colon-separated list of directories to recursively
+                        search for SpliceGrapher predictions
+  -m {BF,BH,QV}, --multTest {BF,BH,QV}
+                        Multiple testing adjustment method BF: Bonferroni, BH:
+                        Benjamini-Hochberg, QV: q-values [default = QV]
+  -e {IR,SE}, --event {IR,SE}
+                        AS event to test, IR: Intron Retention, SE: Exon
+                        Skipping [default = IR]
+</pre></div>
+</div>
+<table class="docutils citation" frame="void" id="sg" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[SG]</a></td><td>Rogers, MF, Thomas, J, Reddy, AS, Ben-Hur, A (2012).
+SpliceGrapher: detecting patterns of alternative splicing
+from RNA-Seq data in the context of gene models and
+EST data. <em>Genome Biol</em>., 13, 1:R4.</td></tr>
+</tbody>
+</table>
+</div>
 </div>
 
 
@@ -56,18 +236,17 @@
       <div class="bottomnav">
       
         <p>
-        «&#160;&#160;<a href="introduction.html">Introduction</a>
+        «&#160;&#160;<a href="installation.html">Get iDiffIR</a>
         &#160;&#160;::&#160;&#160;
         <a class="uplink" href="index.html">Contents</a>
         &#160;&#160;::&#160;&#160;
-        <a href="installation.html">Get iDiffIR</a>&#160;&#160;»
+        <a href="contact.html">Contact</a>&#160;&#160;»
         </p>
 
       </div>
 
     <div class="footer">
         &copy; Copyright 2015, Michael Hamilton.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>

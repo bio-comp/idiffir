@@ -32,36 +32,14 @@ PAD      = 6   #P
 EQUAL    = 7   #=
 DIFF     = 8   #X
 
-def getLengths( fname ):
-    """
-    get lengths of chromosomes from faidx file
-
-    return dictionary of chromosome -> length mappings
-    """
-    lmap = { }
-    with open(fname) as fin:
-        for line in fin:
-            line = line.strip()
-            if len(line) > 0:
-                chrom, l, offset, llen, unk = line.split('\t')
-            lmap[chrom] = int(l)
-    return lmap 
-
 def parseArgs():
     parser = ArgumentParser(description='Get chromosomal read depths and junctions')
 
     parser.add_argument('-o', '--output-dir',dest='outdir', action='store', 
                         default='iDiffIR_counts', help="output file directory name")
 
-
-    #parser.add_argument( '-j', '--junctions', action='store_true', default=False,
-    #                   help='Get count junctions (by default, only read depths are counted--needed for exon analysis')
-
     parser.add_argument('-v', '--verbose',dest='verbose', action='store_true', 
                         default=False, help="verbose output")
-
-    parser.add_argument( 'faidx', action='store', type=str,
-                         help='FASTA index file (produced using samtools faidx)')
 
     parser.add_argument( 'bamfile_in', action='store', type=str, default=None,
                          help='Name of sorted, indexed BAM file')
@@ -119,7 +97,7 @@ def writeDepths( depths, chromosome, out_dir, chrom_len, verbose ):
 def main( ):
     args = parseArgs()
     bamfile = pysam.Samfile(args.bamfile_in, 'rb')
-    lmap = getLengths( args.faidx )
+    lmap = dict(zip(bamfile.references, bamfile.lengths))
     tot_nonzero   = 0
     tot_positions = 0
     tot_junctions = 0

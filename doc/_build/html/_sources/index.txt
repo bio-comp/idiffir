@@ -5,13 +5,18 @@
 ========
 Home
 ========
+Welcome to the home of **iDiffIR**, a method for **i**\ dentifying 
+**diff**\ erential **i**\ ntron **r**\ etention from RNA-seq.
 
 .. toctree::
    :maxdepth: 2
 
    introduction
-   tutorial
+   method
    installation
+   tutorial
+   contact
+
 
 *   :ref:`search`
 

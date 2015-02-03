@@ -23,8 +23,9 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="iDiffIR 0.3.1 documentation" href="index.html" />
-    <link rel="next" title="Tutorial" href="tutorial.html" />
+    <link rel="next" title="Method" href="method.html" />
     <link rel="prev" title="Home" href="index.html" /> 
   </head>
   <body>
@@ -40,7 +41,7 @@
         &#160;&#160;::&#160;&#160;
         <a class="uplink" href="index.html">Contents</a>
         &#160;&#160;::&#160;&#160;
-        <a href="tutorial.html">Tutorial</a>&#160;&#160;»
+        <a href="method.html">Method</a>&#160;&#160;»
         </p>
 
       </div>
@@ -49,6 +50,34 @@
         
   <div class="section" id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="intron-retention">
+<h2>Intron retention<a class="headerlink" href="#intron-retention" title="Permalink to this headline">¶</a></h2>
+<p>Intron retention (IR) is an alterntaive splicing (AS) form where
+the intronic that separate the exonic components that make up
+mature mRNA remain in the final transcript.  On the left below is
+a figure of a pre-mRNA showing exons as shaded rectangles separated
+by a single exon (black line).  On the right are two possible
+outcomes: 1) the intron remains, leading to an IR event or 2) the
+intron is spliced out, resulting in a constitutively spliced (CS) form.</p>
+<div class="figure align-center">
+<img alt="IR example" src="_images/ir.png" />
+</div>
+</div>
+<div class="section" id="differential-intron-retention">
+<h2>Differential intron retention<a class="headerlink" href="#differential-intron-retention" title="Permalink to this headline">¶</a></h2>
+<p>The figure below shows an example of differential intron
+retention (IR). The top track shows a splice graph depiction
+for the gene while the second and third tracks show read
+depths for RNA-seq alignments from two different conditions.
+The areas
+in red corresponds to the depths of the mRNA region detected
+as a differential IR event.  While other introns exhibit some
+level of expression, there exists insufficient evidence that these
+introns are differentially retained.</p>
+<div class="figure">
+<img alt="differential IR example" src="_images/ir_example.png" />
+</div>
+</div>
 </div>
 
 
@@ -60,14 +89,13 @@
         &#160;&#160;::&#160;&#160;
         <a class="uplink" href="index.html">Contents</a>
         &#160;&#160;::&#160;&#160;
-        <a href="tutorial.html">Tutorial</a>&#160;&#160;»
+        <a href="method.html">Method</a>&#160;&#160;»
         </p>
 
       </div>
 
     <div class="footer">
         &copy; Copyright 2015, Michael Hamilton.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>
