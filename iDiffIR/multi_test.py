@@ -71,7 +71,7 @@ def qvalues( pvalues, splineDF=3, qplot=False ):
     spi0 = splrep( lams, pi0s, k = splineDF )
     preds = splev(np.arange(0, 1.05, 0.05), spi0  )
 
-    pi0=min(1.0, splev(numpy.max(lams), spi0))
+    pi0=min(1.0, splev(np.max(lams), spi0))
 
     qvals = [0]*m
     qvals[m-1] = min(pi0*p[m-1], 1.0)

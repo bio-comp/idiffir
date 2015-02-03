@@ -15,6 +15,11 @@
 #
 #    Author: Michael Hamilton, Colorado State University, 2013
 #    Contact: <hamiltom@cs.colostate.edu>
+"""
+.. moduleauthor:: Mike Hamilton <mike.hamilton7@gmail.com>
+
+"""
+
 from SpliceGrapher.SpliceGraph       import *
 from scipy.stats import t,gmean, hmean, sem, ttest_1samp
 from scipy.stats import norm as sNorm

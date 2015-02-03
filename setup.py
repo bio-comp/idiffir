@@ -7,7 +7,7 @@ differntial intron retention from short read data.
 """
 from distutils.core import setup
 import sys
-SCRIPTS  = ['scripts/analyze_introns.py',
+SCRIPTS  = ['scripts/idiffir.py',
             'scripts/getDepths.py',
             'scripts/convertSam.py',
             'scripts/simulate_IR.py',
