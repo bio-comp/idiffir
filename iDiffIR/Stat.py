@@ -15,8 +15,7 @@
 #
 #    Author: Michael Hamilton, Colorado State University, 2013
 #    Contact: <hamiltom@cs.colostate.edu>
-"""
-.. moduleauthor:: Mike Hamilton <mike.hamilton7@gmail.com>
+"""Statistical functions for **iDiffIR**
 
 """
 
@@ -578,6 +577,111 @@ def get_weight( start, stop, gene, wts):
             retn.append(wts[i])
     return numpy.mean(retn)
 
+def getDepthsFromBam( bamfile, chrom, start, end ):
+    """Get read depths in bamfile for specific location
+    
+    Get read depths from a single bamfile.  Helper function
+    for fetching multiple replicates/conditions.
+
+    See Also
+    --------
+    getDepthsFromBamfiles : Wrapper function
+
+    Parameters
+    ----------
+    bamfile : pysam.Samfile
+              Bamfile to fetch read depths
+    chrom : str
+            Name of chromosome (region)
+    start : int
+            Minimum location of range
+    end : int
+          Maximum location of range
+
+    Returns
+    -------
+    d : numpy.ndarray
+        Read depth vector for given location
+
+    """
+    bamfile = pysam.Samfile(bamfile, 'rb')
+    if chrom not in bamfile.references:
+        sys.stderr.write('Chromosome %s not found in bamfile\n')
+        return numpy.empty(0)
+
+    readItr = bamfile.fetch(chrom, start, end)
+    
+def getDepthsFromBamfiles( start, end, f1files, f2files ):
+    """Get read depths from bamfiles
+
+    Wrapper function for getting read depths from bamfiles 
+    from 2 exprerimental conditions.
+
+    See Also
+    --------
+    procGeneStatsSE : Calling function
+    getDepthsFromBam : Helper function
+    
+    Parameters
+    ----------
+    gene : iDiffIR.IntronModel.IntronModel
+           Gene for which to compute read depths
+    f1files, f2files : list 
+                       Lists of file paths to bamfiles for 
+                       factor\ :math:`_1`, 
+                       factor\ :math:`_2`, respectively.
+    f2files : list 
+              List of file paths to bamfiles for 
+              factor\ :math:`_1`.
+    
+    Returns
+    -------
+    d1, d2 : numpy.ndarry
+             :math:`r \cross N` read depth vectors where
+             :math:`r` is the number of replicates for the
+             associate factor and :math:`N` is the length
+             of the gene.
+    
+    """
+    factor1depths = [getDepthsFromBam(bamfile, start, end) \
+                     for bamfile in f1files]
+    factor2depths = [getDepthsFromBam(bamfile, start, end) \
+                     for bamfile in f2files]
+
+    return numpy.array(factor1depths, int), numpy.array(factor2depths, int)
+
+                  
+def procGeneStatsSE( gene, nspace ):
+    """Compute exon skipping statistics for gene
+
+    Compute exon skipping statistics for all SEs in gene
+    by calculating the adjusted :math:`\log`-fold change 
+    statistic.  This function can be run in parallel or
+    serial.  
+
+    See Also
+    --------
+    computeSEStatistics : Wrapper function
+    getReadDepths : Get read depths from bamfiles
+    
+    Parameters
+    ----------
+    gene : iDiffIR.IntronModel.IntronModel 
+           Gene to compute SE statistics
+    nspace : argparse.ArgumentParser
+             Command line arguments from **idiffir.py** 
+
+    Returns
+    -------
+    status : bool
+             True if gene has tested SE events
+    gene : Reference to gene object
+
+    """
+    f1Depths, f2Depths =  getDepthsFromBamfiles( gene, 
+                                            nspace.factor1bamfiles, 
+                                            nspace.factor2bamfiles )
+    
 def computeSEStatistics(geneRecords, nspace):
     """Compute SE statistics
 
