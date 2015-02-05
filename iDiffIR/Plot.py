@@ -88,7 +88,7 @@ def writeAll( geneRecords, aVals, odir=os.getcwd() ):
     """
     # iterate across all genes
     with open( os.path.join(odir, 'allIntrons.txt'), 'w' ) as fout:
-        ofile.write('\t'.join(['geneID', 'lowExonCoords', 
+        fout.write('\t'.join(['geneID', 'lowExonCoords', 
                                'intronCoords', 'highExonCoords',
                                'pValue', 'adjPValue', 
                                'logFoldChange','intronExp', 'statistic', 
@@ -101,8 +101,8 @@ def writeAll( geneRecords, aVals, odir=os.getcwd() ):
                 fout.write('%s\t%s\t%s\t%s\t%f\t%f\t%f\t%f\t%f\t%d\t%s\n' % \
                            ( gene.gid, str(gene.exonsR[i]), str(gene.intronsR[i]), str(gene.exonsR[i+1]), 
                              min(1, min(gene.intPvals[i])),min( 1, min(gene.intQvals[i])), gene.intfc[i], 
-                             gene.intexp[i], gene.intstat[i][numpy.argmin(gene.intQvals[i])], 
-                             aVals[numpy.argmin(gene.intQvals[i])], str(gene.retained[i]) )) 
+                             gene.intexp[i], gene.intstat[i][numpy.argmin(gene.intPvals[i])], 
+                             aVals[numpy.argmin(gene.intPvals[i])], str(gene.retained[i]) )) 
                 
 def writeAllSE( geneRecords, aVals, odir=os.getcwd() ):
     """
@@ -110,22 +110,23 @@ def writeAllSE( geneRecords, aVals, odir=os.getcwd() ):
     """
     # iterate across all genes
     with open( os.path.join(odir, 'allSEs.txt'), 'w' ) as fout:
-        for gene in geneRecords:
-        ofile.write('\t'.join(['geneID', 'lowExonCoords', 
+
+        fout.write('\t'.join(['geneID', 'lowExonCoords', 
                                'SECoords', 'highExonCoords',
                                'pValue', 'adjPValue', 
                                'logFoldChange','SEExp', 'statistic', 
-                               'bestA','known']) + '\n')
-
+                               'bestA']) + '\n')
+        for gene in geneRecords:
             # iterate across all exons
             for i,event in enumerate(gene.flavorDict['SE']):
                 if not gene.SETested[i]: continue
-                fout.write('%s\t%s\t%s\t%s\t%f\t%f\t%f\t%f\t%d\t\n' % \
+                fout.write('%s\t%s\t%s\t%s\t%f\t%f\t%f\t%f\t%f\t%d\n' % \
                            ( gene.gid, str(event[0]), str(event[1]), 
                              str(event[2]), min(1, min(gene.SEPvals[i])),
                              min( 1, min(gene.SEQvals[i])), gene.SEfc[i], 
-                             gene.SEexp[i], gene.SEstat[i], 
-                             aVals[numpy.argmin(gene.SEQvals[i])] )) 
+                             gene.SEexp[i], 
+                             gene.SEstat[i][numpy.argmin(gene.SEPvals[i])], 
+                             aVals[numpy.argmin(gene.SEPvals[i])] )) 
     
 def writeLists( summaryDict, odir=os.getcwd() ):
     """
@@ -935,8 +936,61 @@ def plotMVA(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
     plt.autoscale(True)
     plt.close()
 
-
 def plotMVASE(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
+    """
+    Render MA plot
+    """
+    fig = plt.figure(figsize=(8,8), dpi=200)
+
+    plot = fig.add_subplot(111)
+    plot.tick_params(axis='both', which='major', labelsize=12)
+    plot.tick_params(axis='both', which='minor', labelsize=12)
+    colors = ['blue', 'green',  'brown','cyan', 'orange', 'olive', 'pink', 'yellow', 'black',
+              'SpringGreen', 'Coral']
+
+    pvals = list(chain.from_iterable([numpy.array([ geneRecords[i].SEPvals[t] for t in xrange(
+                            len(geneRecords[i].SEPvals)) \
+                                                        if geneRecords[i].SETested[t]])\
+                                          for i in xrange(len(geneRecords))])) 
+
+    N = len(pvals)
+    M = list(chain.from_iterable([numpy.array([ geneRecords[i].SEfc[t] for t in xrange(
+                            len(geneRecords[i].SEPvals)) \
+                                                        if geneRecords[i].SETested[t]])\
+                                          for i in xrange(len(geneRecords))])) 
+    
+    A = list(chain.from_iterable([numpy.array([ geneRecords[i].SEexp[t] for t in xrange(
+                            len(geneRecords[i].SEPvals)) \
+                                                        if geneRecords[i].SETested[t]])\
+                                          for i in xrange(len(geneRecords))])) 
+
+    #plot background points
+    plt.plot( A, M, color='0.65', marker='.', linestyle='')
+
+    # plot significat SEs
+    for aidx in xrange(len(aVals)):
+        M = []
+        A = []
+        for gene in geneRecords:
+            for i, qvals in enumerate(gene.SEQvals):
+                if gene.SETested[i] and numpy.argmin(qvals) == aidx and numpy.min(qvals) < 0.05:
+                    M.append( gene.SEfc[i])
+                    A.append( gene.SEexp[i])
+        
+        
+        plt.plot( A, M, color=colors[aidx], marker='.', linestyle='', label=r'$a = 2^{%s}$' % aVals[aidx] )
+    
+
+
+    
+    plt.xlabel( r'$\frac{1}{2}(\log_2 \hat{f}_1 + \log_2 \hat{f}_2)$', size=18)
+    plt.ylabel( r'$\log_{2}\hat{f}_1 - \log_2\hat{f}_2$', size=18)
+    plt.grid()
+    plt.legend(ncol=3)
+    plt.savefig(os.path.join(odir,'mvaSE.%s') % (ext))
+
+
+def plotMVASE_smear(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
     """
     Render MA plot
     """
@@ -960,7 +1014,7 @@ def plotMVASE(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
                 nsigfcs.append( gene.SEfc[i])
                 nsigexps.append( gene.SEexp[i])
 
-    H, xedges, yedges = np.histogram2d(nsigfcs, nsigexps, bins=(20, 10))
+    H, xedges, yedges = np.histogram2d(nsigfcs, nsigexps, bins=(30, 30))
     ydiff=0#abs(yedges[0]-yedges[1])
     xdiff=0#abs(xedges[0]-xedges[1])
     

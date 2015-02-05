@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/env python
 
 #
 #    iDiffIR- identifying differential intron retention (IR) from RNA-seq
@@ -19,8 +19,10 @@
 #
 
 import sys, os, numpy, pysam, gzip
+from subprocess import Popen, PIPE
 from argparse import ArgumentParser
 from SpliceGrapher.shared.utils      import *
+
 
 MATCH    = 0   #M
 INSERT   = 1   #I
@@ -51,7 +53,7 @@ def parseArgs():
     if not os.path.exists( args.outdir ):
         os.makedirs( args.outdir )
     return args
-
+    
 def processRead( read, depths, junctions):
     rpos = 0
     pos = read.pos
@@ -81,18 +83,16 @@ def writeDepths( depths, chromosome, out_dir, chrom_len, verbose ):
     write depths to file
     """
     if verbose:
-        sys.stderr.write('Writing depths (%s positions)\n' % (commaFormat(chrom_len)))
-    with gzip.open( os.path.join(out_dir, '%s.cnt.gz' % (chromosome.lower())), 'wb') as fout:
-        fout.write( '>%s\n' % (chromosome ) )
-        nonzero = 0
-        indicator = ProgressIndicator(10000000, verbose=verbose)
+        sys.stderr.write('Compressing and writing depths (%s positions)\n' % (commaFormat(chrom_len)))
+    indicator = ProgressIndicator(10000000)
+    with open( os.path.join(out_dir, '%s.cnt.gz' % (chromosome.lower())), 'wb') as fout:
+        pipe = Popen('gzip', stdin=PIPE, stdout=fout)
         for d in depths:
-            fout.write( '%d ' % d )
-            if d > 0: nonzero += 1
+            pipe.stdin.write('%d ' % d ) 
             indicator.update()
-        if verbose:
-            sys.stderr.write( '%s positions' % commaFormat(indicator.count()))
         indicator.finish()
+        pipe.communicate()
+        
 
 def main( ):
     args = parseArgs()
@@ -105,9 +105,9 @@ def main( ):
     chromosome = bamfile.getrname(read.tid)
     if args.verbose:
         sys.stderr.write('-'*70+'\n')
-        sys.stderr.write('Processing chromosome %s reads: \n' % ( chromosome ))
+        sys.stderr.write('Processing chromosome %s alignments: \n' % ( chromosome ))
     indicator = ProgressIndicator(1000000, verbose=args.verbose)
-    depths = numpy.zeros( lmap[chromosome] )
+    depths = numpy.zeros(lmap[chromosome], int)
     junctions = { }
     nonzero = 0
     processRead( read, depths, junctions )
@@ -116,23 +116,13 @@ def main( ):
         rchrom = bamfile.getrname(read.tid)
         # found new chromosome
         if rchrom != chromosome:
-            tot_nonzero += nonzero
             if args.verbose:
                 sys.stderr.write( '%s reads' % commaFormat(indicator.count()))
             indicator.finish()
-            if args.verbose:
-                sys.stderr.write('Writing depths (%s positions)\n' % (commaFormat(lmap[chromosome])))
-            with gzip.open( os.path.join(args.outdir, '%s.cnt.gz' % (chromosome.lower())), 'wb') as fout:
-                fout.write( '>%s\n' % (chromosome ) )
-                nonzero = 0
-                indicator = ProgressIndicator(10000000, verbose=args.verbose)
-                for d in depths:
-                    fout.write( '%d ' % d )
-                    if d > 0: nonzero += 1
-                    indicator.update()
-                if args.verbose:
-                    sys.stderr.write( '%s positions' % commaFormat(indicator.count()))
-                indicator.finish()
+
+            writeDepths( depths, chromosome, args.outdir, lmap[chromosome], args.verbose)
+            nonzero = sum(depths > 0)
+
             if args.verbose:
                 sys.stderr.write('Writing junctions\n')
             with gzip.open( os.path.join(args.outdir, '%s.jct.gz' % (chromosome.lower())), 'wb') as fout:
@@ -140,7 +130,6 @@ def main( ):
                     fout.write('%d\t%d\t%d\n' % (key[0], key[1], junctions[key] ) )
 
             tot_nonzero   += nonzero
-            tot_positions += lmap[chromosome]
             tot_junctions += len(junctions)
             if args.verbose:
                 sys.stderr.write('Coverage: %s / %s (%0.2f%%) positions have non-zero depth\n' % \
@@ -151,29 +140,19 @@ def main( ):
             chromosome = bamfile.getrname(read.tid)
             if args.verbose:
                 sys.stderr.write('-'*70+'\n')
-                sys.stderr.write('Processing chromosome %s reads: \n' % ( chromosome ))
+                sys.stderr.write('Processing chromosome %s alignments: \n' % ( chromosome ))
             indicator = ProgressIndicator(1000000, verbose=args.verbose)
-            depths = numpy.zeros( lmap[chromosome] )
+            depths = numpy.zeros( lmap[chromosome], int)
             junctions = { }
         processRead(read, depths, junctions)
         indicator.update()
-    # finish up
-    if args.verbose:
-        sys.stderr.write('Writing depths (%d positions)\n' % (lmap[chromosome]))
     if args.verbose:
         sys.stderr.write( '%s reads' % commaFormat(indicator.count()))
     indicator.finish()
-    with gzip.open( os.path.join(args.outdir, '%s.cnt.gz' % (chromosome.lower())), 'wb') as fout:
-        fout.write( '>%s\n' % (chromosome ) )
-        nonzero = 0
-        indicator = ProgressIndicator(10000000, verbose=args.verbose)
-        for d in depths:
-            fout.write( '%d ' % d )
-            if d > 0: nonzero += 1
-            indicator.update()
-        if args.verbose:
-            sys.stderr.write( '%s positions' % commaFormat(indicator.count()))
-        indicator.finish()
+
+    writeDepths( depths, chromosome, args.outdir, lmap[chromosome], args.verbose)
+    nonzero = sum(depths > 0)
+
     if args.verbose:
         sys.stderr.write('Writing junctions\n')
     with gzip.open( os.path.join(args.outdir, '%s.jct.gz' % (chromosome.lower())), 'wb') as fout:
@@ -182,19 +161,21 @@ def main( ):
 
     if args.verbose:
         sys.stderr.write('Coverage: %s / %s (%0.2f%%) positions have non-zero depth\n' % \
-                         (commaFormat(nonzero), commaFormat(lmap[chromosome]), float(nonzero)/lmap[chromosome] * 100))
+                         (commaFormat(nonzero), 
+                          commaFormat(lmap[chromosome]), 
+                          float(nonzero)/lmap[chromosome] * 100))
         sys.stderr.write('Junctions: %s\n' % commaFormat(len(junctions)) )
         sys.stderr.write('+'*70+'\n')
 
     tot_nonzero   += nonzero
-    tot_positions += lmap[chromosome]
+    tot_positions = sum(lmap.values())
     tot_junctions += len(junctions)
 
     if args.verbose:
         sys.stderr.write('*'*70 + '\n')
         sys.stderr.write('Total Coverage: %d / %d (%0.2f%%) positions have non-zero depth\n' % \
                          (tot_nonzero, tot_positions, float(tot_nonzero)/tot_positions* 100))
-        sys.stderr.write('Total Junctions: %d' % tot_junctions) 
+        sys.stderr.write('Total Junctions: %d\n' % tot_junctions) 
         sys.stderr.write('*'*70 + '\n')
 
 

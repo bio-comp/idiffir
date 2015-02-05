@@ -1,4 +1,4 @@
-#!/bin/python
+#!/usr/bin/env python
 """Program for generating miso IR examples."""
 from SpliceGrapher.shared.utils        import *
 from SpliceGrapher.shared.GeneModelConverter import *

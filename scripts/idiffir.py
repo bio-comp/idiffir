@@ -17,7 +17,12 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+"""
+Main iDiffIR script
 
+:author: Mike Hamilton
+"""
+import os, sys, numpy
 from iDiffIR.IntronModel import *
 from iDiffIR.Plot import *
 from iDiffIR.Stat import *
@@ -25,10 +30,8 @@ import matplotlib
 matplotlib.use('agg')
 from SpliceGrapher.formats.fasta import *
 from argparse import ArgumentParser, ArgumentTypeError
-import os, sys, numpy
 from SpliceGrapher.shared.utils      import *
 from SpliceGrapher.formats.loader import loadGeneModels
-
 
 
 def fileList( raw ):
@@ -54,6 +57,9 @@ def parseArgs():
                         type=float, help='coverage cutoff, default = 0.99')
     parser.add_argument('-d', '--dexpThresh', dest='dexpThresh', action='store', default=10, 
                         type=float, help='differential gene expression threshold, [default = 10]')
+    parser.add_argument('-p', '--procs', dest='procs', action='store', default=1, 
+                        type=int, help='Number of processing cores to use, [default = 1]')
+
     parser.add_argument('-f', '--fdrlevel', dest='fdrlevel', action='store', default=0.05, 
                         type=float, help='FDR test level, [default = 0.05]')
 #    parser.add_argument('-n', '--numClusts', dest='numClusts', action='store', default=5, 
@@ -71,15 +77,15 @@ def parseArgs():
                         help='AS event to test, IR: Intron Retention, SE: Exon Skipping [default = IR]')
     parser.add_argument('genemodel', type=str,
                         help="gene model file: NAME.gtf[.gz] | NAME.gff[.gz]")
-    parser.add_argument('factor1Dirs', type=fileList,
-                        help="colon-separated list of directories: PATH-TO-REPLICATE_1[:PATH-TO-REPLICATE_2,...]")
-    parser.add_argument('factor2Dirs', type=fileList,
-                        help="colon-separated list of directories: PATH-TO-REPLICATE_1[:PATH-TO-REPLICATE_2,...]")
+    parser.add_argument('factor1bamfiles', type=fileList,
+                        help="colon-separated list of bamfiles: PATH-TO-REPLICATE_1[:PATH-TO-REPLICATE_2,...]")
+    parser.add_argument('factor2bamfiles', type=fileList,
+                        help="colon-separated list of bamfiles: PATH-TO-REPLICATE_1[:PATH-TO-REPLICATE_2,...]")
     
 
     args = parser.parse_args()
     if not validateArgs( args ):
-        raise Exception("Argument Errors: check usage")
+        raise Exception("Argument Errors: check arguments and usage!")
     return args
 
 def validateArgs( nspace ):
@@ -93,17 +99,17 @@ def validateArgs( nspace ):
     # count files
     for f in nspace.factor1Dirs:
         if not os.path.exists(f):
-            sys.stderr.write('Counts directory %s not found' % f )
+            sys.stderr.write('**Counts directory %s not found\n' % f )
             countFilesOK = False
 
     for f in nspace.factor2Dirs:
         if not os.path.exists(f):
-            sys.stderr.write('Counts directory %s not found' % f )
+            sys.stderr.write('**Counts directory %s not found\n' % f )
             countFilesOK = False
 
     # gene model
     if not os.path.isfile(nspace.genemodel):
-        sys.stderr.write('File %s not found' % nspace.genemodel )
+        sys.stderr.write('**Genene model file %s not found\n' % nspace.genemodel )
         geneModelOK = False
 
     if nspace.coverage < 0 or nspace.coverage > 1:
@@ -160,23 +166,21 @@ def loadData( nspace, geneModel, geneRecords ):
 
             for i in xrange(len(factorfiles)):
                 fname = os.path.join(factorfiles[i], 
-                                     '%s.cnt.gz' % chrm) 
+                                     '%s.cnt.npy' % chrm) 
                 if not os.path.exists(fname):
                     sys.stderr.write('Depths file %s not found\n' % fname )
                     continue
-                itr = fasta_itr( fname )
+                depths = numpy.load(fname)
                 if nspace.verbose:
                     sys.stderr.write("Reading depths from %s\n" % ( fname ) )
-                rec = itr.next() 
-                key = rec.header
-                depths = numpy.array( rec.sequence.strip().split(), int )
+                depths = csr_matrix( depths )
                 counter = 0
                 for gene in genes:
                     grec = grdict[gene.id]
                     start = grec.minpos - 1
                     end = grec.maxpos
                     l = fDict.get(gene.id, [ ] )
-                    l.append( depths[start:end] )
+                    l.append( depths[0,start:end])
                     fDict[gene.id] = l
                     counter += 1
                 if nspace.verbose:
@@ -273,7 +277,9 @@ def main():
     writeStatus('Loading models', nspace.verbose)
     geneModel = loadGeneModels( nspace.genemodel, verbose=nspace.verbose )
     writeStatus('Making reduced models', nspace.verbose)
-    geneRecords = makeModels( geneModel, verbose=nspace.verbose, graphDirs=nspace.graphDirs, exonic=nspace.event=='SE' )
+    geneRecords = makeModels( geneModel, verbose=nspace.verbose, 
+                              graphDirs=nspace.graphDirs, 
+                              exonic=nspace.event=='SE', procs=nspace.procs )
     writeStatus( 'Loading Depths', nspace.verbose )
     f1Dict, f2Dict = loadData( nspace, geneModel, geneRecords )
     genered = [ ]
@@ -286,19 +292,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-def nspaceS():
-#if True:
-    class w: pass
-    nspace = w()
-    nspace.outdir = '.'
-    nspace.krange=[2,6]
-    #nspace.genemodel = os.getenv('HUMANGTFPROT')
-    nspace.genemodel = os.getenv('TAIRGTF')
-    nspace.factor1Dirs = fileList( '/s/waffles/b/tmp/hamiltom/simulation/mutant_idiffir')
-    nspace.factor2Dirs = fileList( '/s/waffles/b/tmp/hamiltom/simulation/wildtype_idiffir')
-    nspace.verbose = True
-    nspace.biasAdj=False
-    nspace.numClusts=5
-    nspace.coverage=0.90
-    nspace.fdrlevel = 0.05
-    nspace.shrink_introns=False

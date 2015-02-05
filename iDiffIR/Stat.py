@@ -468,32 +468,26 @@ def computeStatistics( geneRecords, f1Dict, f2Dict, nspace ):
                 
             else:
                 intTested.append(True)
+                # compute numerators for each value of a
                 numer = [numpy.log2( 2**a + f1Intm * f1Norm  ) \
                              for a in aVals ]
+
+                # compute denominators for each value of a
                 denom = [numpy.log2( 2**a + f2Intm * f2Norm ) \
                              for a in aVals ]
-                numerL = numpy.log2( (2**a + f1Int[:11].mean())/(f1ExonL.mean() + EPS) )
-                denomL = numpy.log2( (2**a + f2Int[:11].mean())/(f2ExonL.mean()  + EPS) )
-                numerR = numpy.log2( (2**a + f1Int[-10:].mean())/(f1ExonR.mean() + EPS) )
-                denomR = numpy.log2( (2**a + f2Int[-10:].mean())/(f2ExonR.mean() + EPS) )
 
                 intfc.append( (numpy.log2(f1Intm * f1Norm+EPS)) -  \
                                   (numpy.log2(f2Intm * f2Norm+EPS)))
-                intexp.append(0.5 * (numpy.log2(f1Intm * f1Norm+EPS)\
-                                         + numpy.log2(f2Intm *\
-                                                          f2Norm+EPS)))
-                ssDiff =  0.5*( (numerL - denomL) + (numerR-denomR))
+
+                intexp.append(0.5 * (numpy.log2(f1Intm * f1Norm+EPS)
+                                     + numpy.log2(f2Intm *f2Norm+EPS)))
+
 
                 intFC.append( [(numer[i] - denom[i]) / (cosL + cosR) \
                                    for i in xrange(len(numer))])
 
                 intstat.append( [ ((numer[i] - denom[i] ) / (cosL + cosR))/gene.serr \
                                   for i in xrange(len(numer))])
-                #intstat.append( [ ((numer[i] - denom[i] ) / (cosL + cosR)) \
-                #                  for i in xrange(len(numer))])
-
-                #intstat.append( [ ((numer[i] - denom[i] )  ) / gene.serr \
-                #                      for i in xrange(len(numer))])
 
         if intTested.count(True) > 0:
             gene.intexp = intexp
