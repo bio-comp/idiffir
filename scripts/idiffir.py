@@ -35,9 +35,28 @@ from SpliceGrapher.formats.loader import loadGeneModels
 
 
 def fileList( raw ):
+    """Converts a **:**-separated string of file paths into a list
+    
+    Parameters
+    ----------
+    raw : string containing paths separated by a **:**
+
+    Returns
+    -------
+    p : list
+        List of file paths
+        
+    """
     return [ r.strip() for r in raw.strip().split(':')]
 
 def parseArgs():
+    """Parse command line arguments
+
+    Returns
+    -------
+    a : argparse.ArgumentParser
+
+    """
     parser = ArgumentParser(description='Identify differentially expressed introns.')
     parser.add_argument('-v', '--verbose',dest='verbose', action='store_true', 
                         default=False, help="verbose output [default is quiet running]")
@@ -88,154 +107,201 @@ def parseArgs():
         raise Exception("Argument Errors: check arguments and usage!")
     return args
 
+def _validateBamfiles(bamfileList):
+    """Check if bamfiles exist
+
+    Parameters
+    ----------
+    bamfileList : List of paths to check
+
+    Returns
+    -------
+    b : bool
+        True if all files exist at given paths
+
+    """
+    bamfilesOK = True
+    for f in bamfileList:
+        if not os.path.exists(f):
+            sys.stderr.write('**Counts directory %s not found\n' % f )
+            countFilesOK = False
+    return bamfilesOK
+    
 def validateArgs( nspace ):
+    """Verify program arguments
+
+    Checks all arguments to **idiffir.py** for consistency
+    and feasibilty.
+
+    Parameters
+    ----------
+    nspace : argparse.Namespace object containing **idiffir.py** arguments
+    
+    .. todo:: add rest of argument checks
+ 
+    Returns
+    -------
+    b : bool
+        True if parameters are feasible
+
     """
-    Verify arguments
-    """
-    countFilesOK = True
     geneModelOK  = True
     cParamOK     = True
         
-    # count files
-    for f in nspace.factor1Dirs:
-        if not os.path.exists(f):
-            sys.stderr.write('**Counts directory %s not found\n' % f )
-            countFilesOK = False
-
-    for f in nspace.factor2Dirs:
-        if not os.path.exists(f):
-            sys.stderr.write('**Counts directory %s not found\n' % f )
-            countFilesOK = False
+    # bamfiles
+    cfOK1 = _validateBamfiles(nspace.factor1bamfiles)
+    cfOK2 = _validateBamfiles(nspace.factor2bamfiles)
+    countFilesOK = cfOK1 and cfOK2
 
     # gene model
     if not os.path.isfile(nspace.genemodel):
         sys.stderr.write('**Genene model file %s not found\n' % nspace.genemodel )
         geneModelOK = False
 
+    # check event coverage parameter
     if nspace.coverage < 0 or nspace.coverage > 1:
         sys.stderr.write( 'Feasible values of coverage filter `-c`, `--coverage`: 0 <= c <= 1\n')
         cParamOK = False
 
+    
     return countFilesOK and cParamOK and geneModelOK
 
 def makeOutputDir(nspace):
-    """
-    Make directories and subdirectories for output.
+    """Make output directories
+
+    Make output directories and subdirectories for **iDiffIR** output
+
+    Parameters
+    ----------
+    nspace : argparse.Namespace object with **idiffir.py** parameters
+
+    Returns
+    -------
+    status : bool
+             True if directories were able to be created or already exist.
     """
     try:
+        # build main directory
         if not os.path.exists(nspace.outdir):
             os.makedirs(nspace.outdir)
-        
+
+        # build figures subdirectory
         if not os.path.exists(os.path.join(nspace.outdir, 'figures')) and not nspace.noplot:
             os.makedirs(os.path.join(nspace.outdir, 'figures'))
+
+        # build figuresLog subdirectory
         if not os.path.exists(os.path.join(nspace.outdir, 'figuresLog')) and not nspace.noplot:
             os.makedirs(os.path.join(nspace.outdir, 'figuresLog'))
+        
+        # HTML output not implemented yet
+        # # build HTML directory
+        # if not os.path.exists(os.path.join(nspace.outdir, 'HTML')):
+        #     os.makedirs(os.path.join(nspace.outdir, 'HTML'))
 
-#        if not os.path.exists(os.path.join(nspace.outdir, 'HTML')):
-#            os.makedirs(os.path.join(nspace.outdir, 'HTML'))
+        # build lists subdirectory
         if not os.path.exists(os.path.join(nspace.outdir, 'lists')):
             os.makedirs(os.path.join(nspace.outdir, 'lists'))
 
+    # couldn't make a directory...
     except OSError:
         return False
+    # all ok
     return True
 
 def writeStatus( status, verbose=False ):
+    """Print status message
+    
+    Pretty-print status message to stdout
+
+    Parameters
+    ----------
+    status  : string to write
+    verbose : whether to display status
+
     """
-    Pretty print status
-    """
+    # do nothing if we're keeping quiet
     if not verbose: return
+
+    # print otherwise
     n = len(status)+2
     sys.stderr.write( '%s\n' % ( '-' * n ) )
     sys.stderr.write( ' %s \n' % ( status ) )
     sys.stderr.write( '%s\n' % ( '-' * n ) )
 
-def loadData( nspace, geneModel, geneRecords ):
-    """
-    Load gene depths
-    """
-    f1Dict = { }
-    f2Dict = { }
-    grdict = { }
-    for gene in geneRecords:
-        grdict[gene.gid] = gene
-    def load( factorfiles, fDict ):
-        for chrm in sorted(geneModel.getChromosomes()):
-            genes     = geneModel.getGeneRecords(chrm)
-            genes.sort()
+def runIntron(geneRecords, geneModel, nspace):
+    """Run differential IR analysis
 
-            for i in xrange(len(factorfiles)):
-                fname = os.path.join(factorfiles[i], 
-                                     '%s.cnt.npy' % chrm) 
-                if not os.path.exists(fname):
-                    sys.stderr.write('Depths file %s not found\n' % fname )
-                    continue
-                depths = numpy.load(fname)
-                if nspace.verbose:
-                    sys.stderr.write("Reading depths from %s\n" % ( fname ) )
-                depths = csr_matrix( depths )
-                counter = 0
-                for gene in genes:
-                    grec = grdict[gene.id]
-                    start = grec.minpos - 1
-                    end = grec.maxpos
-                    l = fDict.get(gene.id, [ ] )
-                    l.append( depths[0,start:end])
-                    fDict[gene.id] = l
-                    counter += 1
-                if nspace.verbose:
-                    sys.stderr.write("Read %d gene depths\n" % (counter))
-    if nspace.verbose:
-        sys.stderr.write( '-' * 30 + '\n' )
-        sys.stderr.write("|Reading factor 1 gene depths|\n")
-        sys.stderr.write( '-' * 30 + '\n' )
+    Run **iDiffIR** differential intron retention analysis.
 
-    load( nspace.factor1Dirs, f1Dict)
-    if nspace.verbose:
-        sys.stderr.write( '-' * 30 + '\n' )
-        sys.stderr.write("|Reading factor 2 gene depths|\n")
-        sys.stderr.write( '-' * 30 + '\n' )
-    load( nspace.factor2Dirs, f2Dict)
-    return f1Dict, f2Dict 
+    Parameters
+    ----------
+    geneRecords : list of IntronModel.IntronModel objects
+    geneModel   : SpliceGrapher.formats.GeneModel.GeneModel
+                  Gene model object for the provided genome
+    nspace      : argparse.ArgumentParser 
+                  Command line arguments for **idiffir.py**
+    
+    """
+    # depricated bias adjustment
+    #    if nspace.biasAdj:
+    #        f1Codes, f2Codes, f1Cnt, f2Cnt = removePositionalBias(
+    #            geneRecords, f1Dict, f1Dict, nspace.numClusts)
+    #        rmi = rmsip(geneRecords, f1Dict, f2Dict )
+    #        plotGBCs( f1Codes, f2Codes, f1Cnt, f2Cnt, rmi, nspace.outdir)
 
-def runIntron(geneRecords, geneModel, f1Dict, f2Dict, nspace):
-    """
-    Run differential IR analysis
-    """
+    # compute differential IR statistics
     writeStatus('Computing statistics', nspace.verbose)
-#    if nspace.biasAdj:
-#        f1Codes, f2Codes, f1Cnt, f2Cnt = removePositionalBias(
-#            geneRecords, f1Dict, f1Dict, nspace.numClusts)
-#        rmi = rmsip(geneRecords, f1Dict, f2Dict )
-#        plotGBCs( f1Codes, f2Codes, f1Cnt, f2Cnt, rmi, nspace.outdir)
-    testedGenes, aVals = computeStatistics( geneRecords, f1Dict, f2Dict, 
-                                      nspace )
+    testedGenes, aVals = computeStatistics( geneRecords, nspace)
+
+    # create a summary dictionary of results
     summaryDict = summary( testedGenes, aVals, nspace.fdrlevel)
+    # write full latex table
     fullTexTable(summaryDict,os.path.join(nspace.outdir, 'lists')) 
+    # write gene lists
     writeLists( summaryDict, os.path.join(nspace.outdir, 'lists'))
+    # write all IR events
     writeAll( testedGenes, aVals, os.path.join(nspace.outdir, 'lists'))
     #writeGeneExpression(geneRecords, os.path.join(nspace.outdir, 'lists'))
+
+    # plot figures for significant events
     writeStatus('Plotting Depths', nspace.verbose)
     f1labs = [ '%s Rep %d' % (nspace.factorlabels[0], i+1) for i in xrange( len(nspace.factor1Dirs))]
     f2labs = [ '%s Rep %d' % (nspace.factorlabels[1], i+1) for i in xrange( len(nspace.factor2Dirs))]
+
+    # finish up if we're not plotting
     if nspace.noplot: return
+
+    # plot diagnostic figures (p-value distribution and MvA )
     plotPDist(testedGenes, os.path.join(nspace.outdir, 'figures'))
     plotMVA(testedGenes, aVals, os.path.join(nspace.outdir, 'figures'))
 
+    # plot figures in standard scale
     plotResults( testedGenes, aVals, f1Dict, f2Dict, f1labs+f2labs, 
                  nspace, geneModel, False,
                  os.path.join(nspace.outdir, 'figures'))
+
+    # plot figures in log scale
     plotResults( testedGenes, aVals, f1Dict, f2Dict, f1labs+f2labs, 
                  nspace, geneModel, True,
                  os.path.join(nspace.outdir, 'figuresLog'))
     
-def runExon(geneRecords, geneModel, f1Dict, f2Dict, nspace):
-    """
-    Run differential exon skipping analysis
+def runExon(geneRecords, geneModel, nspace):
+    """Run differential exon skipping analysis
+
+    Run iDiffIR's differential exon skipping analysis
+
+    Parameters
+    ----------
+    geneRecords : list
+                  List of IntronModel.IntronModel objects
+    geneModel   : SpliceGrapher.formats.GeneModel.GeneModel
+                  Gene model object for the provided genome
+    nspace      : argparse.ArgumentParser 
+                  Command line arguments for **idiffir.py**
+
     """
     writeStatus("Computing SE statistics", nspace.verbose)
-    SErecords, aVals = computeSEStatistics( geneRecords, f1Dict, f2Dict, 
-                                            nspace )
+    SErecords, aVals = computeSEStatistics( geneRecords, nspace )
     plotPDistSE(SErecords, os.path.join(nspace.outdir, 'figures'))
     plotMVASE(SErecords, aVals, os.path.join(nspace.outdir, 'figures'))
     summaryDictSE = summarySE( SErecords, aVals, nspace.fdrlevel)
@@ -243,8 +309,10 @@ def runExon(geneRecords, geneModel, f1Dict, f2Dict, nspace):
     #writeListsSE( summaryDict, os.path.join(nspace.outdir, 'lists'))
     writeAllSE( SErecords, aVals, os.path.join(nspace.outdir, 'lists'))
     writeStatus("Plotting Depths", nspace.verbose)
-    f1labs = [ '%s Rep %d' % (nspace.factorlabels[0], i+1) for i in xrange( len(nspace.factor1Dirs))]
-    f2labs = [ '%s Rep %d' % (nspace.factorlabels[1], i+1) for i in xrange( len(nspace.factor2Dirs))]
+    f1labs = [ '%s Rep %d' % (nspace.factorlabels[0], i+1) \
+               for i in xrange( len(nspace.factor1Dirs))]
+    f2labs = [ '%s Rep %d' % (nspace.factorlabels[1], i+1) \
+               for i in xrange( len(nspace.factor2Dirs))]
 
     if nspace.noplot: return
     plotPDistSE(SErecords, os.path.join(nspace.outdir, 'figures'))
@@ -257,35 +325,50 @@ def runExon(geneRecords, geneModel, f1Dict, f2Dict, nspace):
                  os.path.join(nspace.outdir, 'figuresLog'))
 
 def _dispatch(event):
+    """Run differential event analysis for given event
+
+    Dispatch differential analysis to corresponding function
+
+    Parameters
+    ----------
+    event : str
+            Either IR or SE indicating intron retention or exon skipping
     """
-    Run differential event analysis for given event
-    """
+    # run differential IR analysis
     if event == 'IR':
         return runIntron
 
+    # run differential SE analysis
     elif event == 'SE':
         return runExon
-        
+
+    # invalalid event ID
     else:
         raise ValueError
 
 def main():
+    """Main program execution
+
+    """
     nspace = parseArgs()
     if not makeOutputDir(nspace): 
         sys.exit('Could not create directory: %s' % nspace.outdir)
 
     writeStatus('Loading models', nspace.verbose)
     geneModel = loadGeneModels( nspace.genemodel, verbose=nspace.verbose )
+
     writeStatus('Making reduced models', nspace.verbose)
     geneRecords = makeModels( geneModel, verbose=nspace.verbose, 
                               graphDirs=nspace.graphDirs, 
                               exonic=nspace.event=='SE', procs=nspace.procs )
-    writeStatus( 'Loading Depths', nspace.verbose )
-    f1Dict, f2Dict = loadData( nspace, geneModel, geneRecords )
-    genered = [ ]
-    for gene in geneRecords:
-        if gene.gid in f1Dict and gene.gid in f2Dict and not gene.chrom.isalpha(): genered.append(gene)
-    geneRecords = genered
+    
+    # Depricated 
+    # writeStatus( 'Loading Depths', nspace.verbose )
+    # f1Dict, f2Dict = loadData( nspace, geneModel, geneRecords )
+    # genered = [ ]
+    # for gene in geneRecords:
+    #     if gene.gid in f1Dict and gene.gid in f2Dict and not gene.chrom.isalpha(): genered.append(gene)
+    # geneRecords = genered
 
     _dispatch(nspace.event)(geneRecords, geneModel, f1Dict, f2Dict, nspace)
 

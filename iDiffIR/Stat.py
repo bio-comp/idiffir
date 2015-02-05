@@ -27,6 +27,8 @@ from scipy.cluster.vq import kmeans,vq
 from multi_test import bh,qvalues,bonferroni
 from itertools import chain
 import numpy, os, sys, multi_test
+from multiprocessing import Pool
+
 EPS=10**-5
 
 class Results(object):
@@ -52,8 +54,9 @@ def rmsip( geneRecords, f1Dict, f2Dict ):
     return numpy.sqrt( numpy.sum( [ x**2 for x in cosL ]) / float(len(cosL)) )
         
 def removePositionalBias( geneRecords, f1Dict, f2Dict, numClusts, verbose=True ):
-    """
-    Removes primer bias by smoothing read depths.
+    """Removes primer bias by smoothing read depths.
+
+    Depricated
     """
     THREE_PRIME_BIAS = 0
     FIVE_PRIME_BIAS  = 1
@@ -204,10 +207,12 @@ def removePositionalBias( geneRecords, f1Dict, f2Dict, numClusts, verbose=True )
             gene.f2ExonWts.append(wts)
 
     return f1Codes, f2Codes, f1Cnt, f2Cnt
+
 def computeNormFactors( geneRecords, f1Dict, f2Dict, verbose=False ):
-    """
-    Compute library norm factors for each replicate and
+    """Compute library norm factors for each replicate and
     separately for both introns and exons
+
+    Depricated
     """
     if verbose:
         sys.stderr.write('\tComputing library size factors...\n')
@@ -254,9 +259,10 @@ def computeNormFactors( geneRecords, f1Dict, f2Dict, verbose=False ):
     return f1ExonExp, f2ExonExp, f1IntronExp, f2IntronExp, k
 
 def computeNormFactorsAdj( geneRecords, f1Dict, f2Dict, verbose=False ):
-    """
-    Compute library norm factors for each replicate and
+    """Compute library norm factors for each replicate and
     separately for both introns and exons
+
+    Depricated
     """
     if verbose:
         sys.stderr.write('\tComputing library size factors...\n')
@@ -269,7 +275,6 @@ def computeNormFactorsAdj( geneRecords, f1Dict, f2Dict, verbose=False ):
 
     for gene in geneRecords:
         soffset = 0
-
         eoffset = 1
         for i in xrange( f1Reps ):
             f1ExonExp[i].extend( [ numpy.mean( 
@@ -573,11 +578,40 @@ def get_weight( start, stop, gene, wts):
             retn.append(wts[i])
     return numpy.mean(retn)
 
+def computeSEStatistics(geneRecords, nspace):
+    """Compute SE statistics
+
+    Parameters
+    ----------
+    geneRecords : list
+                  List of iDiffIR.IntronModel.IntronModel objects to 
+                  process.
+    nspace : argparse.ArgumentParser
+            Command line arguments for **idiffir.py**
+
+    Returns
+    -------
+    testedGenes : list
+                  List of genes containing tested IR events
+    aVals : list
+            List of pseudo-count parameters, :math:`a`, used
+
+    """
+    exonExp = [ ] # list of exonic expression across all genes
+    intronExp = [ ] # list of exonic expression across all genes
+
+    # parallel call
+    p = Pool(nspace.procs)
+    if nspace.procs > 1:
+        p.imap_unsorted( procGeneStatsSE, [(gene, nspace) for gene in geneRecords] )
+    # serial call
+    for gene in geneRecords:
+        res = proceGeneStatsSE(gene, nspace)
+
 def computeSEStatistics( geneRecords, f1Dict, f2Dict, nspace ):
     """
     Wrapper to compute statistics for all gene records
     """
-
     mink=nspace.krange[0]
     maxk=nspace.krange[1]
     c=nspace.coverage
@@ -961,66 +995,11 @@ def computeSE_old( gene, f1EV, f2EV, f1ExonNorm, f2ExonNorm):
 
 
 def zscore( x, mu=0, sigma=1.0 ):
-    """
-    Computes the z-score
+    """Computes the z-score
+
     """
     return ( x - mu ) / float(sigma)
 
 
-def loadTest(dat='sr45'):
-    """
-    Load data from count files
-    """
-    from SpliceGrapher.formats.fasta import fasta_itr
-    # load factor 1 depths
-    class Raw(object): pass
-    nspace = Raw()
-    if dat == 'sr45':
-        nspace.factor1files = ['../../diftext/sr45_counts/sr45_d.cnt.gz','../../diftext/sr45_counts/sr45_e.cnt.gz' ]
-        nspace.factor2files = ['../../diftext/sr45_counts/wt_d.cnt.gz', '../../diftext/sr45_counts/wt_e.cnt.gz']
-    elif dat == 'ptb':
-        nspace.factor1files = ['../../diftext/ptb_mi12_r1.cnt.gz','../../diftext/ptb_mi12_r2.cnt.gz' ]
-        nspace.factor2files = ['../../diftext/ptb_wt_r1.cnt.gz', '../../diftext/ptb_wt_r2.cnt.gz']
-    elif dat =='hnrnp':
-        nspace.factor1files = ['../../diftext/mt_hnrnp.cnt.gz']
-        nspace.factor2files = ['../../diftext/wt_hnrnp.cnt.gz']
-
-
-    else:
-        nspace.factor1files = ['../../diftext/mt_met1_MATS.gz']
-        nspace.factor2files = ['../../diftext/wt_met1_MATS.gz']
-
-    nspace.verbose = True
-    f1Dict = { }
-    for i in xrange(len(nspace.factor1files)):
-        itr = fasta_itr( nspace.factor1files[i] )
-        sys.stderr.write("Reading depths from %s\n" % (nspace.factor1files[i]))
-
-        indicator = ProgressIndicator(10000, verbose=nspace.verbose)
-        for rec in itr:
-            key = rec.header.split(':')[0].strip()
-            l = f1Dict.get(key, [ ] )
-            l.append( numpy.array( rec.sequence.strip().split(), int ) )
-            f1Dict[key] = l
-            indicator.update()
-        indicator.finish()
-        sys.stderr.write("Read %d gene depths\n" % (indicator.ctr))
-
-
-    # load factor 2 depths
-    f2Dict = { }
-    for i in xrange(len(nspace.factor2files)):
-        repDict = { }
-        itr = fasta_itr( nspace.factor2files[i] )
-        sys.stderr.write("Reading depths from %s\n" % ( nspace.factor2files[i] ))
-        indicator = ProgressIndicator(10000, verbose=nspace.verbose)
-        for rec in itr:
-            key = rec.header.split(':')[0].strip()
-            l = f2Dict.get(key, [ ] )
-            l.append( numpy.array( rec.sequence.strip().split(), int ) )
-            f2Dict[key] = l
-            indicator.update()
-        indicator.finish()
-        sys.stderr.write("Read %d gene depths\n" % (indicator.ctr))
-
-    return f1Dict, f2Dict
+if __name__ == '__main__':
+    raise 'Supporting module only'

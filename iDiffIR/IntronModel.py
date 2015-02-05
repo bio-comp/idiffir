@@ -211,20 +211,28 @@ def makeModels( geneModel, verbose=False, graphDirs=None, exonic=False, procs=1 
     EXONIC = exonic
     # end hack
 
-    # create processor pool for parallel calls
-    p = Pool(procs)
+    # run parallel
+    if procs > 1:
+        # create processor pool for parallel calls
+        p = Pool(procs)
 
-    # parallel calls to processor pool
-    r = p.imap_unordered( procGene, [gene for gene in geneModel.getAllGenes(geneFilter=gene_type_filter)])
+        # parallel calls to processor pool
+        r = p.imap_unordered( procGene, [gene for gene in geneModel.getAllGenes(geneFilter=gene_type_filter)])
 
-    # collect parallel results as they come in
-    models = []
-    for model in r:
-        indicator.update()
-        models.append(model)
+        # collect parallel results as they come in
+        models = []
+        for model in r:
+            indicator.update()
+            models.append(model)
+    # run serial
+    else:
+        for gene in geneModel.getAllGenes(geneFilter=gene_type_filter):
+            indicator.update()
+            procGene(gene)
     if verbose:
         sys.stderr.write('%d genes' % indicator.count())
     indicator.finish()
+            
     return models
     
 def makeReducedExonModel(gene, graph):
