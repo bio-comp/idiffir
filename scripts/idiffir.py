@@ -22,7 +22,7 @@ Main iDiffIR script
 
 :author: Mike Hamilton
 """
-import os, sys, numpy
+import os, sys, numpy, pysam
 from iDiffIR.IntronModel import *
 from iDiffIR.Plot import *
 from iDiffIR.Stat import *
@@ -228,7 +228,7 @@ def writeStatus( status, verbose=False ):
     sys.stderr.write( ' %s \n' % ( status ) )
     sys.stderr.write( '%s\n' % ( '-' * n ) )
 
-def runIntron(geneRecords, geneModel, nspace):
+def runIntron(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
     """Run differential IR analysis
 
     Run **iDiffIR** differential intron retention analysis.
@@ -251,7 +251,7 @@ def runIntron(geneRecords, geneModel, nspace):
 
     # compute differential IR statistics
     writeStatus('Computing statistics', nspace.verbose)
-    testedGenes, aVals = computeStatistics( geneRecords, nspace)
+    testedGenes, aVals = computeStatistics( geneRecords, nspace, validChroms, f1LNorm, f2LNorm)
 
     # create a summary dictionary of results
     summaryDict = summary( testedGenes, aVals, nspace.fdrlevel)
@@ -285,7 +285,7 @@ def runIntron(geneRecords, geneModel, nspace):
                  nspace, geneModel, True,
                  os.path.join(nspace.outdir, 'figuresLog'))
     
-def runExon(geneRecords, geneModel, nspace):
+def runExon(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
     """Run differential exon skipping analysis
 
     Run iDiffIR's differential exon skipping analysis
@@ -301,7 +301,7 @@ def runExon(geneRecords, geneModel, nspace):
 
     """
     writeStatus("Computing SE statistics", nspace.verbose)
-    SErecords, aVals = computeSEStatistics( geneRecords, nspace )
+    SErecords, aVals = computeSEStatistics( geneRecords, nspace, validChroms, f1LNorm, f2LNorm )
     plotPDistSE(SErecords, os.path.join(nspace.outdir, 'figures'))
     plotMVASE(SErecords, aVals, os.path.join(nspace.outdir, 'figures'))
     summaryDictSE = summarySE( SErecords, aVals, nspace.fdrlevel)
@@ -346,11 +346,44 @@ def _dispatch(event):
     else:
         raise ValueError
 
+def getValidChromosomes(nspace):
+    """Find chromosomes that are covered in 
+       each bamfile
+
+    """
+    f1Chroms = [ ]
+    for path in nspace.factor1bamfiles:
+        bamfile = pysam.Samfile(path, 'rb')
+        f1Chroms.append(set(bamfile.references))
+    f2Chroms = [ ]
+    for path in nspace.factor2bamfiles:
+        bamfile = pysam.Samfile(path, 'rb')
+        f2Chroms.append(set(bamfile.references))
+    f1Chroms = set.intersection( *f1Chroms )
+    f2Chroms = set.intersection( *f2Chroms )
+    return set.intersection(f1Chroms, f2Chroms)
+
+def getNormFactors(nspace):
+    f1Cnts = [ ]
+    for path in nspace.factor1bamfiles:
+        bamfile = pysam.Samfile(path, 'rb')
+        f1Cnts.append(bamfile.mapped)
+    f2Cnts = [ ]
+    for path in nspace.factor2bamfiles:
+        bamfile = pysam.Samfile(path, 'rb')
+        f2Cnts.append(bamfile.mapped)
+    mVal = max(f1Cnts+f2Cnts)
+    f1LNorm = [mVal/float(x) for x in f1Cnts]
+    f2LNorm = [mVal/float(x) for x in f2Cnts]
+    return f1LNorm, f2LNorm
+
 def main():
     """Main program execution
 
     """
     nspace = parseArgs()
+    validChroms = getValidChromosomes(nspace)
+    f1LNorm, f2LNorm, = getNormFactors(nspace)
     if not makeOutputDir(nspace): 
         sys.exit('Could not create directory: %s' % nspace.outdir)
 
@@ -360,7 +393,8 @@ def main():
     writeStatus('Making reduced models', nspace.verbose)
     geneRecords = makeModels( geneModel, verbose=nspace.verbose, 
                               graphDirs=nspace.graphDirs, 
-                              exonic=nspace.event=='SE', procs=nspace.procs )
+                              exonic=nspace.event=='SE', 
+                              procs=nspace.procs )
     
     # Depricated 
     # writeStatus( 'Loading Depths', nspace.verbose )
@@ -370,7 +404,7 @@ def main():
     #     if gene.gid in f1Dict and gene.gid in f2Dict and not gene.chrom.isalpha(): genered.append(gene)
     # geneRecords = genered
 
-    _dispatch(nspace.event)(geneRecords, geneModel, f1Dict, f2Dict, nspace)
+    _dispatch(nspace.event)(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm)
 
 if __name__ == "__main__":
     main()
