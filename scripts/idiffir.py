@@ -361,7 +361,7 @@ def main():
     geneRecords = makeModels( geneModel, verbose=nspace.verbose, 
                               graphDirs=nspace.graphDirs, 
                               exonic=nspace.event=='SE', procs=nspace.procs )
-    
+    del geneModel
     # Depricated 
     # writeStatus( 'Loading Depths', nspace.verbose )
     # f1Dict, f2Dict = loadData( nspace, geneModel, geneRecords )
