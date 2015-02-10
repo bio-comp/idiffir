@@ -37,7 +37,6 @@ def processRead( read, depths, junctions, minIdx, maxIdx ):
     """ 
     # current genomic position in read
     pos = read.pos 
-    print pos
     # iterate through alignment CIGAR fields
     for i,rec in enumerate(read.cigar):
         t,l = rec
@@ -47,7 +46,6 @@ def processRead( read, depths, junctions, minIdx, maxIdx ):
         if t == MATCH:
             start = max(0, pos-minIdx)
             end   = min(len(depths), max(0, (pos+l)-minIdx))
-            print start, end,
             depths[start:end] += 1
             pos = pos+ l
 
@@ -141,11 +139,11 @@ def getDepthsFromBamfiles( gene, f1files, f2files ):
     
     """
     start, end = gene.minpos, gene.maxpos
-    chrom = gene.chromosome
-    factor1djs = [getDepthsFromBam(bamfile, gene.chromsome, 
+    chrom = gene.chrom
+    factor1djs = [getDepthsFromBam(bamfile, gene.chrom, 
                                    gene.minpos, gene.maxpos) \
                      for bamfile in f1files]
-    factor2djs = [getDepthsFromBam(bamfile, gene.chromosome, 
+    factor2djs = [getDepthsFromBam(bamfile, gene.chrom, 
                                    gene.minpos, gene.maxpos) \
                      for bamfile in f2files]
     factor1depths = numpy.array( [ t[0] for t in factor1djs])

@@ -27,6 +27,7 @@ from multi_test import bh,qvalues,bonferroni
 from itertools import chain
 import numpy, os, sys, multi_test
 from multiprocessing import Pool
+from multiprocessing import Process, Queue, current_process, freeze_support
 from iDiffIR.BamfileIO import *
 
 EPS=10**-5
@@ -579,7 +580,7 @@ def get_weight( start, stop, gene, wts):
     return numpy.mean(retn)
 
                  
-def procGeneStatsSE( gene, nspace, f1LNorm, f2LNorm ):
+def procGeneStatsSE( tasks, test_status):
     """Compute exon skipping statistics for gene
 
     Compute exon skipping statistics for all SEs in gene
@@ -608,162 +609,170 @@ def procGeneStatsSE( gene, nspace, f1LNorm, f2LNorm ):
     gene : Reference to gene object
 
     """
-    f1Depths, f2Depths =  getDepthsFromBamfiles( gene, 
-                                            nspace.factor1bamfiles, 
-                                            nspace.factor2bamfiles )
-    
-    SEnodes = gene.flavorDict['SE']
-    
-    # nothing to test 
-    # .. todo:: change to search for undetected splice juntions
-    #           if requested
-    if not SEnodes: return False
+    for gene, nspace, f1LNorm, f2LNorm in iter(tasks.get, 'STOP'):
+        f1Depths, f2Depths, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene, 
+                                                                       nspace.factor1bamfiles, 
+                                                                       nspace.factor2bamfiles 
+                                                                   )
+        SEnodes = gene.flavorDict['SE']
 
-    # create stats arrays for each 
-    # SE event
-    nSEs = len(SEnodes)
-    SEQvals = [ list() for _ in gene.flavorDict['SE']]
-    SEZ     = [ list() for _ in gene.flavorDict['SE']]
-    SEPvals = [ list() for _ in gene.flavorDict['SE']]
+        # nothing to test 
+        # .. todo:: change to search for undetected splice juntions
+        #           if requested
+        if not SEnodes: 
+            test_status.put(False)
+            continue
+        # create stats arrays for each 
+        # SE event
+        nSEs = len(SEnodes)
+        SEFC = [ ]
+        SETested = []
+        SEfc = [ ]
+        SEexp = [ ]
+        SEserrs = []
+        SEstat = []
 
-    serr, f1Norm,f2Norm, f1exp, f2exp, fc = computeSE( gene, f1Depths, 
-                                                       f2Depths, f1LNorm, 
-                                                       f2LNorm)
-    gene.serr = serr
-    gene.f1Norm = f1Norm
-    gene.f2Norm = f2Norm
-    # filter genes with no expression 
-    if numpy.sum( numpy.array(f1Depths).mean(0) ) == 0 or \
-            numpy.sum( numpy.array(f2Depths).mean(0) ) == 0:
-        return False
-        
-    # iterate through each event
-    for k,event  in enumerate(SEnodes):
-        l,se,r = event
-        ls, le = l
-        s, e = se
-        e += 1
-        rs, re = r
-        if False:#biasAdj:
-            f1SE = numpy.array([f1ExpV[i][(s):(e)] * f1ExonNorm[i] * get_weight(s,e,gene,f1ExonWts[i])\
-                                    for i in xrange(len(f1ExonNorm))]).mean(0)
-            f2SE = numpy.array([f2ExpV[i][(s):(e)] * f2ExonNorm[i] * get_weight(s,e,gene,f2ExonWts[i])\
-                                    for i in xrange(len(f2ExonNorm))]).mean(0)
+        serr, f1Norm,f2Norm, f1exp, f2exp, fc = computeSE( gene, f1Depths, 
+                                                           f2Depths, f1LNorm, 
+                                                           f2LNorm)
+        gene.serr = serr
+        gene.f1Norm = f1Norm
+        gene.f2Norm = f2Norm
+        # filter genes with no expression 
+        if numpy.sum( numpy.array(f1Depths).mean(0) ) == 0 or \
+                numpy.sum( numpy.array(f2Depths).mean(0) ) == 0:
+            test_status.put(False)
+            continue
+        # iterate through each event
+        for k,event  in enumerate(SEnodes):
+            l,se,r = event
+            ls, le = l
+            s, e = se
+            e += 1
+            rs, re = r
+            if False:#biasAdj:
+                f1SE = numpy.array([f1ExpV[i][(s):(e)] * f1ExonNorm[i] * get_weight(s,e,gene,f1ExonWts[i])\
+                                        for i in xrange(len(f1ExonNorm))]).mean(0)
+                f2SE = numpy.array([f2ExpV[i][(s):(e)] * f2ExonNorm[i] * get_weight(s,e,gene,f2ExonWts[i])\
+                                        for i in xrange(len(f2ExonNorm))]).mean(0)
+            else:
+                f1SE = numpy.array([f1Depths[i][s:e] * f1LNorm[i]\
+                                        for i in xrange(len(f1LNorm))]).mean(0)
+                f2SE = numpy.array([f2Depths[i][s:e] * f2LNorm[i]\
+                                        for i in xrange(len(f2LNorm))]).mean(0)
+            if False:#biasAdj:
+                f1ExonL = numpy.array([f1ExpV[i][ls:le]*f1ExonNorm[i]*get_weight( ls, le, f1ExonWts[i]) \
+                                           for i in xrange(len(f1IntronNorm))]).mean(0)
+                f1ExonR = numpy.array([f1ExpV[i][rs:re]*f1ExonNorm[i]*get_weight( rs, re, f1ExonWts[i]) \
+                                           for i in xrange(len(f1IntronNorm))]).mean(0)
+                f2ExonL = numpy.array([f2ExpV[i][ls:le]*f2ExonNorm[i]*get_weight( ls, le, f2ExonWts[i]) \
+                                           for i in xrange(len(f2IntronNorm))]).mean(0)
+                f2ExonR = numpy.array([f2ExpV[i][rs:re]*f2ExonNorm[i]*get_weight( rs, re, f2ExonWts[i]) \
+                                           for i in xrange(len(f2IntronNorm))]).mean(0)
+            else:
+                f1ExonL = numpy.array([f1Depths[i][ls:le]*f1LNorm[i] \
+                                           for i in xrange(len(f1LNorm))]).mean(0)
+                f1ExonR = numpy.array([f1Depths[i][rs:re]*f1LNorm[i] \
+                                           for i in xrange(len(f1LNorm))]).mean(0)
+                f2ExonL = numpy.array([f2Depths[i][ls:le]*f2LNorm[i] \
+                                           for i in xrange(len(f2LNorm))]).mean(0)
+                f2ExonR = numpy.array([f2Depths[i][rs:re]*f2LNorm[i] \
+                                           for i in xrange(len(f2LNorm))]).mean(0)
+
+            tested = True
+            if len(f1SE) == 0 :
+                tested = False
+                f1SEm = EPS
+                f2SEm = EPS
+            else:
+                f1SEm = numpy.mean(f1SE)
+                f2SEm = numpy.mean(f2SE)
+
+
+            f1LSS = numpy.array(list(f1ExonL[-10:]) + list(f1SE[:11]))
+            f1RSS = numpy.array(list(f1SE[-10:]) + list(f1ExonR[:11]))
+
+            f2LSS = numpy.array(list(f2ExonL[-10:]) + list(f2SE[:11]))
+            f2RSS = numpy.array(list(f2SE[-10:]) + list(f2ExonR[:11]))
+
+            cosL = numpy.dot( f1LSS, f2LSS) / (EPS+numpy.linalg.norm(f1LSS) * numpy.linalg.norm(f2LSS))
+            cosR = numpy.dot( f1RSS, f2RSS) / (EPS+numpy.linalg.norm(f1RSS) * numpy.linalg.norm(f2RSS))
+
+            f1exon = 0.5 * ( numpy.mean(f1ExonL) + numpy.mean(f1ExonR) )
+            f2exon = 0.5 * ( numpy.mean(f2ExonL) + numpy.mean(f2ExonR) )
+
+            f1Coverage = numpy.sum(f1SE > 0 )/float(len(f1SE))
+            f2Coverage = numpy.sum(f2SE > 0 )/float(len(f2SE))
+
+            # check if event has read coverage
+            if f1Coverage < nspace.coverage and f2Coverage < nspace.coverage:
+                tested = False
+
+            # check if gene is DE and if sufficient read 
+            # depth exists in the lower-expressed condition
+            if tested:
+                if gene.f1Norm < gene.f2Norm:
+                    if  max(f1Norm, f2Norm) > nspace.dexpThresh or \
+                        numpy.sum(f2LSS > 1 ) / float(len(f2LSS)) < 1 or \
+                        numpy.sum(f2RSS > 1 ) / float(len(f2RSS)) < 1:
+                        tested = False
+                    if f1SEm > f2SEm * f2Norm and f2SEm == 0 and (f2exon+EPS) * min(1.0, f1SEm / (f1exon+EPS) ) < 1.0/len(f1SE):
+                        tested = False
+
+                elif gene.f2Norm < gene.f1Norm:
+                    if  max(f1Norm, f2Norm) > nspace.dexpThresh or \
+                        numpy.sum(f1LSS > 1 ) / float(len(f1LSS)) < 1 or \
+                        numpy.sum(f1RSS > 1 ) / float(len(f1RSS)) < 1:
+                        tested = False
+                    if f2SEm > f1SEm * f1Norm and f1SEm == 0 and (f1exon+EPS)* min(1.0, f2SEm / (f2exon+EPS) ) < 1.0/len(f2SE):            
+                        tested = False
+
+            if len(f1SE)==0 or len(f2SE)==0:
+                tested = False
+
+
+            if not tested:
+                SETested.append(False)
+                SEFC.append(None)
+                SEfc.append(None)
+                SEexp.append(None)
+                SEstat.append(None)
+            else:
+                SETested.append(True)
+                numer = [numpy.log2( 2**a + f1SEm * f1Norm  ) \
+                             for a in aVals ]
+                denom = [numpy.log2( 2**a + f2SEm * f2Norm ) \
+                             for a in aVals ]
+
+
+                SEfc.append( (numpy.log2(f1SEm * f1Norm+EPS)) -  \
+                                  (numpy.log2(f2SEm * f2Norm+EPS)))
+                SEexp.append(0.5 * (numpy.log2(f1SEm * f1Norm+EPS)\
+                                         + numpy.log2(f2SEm *\
+                                                          f2Norm+EPS)))
+
+                SEFC.append( [(numer[i] - denom[i]) \
+                                   for i in xrange(len(numer))])
+
+                SEstat.append( [ ( numer[i] - denom[i] ) / gene.serr \
+                                      for i in xrange(len(numer))])
+                #intstat.append( [ ((numer[i] - denom[i] )  ) / gene.serr \
+                #                      for i in xrange(len(numer))])
+
+        if SETested.count(True) > 0:
+            testedGenes.append(gene)
+            gene.SEexp = SEexp
+            gene.SEfc  = SEfc
+            gene.SEFC = SEFC
+            gene.SETested = SETested
+            gene.SEserrs = SEserrs
+            gene.SEstat = SEstat
+            gene.SEZ = SEZ
+            gene.SEPvals = SEPvals
+            gene.SEQvals = SEQvals
+            test_status.put(True)
         else:
-            f1SE = numpy.array([f1depths[i][s:e] * f1LNorm[i]\
-                                    for i in xrange(len(f1LNorm))]).mean(0)
-            f2SE = numpy.array([f2depths[i][s:e] * f2LNorm[i]\
-                                    for i in xrange(len(f2LNorm))]).mean(0)
-        if False:#biasAdj:
-            f1ExonL = numpy.array([f1ExpV[i][ls:le]*f1ExonNorm[i]*get_weight( ls, le, f1ExonWts[i]) \
-                                       for i in xrange(len(f1IntronNorm))]).mean(0)
-            f1ExonR = numpy.array([f1ExpV[i][rs:re]*f1ExonNorm[i]*get_weight( rs, re, f1ExonWts[i]) \
-                                       for i in xrange(len(f1IntronNorm))]).mean(0)
-            f2ExonL = numpy.array([f2ExpV[i][ls:le]*f2ExonNorm[i]*get_weight( ls, le, f2ExonWts[i]) \
-                                       for i in xrange(len(f2IntronNorm))]).mean(0)
-            f2ExonR = numpy.array([f2ExpV[i][rs:re]*f2ExonNorm[i]*get_weight( rs, re, f2ExonWts[i]) \
-                                       for i in xrange(len(f2IntronNorm))]).mean(0)
-        else:
-            f1ExonL = numpy.array([f1depths[i][ls:le]*f1LNorm[i] \
-                                       for i in xrange(len(f1LNorm))]).mean(0)
-            f1ExonR = numpy.array([f1depths[i][rs:re]*f1LNorm[i] \
-                                       for i in xrange(len(f1LNorm))]).mean(0)
-            f2ExonL = numpy.array([f2depths[i][ls:le]*f2LNorm[i] \
-                                       for i in xrange(len(f2LNorm))]).mean(0)
-            f2ExonR = numpy.array([f2depths[i][rs:re]*f2LNorm[i] \
-                                       for i in xrange(len(f2LNorm))]).mean(0)
-
-        tested = True
-        if len(f1SE) == 0 :
-            tested = False
-            f1SEm = EPS
-            f2SEm = EPS
-        else:
-            f1SEm = numpy.mean(f1SE)
-            f2SEm = numpy.mean(f2SE)
-            
-        
-        f1LSS = numpy.array(list(f1ExonL[-10:]) + list(f1SE[:11]))
-        f1RSS = numpy.array(list(f1SE[-10:]) + list(f1ExonR[:11]))
-
-        f2LSS = numpy.array(list(f2ExonL[-10:]) + list(f2SE[:11]))
-        f2RSS = numpy.array(list(f2SE[-10:]) + list(f2ExonR[:11]))
-
-        cosL = numpy.dot( f1LSS, f2LSS) / (EPS+numpy.linalg.norm(f1LSS) * numpy.linalg.norm(f2LSS))
-        cosR = numpy.dot( f1RSS, f2RSS) / (EPS+numpy.linalg.norm(f1RSS) * numpy.linalg.norm(f2RSS))
-
-        f1exon = 0.5 * ( numpy.mean(f1ExonL) + numpy.mean(f1ExonR) )
-        f2exon = 0.5 * ( numpy.mean(f2ExonL) + numpy.mean(f2ExonR) )
-
-        f1Coverage = numpy.sum(f1SE > 0 )/float(len(f1SE))
-        f2Coverage = numpy.sum(f2SE > 0 )/float(len(f2SE))
-
-        # check if event has read coverage
-        if f1Coverage < c and f2Coverage < c:
-            tested = False
-
-        # check if gene is DE and if sufficient read 
-        # depth exists in the lower-expressed condition
-        if tested:
-            if gene.f1Norm < gene.f2Norm:
-                if  max(f1Norm, f2Norm) > nspace.dexpThresh or \
-                    numpy.sum(f2LSS > 1 ) / float(len(f2LSS)) < 1 or \
-                    numpy.sum(f2RSS > 1 ) / float(len(f2RSS)) < 1:
-                    tested = False
-                if f1SEm > f2SEm * f2Norm and f2SEm == 0 and (f2exon+EPS) * min(1.0, f1SEm / (f1exon+EPS) ) < 1.0/len(f1SE):
-                    tested = False
-
-            elif gene.f2Norm < gene.f1Norm:
-                if  max(f1Norm, f2Norm) > nspace.dexpThresh or \
-                    numpy.sum(f1LSS > 1 ) / float(len(f1LSS)) < 1 or \
-                    numpy.sum(f1RSS > 1 ) / float(len(f1RSS)) < 1:
-                    tested = False
-                if f2SEm > f1SEm * f1Norm and f1SEm == 0 and (f1exon+EPS)* min(1.0, f2SEm / (f2exon+EPS) ) < 1.0/len(f2SE):            
-                    tested = False
-
-        if len(f1SE)==0 or len(f2SE)==0:
-            tested = False
-
-
-        if not tested:
-            SETested.append(False)
-            SEFC.append(None)
-            SEfc.append(None)
-            SEexp.append(None)
-            SEstat.append(None)
-        else:
-            SETested.append(True)
-            numer = [numpy.log2( 2**a + f1SEm * f1Norm  ) \
-                         for a in aVals ]
-            denom = [numpy.log2( 2**a + f2SEm * f2Norm ) \
-                         for a in aVals ]
-
-
-            SEfc.append( (numpy.log2(f1SEm * f1Norm+EPS)) -  \
-                              (numpy.log2(f2SEm * f2Norm+EPS)))
-            SEexp.append(0.5 * (numpy.log2(f1SEm * f1Norm+EPS)\
-                                     + numpy.log2(f2SEm *\
-                                                      f2Norm+EPS)))
-
-            SEFC.append( [(numer[i] - denom[i]) \
-                               for i in xrange(len(numer))])
-
-            SEstat.append( [ ( numer[i] - denom[i] ) / gene.serr \
-                                  for i in xrange(len(numer))])
-            #intstat.append( [ ((numer[i] - denom[i] )  ) / gene.serr \
-            #                      for i in xrange(len(numer))])
-
-    if SETested.count(True) > 0:
-        testedGenes.append(gene)
-        gene.SEexp = SEexp
-        gene.SEfc  = SEfc
-        gene.SEFC = SEFC
-        gene.SETested = SETested
-        gene.SEserrs = SEserrs
-        gene.SEstat = SEstat
-        gene.SEZ = SEZ
-        gene.SEPvals = SEPvals
-        gene.SEQvals = SEQvals
+            test_status.put(False)
 
 def computeSEStatistics(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
     """Compute SE statistics
@@ -800,24 +809,35 @@ def computeSEStatistics(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
         sys.stderr.write('Computing differential splicing scores...\n')
 
     # parallel call
-    p = Pool(nspace.procs)
     if nspace.procs > 1:
-        resItr = p.imap_unordered( procGeneStatsSE, 
-                                   ((gene, nspace, f1LNorm, f2LNorm) for gene in geneRecords \
-                                    # skip genes that are not in bamfiles
-                                    if gene.chromosome in validChroms ))
-        p.close()
-        for res in resItr:
-            indicator.update()
-        p.join()
-        
-    # serial call
-    for gene in geneRecords:
-        # skip genes not in bamfiles
-        if gene.chromosome not in validChroms: continue
+        #freeze_support()
+        task_queue = Queue()
+        status_queue = Queue()
 
-        res = procGeneStatsSE(gene, nspace)
-        indicator.update()
+        nTasks = 0
+        for gene in geneRecords:
+               if gene.chrom in validChroms:
+                   task_queue.put( (gene, nspace, f1LNorm, f2LNorm) )
+                   nTasks += 1
+
+        for _ in xrange(nspace.procs):
+            Process(target=procGeneStatsSE, 
+                    args=(task_queue, status_queue)).start()
+
+        for _ in xrange(nspace.procs):
+            task_queue.put('STOP')
+
+        for _ in xrange(nTasks):
+            status_queue.get()
+            indicator.update()
+    else:
+        # serial call
+        for gene in geneRecords:
+            # skip genes not in bamfiles
+            if gene.chrom not in validChroms: continue
+
+            res = procGeneStatsSE((gene, nspace, f1LNorm, f2LNorm, status_queue)) 
+            indicator.update()
 
 def computeSEStatistics_old( geneRecords, f1Dict, f2Dict, nspace ):
     """
