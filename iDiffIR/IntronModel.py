@@ -18,21 +18,17 @@
 #
 #
 import os, sys, numpy
-from multiprocessing import Pool
 numpy.seterr(invalid='raise')
 from SpliceGrapher.formats.GeneModel import *
 from SpliceGrapher.SpliceGraph       import *
 from SpliceGrapher.shared.GeneModelConverter import *
+from multiprocessing import Process, Queue, current_process, freeze_support                                                                           
 
-GENEMODEL = None
-GRAPHS    = None
-GRAPHDIRS = None
-EXONIC    = None
 class IntronModel(object):
     """
-    Container for intron-centric gene model and expression
+    Container for an intron-centric gene model
     """
-    def __init__(self, gene, graph, newgene, oGraph, exonsI, retained=None,predicted=False ):
+    def __init__(self, gene, graph, newgene, oGraph, exonsI, retained=None, predicted=False ):
         """
         `gene`    - gene model
         `graph`   - (reduced) splice graph
@@ -59,8 +55,7 @@ class IntronModel(object):
     
         
 class ExonModel(IntronModel):
-    """
-    Container for exon-centric AS analysis
+    """Container for exon-centric AS analysis
 
     Currently only supports exon skipping
     """
@@ -70,10 +65,24 @@ class ExonModel(IntronModel):
         self.flavorDict = flavorDict
 
 def getGraphs( dirList, verbose ):
-    """
-    Load predictions from SpliceGrapher
+    """Load predictions from SpliceGrapher
 
-    Recursively walks through given directory
+    Recursively walks through given directory and 
+    fetches **SpliceGrapher** predictions
+
+    Parameters
+    ----------
+    dirList : list
+              List of directories to process
+    verbose : bool
+              True if progress should be printed
+
+    Returns
+    -------
+    spliceGraphs : dict
+                   Mapping of gene ID -> splice graphs for all
+                   graphs found
+
     """
     if verbose:
         sys.stderr.write('loading splice graph predictions...\n')
@@ -114,17 +123,22 @@ def getSELocs( node, offset ):
 
     """
     if node.strand == '+':
-        parents = sorted(list(set([( e.minpos-offset, e.maxpos-offset) for e in node.parents])), key=lambda x: abs(x[0]-x[1]), reverse=True)
-        children = sorted(list(set([( e.minpos-offset, e.maxpos-offset) for e in node.children])), key=lambda x: abs(x[0]-x[1]), reverse=True)
+        parents = sorted(list(set([( e.minpos-offset, e.maxpos-offset) for e in node.parents])), 
+                         key=lambda x: abs(x[0]-x[1]), reverse=True)
+        children = sorted(list(set([( e.minpos-offset, e.maxpos-offset) for e in node.children])), 
+                          key=lambda x: abs(x[0]-x[1]), reverse=True)
     else:
-        parents = sorted(list(set([( e.minpos-offset, e.maxpos-offset) for e in node.children])), key=lambda x: abs(x[0]-x[1]), reverse=True)
-        children = sorted(list(set([( e.minpos-offset, e.maxpos-offset) for e in node.parents])), key=lambda x: abs(x[0]-x[1]), reverse=True)
+        parents = sorted(list(set([( e.minpos-offset, e.maxpos-offset) for e in node.children])), 
+                         key=lambda x: abs(x[0]-x[1]), reverse=True)
+        children = sorted(list(set([( e.minpos-offset, e.maxpos-offset) for e in node.parents])), 
+                          key=lambda x: abs(x[0]-x[1]), reverse=True)
         
     return (parents[0],(node.minpos-offset,node.maxpos-offset), children[0]) 
 
 def decorateNodes( reducedGraph, graph ):
-    """
-    Decorate nodes with as in reduced graph
+    """Decorate nodes with AS in reduced graph
+
+    .. todo:: add Alt 5, Alt 3 splicing
 
     """
     flavorDict = {}
@@ -136,60 +150,170 @@ def decorateNodes( reducedGraph, graph ):
     flavorDict[ 'SE' ] = SEs
     return flavorDict
 
-def procGene( gene ):
-    graph = makeSpliceGraph(gene) # splice graph of gene model annotation
-    graph.annotate()
-    name=graph.name.upper()
-    predicted=False # flag if there exists a splice grapher annotation
-    # augment gene model graph with predicted graph, if exists
-    if GRAPHDIRS and name in GRAPHS:
-        if graph != GRAPHS[name]:
-            predicted = True
-            graph=graph.union(GRAPHS[name])
-    reducedGraph, irs, newgene = makeReducedGraph(gene, graph)
-    exonsI = makeReducedExonModel(gene, graph) # graph where exons exhibit no AS
-    # do this if we're looking at exon skipping
-    if EXONIC:
-        flavorDict = decorateNodes( reducedGraph, graph)
-        model = ExonModel( gene, reducedGraph, newgene, graph, exonsI, 
-                           flavorDict, retained=irs, predicted=predicted)
-    # looking at IR so do this instead
-    else:
-        model = IntronModel( gene, reducedGraph, newgene, graph, exonsI,
-                             retained=irs, predicted=predicted)
+def procCluster( tasks, output_queue):
+    """Process cluster of overlapping genes.
 
+    Process genes whose genomic intervals overlap.  This
+    function can be called in parallel.
 
-    # indicate which introns overlap on another strand
-    overlappers = [ ]
-    if not EXONIC:
-        overlappers = [ x for x in GENEMODEL.getGenesInRange(model.chrom, model.minpos, model.maxpos) if x.id != model.gid and x.strand != model.strand]
-    if len(overlappers) == 0: model.overlap = [ False ] * len(model.introns)
-    else:
-        overlap = [ ]
-        ranges = [ ]
-        ogenes = [ ]
-        for x in overlappers:
-            if abs(min(x.start(), x.end()) - model.minpos) < 50 and abs(max(x.start(), x.end()) - model.maxpos) < 50 and x.strand==model.strand: continue
-            ranges.append( sorted( (x.start(), x.end()) ) )
-            ogenes.append( x.id )
-        for intronR in model.intronsR:
-            lim = int((abs(intronR[1] - intronR[0]) + 1) * 0.25)
-            for i, o_range  in enumerate(ranges):
-                minOverlap, maxOverlap = o_range
-                if minOverlap >= intronR[0] and minOverlap <= intronR[1] and ( minOverlap > intronR[0] + lim or minOverlap < intronR[1] - lim) or \
-                   maxOverlap >= intronR[0] and maxOverlap <= intronR[1] and ( maxOverlap > intronR[0] + lim or maxOverlap < intronR[1] - lim) or \
-                   minOverlap <= intronR[0] and maxOverlap >= intronR[1]:
-                    overlap.append(True)
-                    break
+    See Also
+    --------
+    geneClusters : makes gene clusters
+
+    Parameters
+    ----------
+    geneCluster : list
+                  List of overlapping genes
+    graphs : dict
+             Mapping of gene.id -> splice graph prediction.  Can be
+             empty if no graphs exist for any of the genes in the cluster.
+    exonic : bool
+             True if analyzing exon skipping
+
+    Returns
+    -------
+    models : list 
+             List of reduced gene models
+
+    """
+    for geneCluster, graphs, exonic in iter(tasks.get, 'STOP'):
+        models = [ ]
+        for gene in geneCluster:
+            graph = makeSpliceGraph(gene) # splice graph of gene model annotation
+            graph.annotate()
+            name=graph.name.upper()
+            predicted=False # flag if there exists a splice grapher annotation
+            # augment gene model graph with predicted graph, if exists
+            if name in graphs:
+                if graph != graphs[name]:
+                    predicted = True
+                    graph=graph.union(graphs[name])
+            reducedGraph, irs, newgene = makeReducedGraph(gene, graph)
+            exonsI = makeReducedExonModel(gene, graph) # graph where exons exhibit no AS
+            # do this if we're looking at exon skipping
+            if exonic:
+                flavorDict = decorateNodes( reducedGraph, graph)
+                model = ExonModel( gene, reducedGraph, newgene, graph, exonsI, 
+                                   flavorDict, retained=irs, predicted=predicted)
+            # looking at IR so do this instead
             else:
-                overlap.append(False)
-        model.overlap = overlap
-    return model
+                model = IntronModel( gene, reducedGraph, newgene, graph, exonsI,
+                                     retained=irs, predicted=predicted)
+
+            # indicate which introns overlap on another strand
+            overlapIntervals = set()
+            for otherGene in geneCluster:
+                # eliminates same gene collision and sense genes
+                # that are on the same strand, start, and end near
+                # eachother.  
+                if len(geneCluster) == 1 or abs(otherGene.minpos - model.minpos) < 50 and \
+                   abs(otherGene.maxpos - model.maxpos) < 50 and \
+                   otherGene.strand==model.strand: continue
+                assert gene.id != otherGene.id # previous filtering should prevent this
+                overlap = (max(model.minpos, otherGene.minpos), 
+                           min( model.maxpos, otherGene.maxpos))
+                if overlap[1] > overlap[0]:
+                    overlapIntervals.add(overlap)
+
+            model.overlap = overlapIntervals
+            models.append(model)
+        #global IND_LOCK
+        #IND_LOCK.acquire()
+        #for _ in xrange( len(models)): ind.update()
+        #IND_LOCK.release()
+        output_queue.put( models )
+
+def geneClusters( geneModel, graphs, exonic):
+    """Cluster genes that overlap each other
+
+    Iterator to cluster and package genes that overlap each other in a 
+    chromosome.  :math:`O( n \log n )` time: sorting genes plus linear scan of
+    genes.
+
+    Parameters
+    ----------
+    geneModel : SpliceGrapher.formats.GeneModel.GeneModel
+                Gene model for given species
+    graphs : dict
+             Mapping of geneID -> **SpliceGrapher** prediction 
+    exonic : bool
+             True if performing SE analysis
+
+    Returns
+    -------
+    geneCluster : list
+                  List of genes that overlap eachother
+    graphCluster : dict
+                 **SpliceGrapher** predictions for genes in cluster.  May be
+                 empty if no genes the in cluster have a prediction.
+    exonic : bool
+             True if performing SE analysis
+    """
+
+    # process each chromosome separately
+    for chrom in geneModel.getChromosomes():
+        genes = sorted(geneModel.getGeneRecords(chrom), 
+                       key=lambda gene: gene.minpos)
+        # initialize first cluster
+        geneCluster = [ genes[0] ]
+        minClust = genes[0].minpos
+        maxClust = genes[0].maxpos
+        for gene in genes[1:]:
+            # gene is beyond cluster, yield current cluster
+            if gene.minpos >= maxClust:
+                clusterGraphs = { }
+                for gene in geneCluster:
+                    if gene.id in graphs:
+                        clusterGraphs[gene.id] = graphs[gene.id]
+                yield geneCluster, clusterGraphs, exonic
+                # intitalize the next cluster
+                del clusterGraphs
+                geneCluster = [gene]
+                minClust = gene.minpos
+                maxClust = gene.maxpos
+            # otherwise it must overlap
+            else:
+                assert gene.minpos >= minClust 
+                geneCluster.append(gene)
+                maxClust = gene.maxpos
+        # yield the last cluster
+        clusterGraphs = { }
+        for gene in geneCluster:
+            if gene.id in graphs:
+                clusterGraphs[gene.id] = graphs[gene.id]
+        yield geneCluster, clusterGraphs, exonic
 
 def makeModels( geneModel, verbose=False, graphDirs=None, exonic=False, procs=1 ):
-    """
-    Make reduced models for all genes in the geneModel.  Genes are processed in
-    parallel using a thread pool with the given number of processors.
+    """Make reduced models for all genes in the geneModel.  
+
+    Genes are processed in parallel using a thread pool 
+    with the given number of processors or in a loop if number of processors 
+    is 1.
+
+    See Also
+    --------
+    IntronModel : Reduced gene model class for IR analysis
+    ExonModel : Reduced gene model class for SE analysis
+
+    Parameters
+    ----------
+    geneModel : SpliceGrapher.formats.GeneModel.GeneModel
+                Gene model for given species
+    verbose : bool
+              Flag to write verbose output to sys.stdout
+    graphDirs : list
+                List of **SpliceGrapher** predictions to augment
+                gene models
+    exonic : bool
+             True if predicting differential exon skipping events
+    procs : int
+            Number of processors to use
+
+    Returns
+    -------
+    models : list
+             List of reduced models
+
     """
     # load splice grapher predictions if given
     graphs = [ ]
@@ -200,35 +324,46 @@ def makeModels( geneModel, verbose=False, graphDirs=None, exonic=False, procs=1 
         sys.stderr.write('Building splicing models\n')
     indicator = ProgressIndicator(10000, verbose=verbose)
 
-    # hack to prevent serialization of arguments in parallel function
-    global GENEMODEL
-    global GRAPHDIRS
-    global GRAPHS
-    global EXONIC
-    GENEMODEL = geneModel
-    GRAPHDIRS = graphDirs
-    GRAPHS = graphs
-    EXONIC = exonic
-    # end hack
+    def updateIndicator(pModels):
+        """Update indicator
 
+        Parameters
+        ----------
+        pModels : list
+                  List of reduced models
+
+        """
+        for i in xrange(len(pModels)):             
+            indicator.update()
+        
     # run parallel
     if procs > 1:
         # create processor pool for parallel calls
-        p = Pool(procs)
+        task_queue = Queue()
+        status_queue = Queue()
+        nTasks = 0
+        for clusterTuple in geneClusters(geneModel, graphs, exonic):
+            task_queue.put( clusterTuple )
+            nTasks += 1
 
-        # parallel calls to processor pool
-        r = p.imap_unordered( procGene, [gene for gene in geneModel.getAllGenes(geneFilter=gene_type_filter)])
+        for _ in xrange(procs):
+            Process(target=procCluster,
+                    args=(task_queue, status_queue)).start()
 
-        # collect parallel results as they come in
+        for _ in xrange(procs):
+            task_queue.put('STOP')
         models = []
-        for model in r:
-            indicator.update()
-            models.append(model)
+        for _ in xrange(nTasks):
+            processedModels = status_queue.get()
+            models.extend(processedModels)
+            updateIndicator(processedModels)
+
     # run serial
     else:
-        for gene in geneModel.getAllGenes(geneFilter=gene_type_filter):
-            indicator.update()
-            procGene(gene)
+        for clusterTuple in geneClusters(geneModel, graphs, exonic):
+            processedModels = procCluster(clusterTuple)
+            models.extend(processedModels)
+            updateIndicator(processedModels)
     if verbose:
         sys.stderr.write('%d genes' % indicator.count())
     indicator.finish()

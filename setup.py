@@ -41,7 +41,7 @@ if 'build' in sys.argv or 'install' in sys.argv:
         sys.exit('Missing dependencies--terminating installation')
 
 setup(name='iDiffIR',
-      version='0.0.1',
+      version='0.3.1',
       description='Identifying differential intron retention from RNA-seq',
       author='Michael Hamilton',
       author_email='hamiltom@cs.colostate.edu',
