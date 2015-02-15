@@ -71,7 +71,7 @@ def parseArgs():
     parser.add_argument('-s', '--shrink_introns', dest='shrink_introns', action='store_true', 
                         default=False, help='shrink introns for depth plots [default is no shrinking]')
     parser.add_argument('-k', '--krange', dest='krange', action='store', 
-                        default=[None,None], type=int, help='kmin kmax; [default is to search for kmax]', nargs=2)
+                        default=[2,6], type=int, help='kmin kmax; [default is to search for kmax]', nargs=2)
     parser.add_argument('-c', '--coverage', dest='coverage', action='store', default=0.99, 
                         type=float, help='coverage cutoff, default = 0.99')
     parser.add_argument('-d', '--dexpThresh', dest='dexpThresh', action='store', default=10, 
@@ -228,7 +228,7 @@ def writeStatus( status, verbose=False ):
     sys.stderr.write( ' %s \n' % ( status ) )
     sys.stderr.write( '%s\n' % ( '-' * n ) )
 
-def runIntron(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
+def runIntron(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
     """Run differential IR analysis
 
     Run **iDiffIR** differential intron retention analysis.
@@ -285,7 +285,7 @@ def runIntron(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
                  nspace, geneModel, True,
                  os.path.join(nspace.outdir, 'figuresLog'))
     
-def runExon(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
+def runExon(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
     """Run differential exon skipping analysis
 
     Run iDiffIR's differential exon skipping analysis
@@ -300,14 +300,13 @@ def runExon(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
                   Command line arguments for **idiffir.py**
 
     """
+    aVals = range(nspace.krange[0], nspace.krange[1])
     writeStatus("Computing SE statistics", nspace.verbose)
-    SErecords, aVals = computeSEStatistics( geneRecords, nspace, validChroms, f1LNorm, f2LNorm )
-    plotPDistSE(SErecords, os.path.join(nspace.outdir, 'figures'))
-    plotMVASE(SErecords, aVals, os.path.join(nspace.outdir, 'figures'))
-    summaryDictSE = summarySE( SErecords, aVals, nspace.fdrlevel)
+    computeSEStatistics( geneRecords, nspace, validChroms, f1LNorm, f2LNorm )
+    summaryDictSE = summarySE( geneRecords, aVals, nspace.fdrlevel)
     fullTexTableSE(summaryDictSE,os.path.join(nspace.outdir, 'lists')) 
     #writeListsSE( summaryDict, os.path.join(nspace.outdir, 'lists'))
-    writeAllSE( SErecords, aVals, os.path.join(nspace.outdir, 'lists'))
+    writeAllSE( geneRecords, aVals, os.path.join(nspace.outdir, 'lists'))
     writeStatus("Plotting Depths", nspace.verbose)
     f1labs = [ '%s Rep %d' % (nspace.factorlabels[0], i+1) \
                for i in xrange( len(nspace.factor1Dirs))]
@@ -315,12 +314,12 @@ def runExon(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
                for i in xrange( len(nspace.factor2Dirs))]
 
     if nspace.noplot: return
-    plotPDistSE(SErecords, os.path.join(nspace.outdir, 'figures'))
-    plotMVASE(SErecords, aVals, os.path.join(nspace.outdir, 'figures'))
-    plotResultsSE( SErecords, aVals, f1Dict, f2Dict, f1labs+f2labs, 
+    plotPDistSE(geneRecords, os.path.join(nspace.outdir, 'figures'))
+    plotMVASE(geneRecords, aVals, os.path.join(nspace.outdir, 'figures'))
+    plotResultsSE( geneRecords, f1labs+f2labs, 
                  nspace, geneModel, False,
                  os.path.join(nspace.outdir, 'figures'))
-    plotResultsSE( SErecords, aVals, f1Dict, f2Dict, f1labs+f2labs, 
+    plotResultsSE( geneRecords, f1labs+f2labs, 
                  nspace, geneModel, True,
                  os.path.join(nspace.outdir, 'figuresLog'))
 
@@ -354,27 +353,32 @@ def getValidChromosomes(nspace):
     f1Chroms = [ ]
     for path in nspace.factor1bamfiles:
         bamfile = pysam.Samfile(path, 'rb')
-        f1Chroms.append(set(bamfile.references))
+        f1Chroms.append(set([chrom.lower() for chrom in bamfile.references]))
     f2Chroms = [ ]
     for path in nspace.factor2bamfiles:
         bamfile = pysam.Samfile(path, 'rb')
-        f2Chroms.append(set(bamfile.references))
+        f2Chroms.append(set([chrom.lower() for chrom in bamfile.references]))
     f1Chroms = set.intersection( *f1Chroms )
     f2Chroms = set.intersection( *f2Chroms )
     return set.intersection(f1Chroms, f2Chroms)
 
 def getNormFactors(nspace):
     f1Cnts = [ ]
-    for path in nspace.factor1bamfiles:
-        bamfile = pysam.Samfile(path, 'rb')
-        f1Cnts.append(bamfile.mapped)
-    f2Cnts = [ ]
-    for path in nspace.factor2bamfiles:
-        bamfile = pysam.Samfile(path, 'rb')
-        f2Cnts.append(bamfile.mapped)
-    mVal = max(f1Cnts+f2Cnts)
-    f1LNorm = [mVal/float(x) for x in f1Cnts]
-    f2LNorm = [mVal/float(x) for x in f2Cnts]
+    try:
+        for path in nspace.factor1bamfiles:
+            bamfile = pysam.Samfile(path, 'rb')
+            f1Cnts.append(bamfile.mapped)
+        f2Cnts = [ ]
+        for path in nspace.factor2bamfiles:
+            bamfile = pysam.Samfile(path, 'rb')
+            f2Cnts.append(bamfile.mapped)
+        mVal = max(f1Cnts+f2Cnts)
+        f1LNorm = [mVal/float(x) for x in f1Cnts]
+        f2LNorm = [mVal/float(x) for x in f2Cnts]
+    except ValueError:
+        seps = '*'*41
+        sys.exit('%s\n Make sure bamfiles are indexed--exiting\n%s' %
+                 (seps,seps))
     return f1LNorm, f2LNorm
 
 def main():
@@ -389,26 +393,12 @@ def main():
 
     writeStatus('Loading models', nspace.verbose)
     geneModel = loadGeneModels( nspace.genemodel, verbose=nspace.verbose )
-
     writeStatus('Making reduced models', nspace.verbose)
-    geneRecords = makeModels( geneModel, verbose=nspace.verbose, 
+    geneRecords = makeModels( geneModel, nspace.outdir, verbose=nspace.verbose, 
                               graphDirs=nspace.graphDirs, 
-
                               exonic=nspace.event=='SE', procs=nspace.procs )
     del geneModel
-
-                              exonic=nspace.event=='SE', 
-                              procs=nspace.procs )
-    
-    # Depricated 
-    # writeStatus( 'Loading Depths', nspace.verbose )
-    # f1Dict, f2Dict = loadData( nspace, geneModel, geneRecords )
-    # genered = [ ]
-    # for gene in geneRecords:
-    #     if gene.gid in f1Dict and gene.gid in f2Dict and not gene.chrom.isalpha(): genered.append(gene)
-    # geneRecords = genered
-
-    _dispatch(nspace.event)(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm)
+    _dispatch(nspace.event)(geneRecords, nspace, validChroms, f1LNorm, f2LNorm)
 
 if __name__ == "__main__":
     main()

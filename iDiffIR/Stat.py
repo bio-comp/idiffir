@@ -615,23 +615,22 @@ def procGeneStatsSE( tasks, test_status):
                                                                        nspace.factor2bamfiles 
                                                                    )
         SEnodes = gene.flavorDict['SE']
-
+        aVals = range(nspace.krange[0], nspace.krange[1]+1)
         # nothing to test 
         # .. todo:: change to search for undetected splice juntions
         #           if requested
         if not SEnodes: 
-            test_status.put(False)
+            test_status.put((gene.gid, False))
             continue
         # create stats arrays for each 
         # SE event
         nSEs = len(SEnodes)
         SEFC = [ ]
-        SETested = []
         SEfc = [ ]
         SEexp = [ ]
         SEserrs = []
         SEstat = []
-
+        SETested = [ ]
         serr, f1Norm,f2Norm, f1exp, f2exp, fc = computeSE( gene, f1Depths, 
                                                            f2Depths, f1LNorm, 
                                                            f2LNorm)
@@ -641,7 +640,7 @@ def procGeneStatsSE( tasks, test_status):
         # filter genes with no expression 
         if numpy.sum( numpy.array(f1Depths).mean(0) ) == 0 or \
                 numpy.sum( numpy.array(f2Depths).mean(0) ) == 0:
-            test_status.put(False)
+            test_status.put((gene.gid, False))
             continue
         # iterate through each event
         for k,event  in enumerate(SEnodes):
@@ -730,7 +729,6 @@ def procGeneStatsSE( tasks, test_status):
             if len(f1SE)==0 or len(f2SE)==0:
                 tested = False
 
-
             if not tested:
                 SETested.append(False)
                 SEFC.append(None)
@@ -760,19 +758,65 @@ def procGeneStatsSE( tasks, test_status):
                 #                      for i in xrange(len(numer))])
 
         if SETested.count(True) > 0:
-            testedGenes.append(gene)
-            gene.SEexp = SEexp
-            gene.SEfc  = SEfc
-            gene.SEFC = SEFC
-            gene.SETested = SETested
-            gene.SEserrs = SEserrs
-            gene.SEstat = SEstat
-            gene.SEZ = SEZ
-            gene.SEPvals = SEPvals
-            gene.SEQvals = SEQvals
-            test_status.put(True)
+            print SEstat
+            test_status.put((gene.gid, True, SEexp, SEfc, SETested, SEstat))
         else:
-            test_status.put(False)
+            test_status.put((gene.gid, False))
+
+def testSE(geneRecords, aVals, nspace):
+    """Hypothesis testing using Z-scores of 
+    modified $\log FC$ statisitc
+    """
+    #compute Z-score distribution parameters
+    for aidx in xrange(len(aVals)):
+        X = list(chain.from_iterable([ numpy.array([geneRecords[i].SEstat[t][aidx]\
+                                                    for t in xrange(len(geneRecords[i].SEstat)) \
+                                                    if geneRecords[i].SETested[t] and geneRecords[i].SEGTested]) \
+                                       for i in xrange(len(geneRecords)) if geneRecords[i].SEGTested]) )
+        mu = numpy.mean(X)
+        sigma = numpy.std(X)
+
+        N = 0
+        # Assign z-scores and pvalues 
+        for gene in geneRecords:
+            if not gene.SEGTested: continue
+            N += 1
+            for i in xrange( len( gene.SETested)):
+                if gene.SETested[i]:
+                    z = zscore(gene.SEstat[i][aidx], mu, sigma)
+                    gene.SEZ[i].append( z )
+                    gene.SEPvals[i].append(min(1.0,2*sNorm.cdf( -abs(z), loc=0, scale=1.0)))
+                    
+                else:
+                    gene.SEZ[i].append(0)
+                    gene.SEPvals[i].append(2)
+
+        # compute q-values
+        pvals = list(chain.from_iterable([ geneRecords[i].SEPvals[t][aidx] \
+                                               for t in xrange(
+                        len(geneRecords[i].SETested)) \
+                                               if geneRecords.SEGTested[i] and geneRecords[i].SETested[t]]  \
+                                               for i in xrange(N)) )
+
+        if nspace.multTest == 'BH':
+            qvals = bh(pvals)
+        elif nspace.multTest == 'BF':
+            qvals = bonferroni(pvals)
+        elif nspace.multTest == 'QV':
+            qvals = qvalues(pvals)[0]
+
+        i = 0
+        for gene in geneRecords:
+            if not gene.SEGTested: continue
+            ci = 0
+            tested = gene.SETested.count(True)
+            for idx in xrange(len(gene.flavorDict['SE'])):
+                if gene.SETested[idx]:
+                    gene.SEQvals[idx].append(qvals[i+ci])
+                    ci += 1
+                else:
+                    gene.SEQvals[idx].append(2)
+            i = i + tested
 
 def computeSEStatistics(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
     """Compute SE statistics
@@ -807,18 +851,20 @@ def computeSEStatistics(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
     intronExp = [ ] # list of exonic expression across all genes
     if nspace.verbose:
         sys.stderr.write('Computing differential splicing scores...\n')
-
+    status_queue = Queue()
+    aVals = range(nspace.krange[0], nspace.krange[1]+1)
+    geneStatus = { }
     # parallel call
     if nspace.procs > 1:
         #freeze_support()
         task_queue = Queue()
-        status_queue = Queue()
-
         nTasks = 0
         for gene in geneRecords:
-               if gene.chrom in validChroms:
-                   task_queue.put( (gene, nspace, f1LNorm, f2LNorm) )
-                   nTasks += 1
+            if gene.chrom in validChroms:
+                task_queue.put( (gene, nspace, f1LNorm, f2LNorm) )
+                nTasks += 1
+            else:
+                gene.SEGTested = False
 
         for _ in xrange(nspace.procs):
             Process(target=procGeneStatsSE, 
@@ -828,16 +874,29 @@ def computeSEStatistics(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
             task_queue.put('STOP')
 
         for _ in xrange(nTasks):
-            status_queue.get()
+            result = status_queue.get()
+            if len(result) > 2:
+                geneStatus[result[0]] = result[2:]
             indicator.update()
+        for gene in geneRecords:
+            if gene.gid in geneStatus:
+                gene.SEexp, gene.SEfc, gene.SETested, gene.SEstat = geneStatus[gene.gid]
+                gene.SEGTested = True
+            else:
+                gene.SEGTested = False
+                
     else:
         # serial call
         for gene in geneRecords:
             # skip genes not in bamfiles
-            if gene.chrom not in validChroms: continue
+            if gene.chrom not in validChroms: 
+                gene.SEGTested = False
+                continue
 
-            res = procGeneStatsSE((gene, nspace, f1LNorm, f2LNorm, status_queue)) 
+            res = procGeneStatsSE((gene, nspace, f1LNorm, f2LNorm), status_queue)
             indicator.update()
+
+    testSE(geneRecords, aVals, nspace)
 
 def computeSEStatistics_old( geneRecords, f1Dict, f2Dict, nspace ):
     """

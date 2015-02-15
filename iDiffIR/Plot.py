@@ -27,6 +27,8 @@ from itertools import chain
 import os,sys
 import warnings  
 import numpy, ConfigParser
+from iDiffIR.BamfileIO import *
+
 #warnings.filterwarnings('ignore')
 from matplotlib import rc
 rc('text', usetex=True)
@@ -396,20 +398,24 @@ def plotResults(geneRecords, aVals, f1Dict, f2Dict, labels, nspace, geneModel, l
                         os.path.join(odir,gene.gid+'.pdf'), log, 
                         geneModel, nspace.shrink_introns )
 
-def plotResultsSE(geneRecords, aVals, f1Dict, f2Dict, labels, nspace, geneModel, useLog=True, odir=os.getcwd()):
+def plotResultsSE(geneRecords, labels, nspace, geneModel, useLog=True, odir=os.getcwd()):
      for gene in geneRecords:
          plotme = False
          highlights = []
          for i in xrange(len(gene.flavorDict['SE'])):
              s,e = gene.flavorDict['SE'][i][1] 
-             if min(gene.SEQvals[i][:len(aVals)]) < nspace.fdrlevel:
+             if min(gene.SEQvals[i]) < nspace.fdrlevel:
                  highlights.append( (s,e-1) )
                  plotme = True
                  f1 = numpy.array(f1Dict[gene.gid]).mean(0)
                  f2= numpy.array(f2Dict[gene.gid]).mean(0)
                      
          if plotme:
-             depths = f1Dict[gene.gid] + f2Dict[gene.gid]
+             f1Depths, f2Depths, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene, 
+                                                                            nspace.factor1bamfiles, 
+                                                                            nspace.factor2bamfiles 
+                                                                        )
+             depths = f1Depths + f2Depths
              plotDepth( gene, depths, labels,
                         highlights,  
                         os.path.join(odir,gene.gid+'.pdf'), useLog, 
