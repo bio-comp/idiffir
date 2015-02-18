@@ -93,9 +93,10 @@ def getDepthsFromBam( bamfile, chrom, start, end ):
     """
     bamfile = pysam.Samfile(bamfile, 'rb')
     chromMap = { }
-    for chrom in bamfile.references:
-        chromMap[chrom.lower()] = chrom
-    if chrom not in bamfile.references:
+    for ref in bamfile.references:
+        chromMap[ref.lower()] = ref
+        chromMap[ref] = ref
+    if chrom not in chromMap:
         sys.stderr.write('Chromosome %s not found in bamfile\n')
         return numpy.empty(0), {}
 
@@ -104,7 +105,6 @@ def getDepthsFromBam( bamfile, chrom, start, end ):
     readItr = bamfile.fetch(chromMap[chrom], start, end)
     for read in readItr:
         processRead( read, depths, junctions, start-1, end )
-    
     return depths, junctions
 
 def getDepthsFromBamfiles( gene, f1files, f2files ):
@@ -141,8 +141,6 @@ def getDepthsFromBamfiles( gene, f1files, f2files ):
                                  (minpos, maxpos) -> count           
     
     """
-    start, end = gene.minpos, gene.maxpos
-    chrom = gene.chrom
     factor1djs = [getDepthsFromBam(bamfile, gene.chrom, 
                                    gene.minpos, gene.maxpos) \
                      for bamfile in f1files]

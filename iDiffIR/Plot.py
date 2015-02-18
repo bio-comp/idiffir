@@ -97,14 +97,14 @@ def writeAll( geneRecords, aVals, odir=os.getcwd() ):
                                'bestA','known']) + '\n')
         for gene in geneRecords:
             # iterate across all exons
-
+            if not gene.IRGTested: continue
             for i,intron in enumerate(gene.introns):
-                if not gene.intTested[i]: continue
+                if not gene.IRTested[i]: continue
                 fout.write('%s\t%s\t%s\t%s\t%f\t%f\t%f\t%f\t%f\t%d\t%s\n' % \
                            ( gene.gid, str(gene.exonsR[i]), str(gene.intronsR[i]), str(gene.exonsR[i+1]), 
-                             min(1, min(gene.intPvals[i])),min( 1, min(gene.intQvals[i])), gene.intfc[i], 
-                             gene.intexp[i], gene.intstat[i][numpy.argmin(gene.intPvals[i])], 
-                             aVals[numpy.argmin(gene.intPvals[i])], str(gene.retained[i]) )) 
+                             min(1, min(gene.IRPvals[i])),min( 1, min(gene.IRQvals[i])), gene.IRfc[i], 
+                             gene.IRexp[i], gene.IRstat[i][numpy.argmin(gene.IRPvals[i])], 
+                             aVals[numpy.argmin(gene.IRPvals[i])], str(gene.retained[i]) )) 
                 
 def writeAllSE( geneRecords, aVals, odir=os.getcwd() ):
     """
@@ -119,6 +119,7 @@ def writeAllSE( geneRecords, aVals, odir=os.getcwd() ):
                                'logFoldChange','SEExp', 'statistic', 
                                'bestA']) + '\n')
         for gene in geneRecords:
+            if not gene.SEGTested: continue
             # iterate across all exons
             for i,event in enumerate(gene.flavorDict['SE']):
                 if not gene.SETested[i]: continue
@@ -299,16 +300,16 @@ def summary(geneRecords, aVals, level=0.05):
                  'upgenes':set(), 'downgenes':set()}
         for gene in geneRecords:
             minGene = 1
-            ########################################################### bug!!!!!!!!!
-            for i, qvals in enumerate(gene.intQvals):
-                p = gene.intPvals[i][aidx]
+            if not gene.IRGTested : continue
+            for i, qvals in enumerate(gene.IRQvals):
+                p = gene.IRPvals[i][aidx]
                 if p < minGene:
                     minGene = p
                 # significant
-                if gene.intQvals[i][aidx] < level:
+                if gene.IRQvals[i][aidx] < level:
                     # upregulated
                     intID = '%s_%s' % ( gene.gid, i)
-                    if gene.intfc[i] > 0:
+                    if gene.IRfc[i] > 0:
                         # known
                         if gene.retained[i]: 
                             known['upirs'].add(intID)
@@ -351,7 +352,7 @@ def summarySE(geneRecords, aVals, level=0.05):
                  'upgenes':set(), 'downgenes':set()}
         for gene in geneRecords:
             minGene = 1
-            ########################################################### bug!!!!!!!!!
+            if not gene.SEGTested: continue
             for i, qvals in enumerate(gene.SEQvals):
                 p = gene.SEPvals[i][aidx]
                 if p < minGene:
@@ -379,27 +380,30 @@ def summarySE(geneRecords, aVals, level=0.05):
 
     return summaryTable
 
-def plotResults(geneRecords, aVals, f1Dict, f2Dict, labels, nspace, geneModel, log=False, odir=os.getcwd()):
+def plotResults(geneRecords, labels, nspace, geneModel, useLog=True, odir=os.getcwd()):
      for gene in geneRecords:
+         if not gene.IRGTested: continue
          plotme = False
          highlights = []
          for i in xrange(len(gene.introns)):
              s,e = gene.introns[i]
-             if min(gene.intQvals[i][:len(aVals)]) < nspace.fdrlevel:
+             if min(gene.IRQvals[i]) < nspace.fdrlevel:
                  highlights.append( (s,e) )
                  plotme = True
-                 f1 = numpy.array(f1Dict[gene.gid]).mean(0)
-                 f2= numpy.array(f2Dict[gene.gid]).mean(0)
-                     
          if plotme:
-             depths = f1Dict[gene.gid] + f2Dict[gene.gid]
+             f1Depths, f2Depths, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene, 
+                                                                            nspace.factor1bamfiles, 
+                                                                            nspace.factor2bamfiles 
+                                                                        )
+             depths = f1Depths.tolist() + f2Depths.tolist()
              plotDepth( gene, depths, labels,
                         highlights,  
-                        os.path.join(odir,gene.gid+'.pdf'), log, 
+                        os.path.join(odir,gene.gid+'.pdf'), useLog, 
                         geneModel, nspace.shrink_introns )
 
 def plotResultsSE(geneRecords, labels, nspace, geneModel, useLog=True, odir=os.getcwd()):
      for gene in geneRecords:
+         if not gene.SEGTested: continue
          plotme = False
          highlights = []
          for i in xrange(len(gene.flavorDict['SE'])):
@@ -407,15 +411,13 @@ def plotResultsSE(geneRecords, labels, nspace, geneModel, useLog=True, odir=os.g
              if min(gene.SEQvals[i]) < nspace.fdrlevel:
                  highlights.append( (s,e-1) )
                  plotme = True
-                 f1 = numpy.array(f1Dict[gene.gid]).mean(0)
-                 f2= numpy.array(f2Dict[gene.gid]).mean(0)
                      
          if plotme:
              f1Depths, f2Depths, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene, 
                                                                             nspace.factor1bamfiles, 
                                                                             nspace.factor2bamfiles 
                                                                         )
-             depths = f1Depths + f2Depths
+             depths = f1Depths.tolist() + f2Depths.tolist()
              plotDepth( gene, depths, labels,
                         highlights,  
                         os.path.join(odir,gene.gid+'.pdf'), useLog, 
@@ -529,8 +531,8 @@ def plotDepth( geneM, depths, depthIDs, highlights, outname, de, geneModel, shri
     verbose=False
     rc('text', usetex=False)
     gene = geneM.gene
-    minPos = min( gene.start(), gene.end())
-    maxPos = max( gene.start(), gene.end())
+    minPos = geneM.minpos
+    maxPos = geneM.maxpos
     X = range( minPos, maxPos+1)    
 
     strand = gene.strand
@@ -804,9 +806,10 @@ def plotPDist(geneRecords, odir=os.getcwd(), nbins=20, ext='pdf' ):
     """
     pvals = []
     for gene in geneRecords:
-        for i, intPvals in enumerate(gene.intPvals):
-            if gene.intTested[i]:
-                pvals.append( numpy.min(intPvals))
+        if not gene.IRGTested: continue
+        for i, IRPvals in enumerate(gene.IRPvals):
+            if gene.IRTested[i]:
+                pvals.append( numpy.min(IRPvals))
 
     fig = plt.figure()
     plot = fig.add_subplot(111)
@@ -822,6 +825,7 @@ def plotPDistSE(geneRecords, odir=os.getcwd(), nbins=20, ext='pdf' ):
     """
     pvals = []
     for gene in geneRecords:
+        if not gene.SEGTested: continue
         for i, SEPvals in enumerate(gene.SEPvals):
             if gene.SETested[i]:
                 pvals.append( numpy.min(SEPvals))
@@ -908,10 +912,11 @@ def plotMVA(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
     nsigexps = []
 
     for gene in geneRecords:
-         for i, qvals in enumerate(gene.intQvals):
-            if  gene.intTested[i]and numpy.min(qvals) >= 0.0:
-                nsigfcs.append( gene.intfc[i])
-                nsigexps.append( gene.intexp[i])
+        if not gene.IRGTested: continue
+        for i, qvals in enumerate(gene.IRQvals):
+            if  gene.IRTested[i]and numpy.min(qvals) >= 0.0:
+                nsigfcs.append( gene.IRfc[i])
+                nsigexps.append( gene.IRexp[i])
 
     H, xedges, yedges = np.histogram2d(nsigfcs, nsigexps, bins=(50, 30))
     ydiff=0#abs(yedges[0]-yedges[1])
@@ -926,10 +931,11 @@ def plotMVA(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
         M = []
         A = []
         for gene in geneRecords:
-            for i, qvals in enumerate(gene.intQvals):
-                if gene.intTested[i] and numpy.argmin(qvals) == aidx and numpy.min(qvals) < 0.05:
-                    M.append( gene.intfc[i])
-                    A.append( gene.intexp[i])
+            if not gene.IRGTested: continue
+            for i, qvals in enumerate(gene.IRQvals):
+                if gene.IRTested[i] and numpy.argmin(qvals) == aidx and numpy.min(qvals) < 0.05:
+                    M.append( gene.IRfc[i])
+                    A.append( gene.IRexp[i])
         
         
         plt.plot( A, M, color=colors[aidx], marker='.', linestyle='', label=r'$a = 2^{%s}$' % aVals[aidx] )
@@ -937,7 +943,14 @@ def plotMVA(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
     
     plt.xlabel( r'$\frac{1}{2}(\log_2 \hat{f}_1 + \log_2 \hat{f}_2)$', size=18)
     plt.ylabel( r'$\log_{2}\hat{f}_1 - \log_2\hat{f}_2$', size=18)
-    plt.legend(ncol=2)
+
+    # Shrink current axis by 20%
+    box = plot.get_position()
+    plot.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+    # Put a legend to the right of the current axis
+    plot.legend(loc='center left', bbox_to_anchor=(1, 0.5), fancybox=True, shadow=True)
+
     plt.savefig(os.path.join(odir,'mva.%s') % (ext))
     plt.autoscale(True)
     plt.close()
@@ -957,18 +970,18 @@ def plotMVASE(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
     pvals = list(chain.from_iterable([numpy.array([ geneRecords[i].SEPvals[t] for t in xrange(
                             len(geneRecords[i].SEPvals)) \
                                                         if geneRecords[i].SETested[t]])\
-                                          for i in xrange(len(geneRecords))])) 
+                                          for i in xrange(len(geneRecords)) if geneRecords[i].SEGTested])) 
 
     N = len(pvals)
     M = list(chain.from_iterable([numpy.array([ geneRecords[i].SEfc[t] for t in xrange(
                             len(geneRecords[i].SEPvals)) \
                                                         if geneRecords[i].SETested[t]])\
-                                          for i in xrange(len(geneRecords))])) 
+                                          for i in xrange(len(geneRecords)) if geneRecords[i].SEGTested])) 
     
     A = list(chain.from_iterable([numpy.array([ geneRecords[i].SEexp[t] for t in xrange(
                             len(geneRecords[i].SEPvals)) \
                                                         if geneRecords[i].SETested[t]])\
-                                          for i in xrange(len(geneRecords))])) 
+                                          for i in xrange(len(geneRecords)) if geneRecords[i].SEGTested])) 
 
     #plot background points
     plt.plot( A, M, color='0.65', marker='.', linestyle='')
@@ -978,6 +991,7 @@ def plotMVASE(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
         M = []
         A = []
         for gene in geneRecords:
+            if not gene.SEGTested: continue
             for i, qvals in enumerate(gene.SEQvals):
                 if gene.SETested[i] and numpy.argmin(qvals) == aidx and numpy.min(qvals) < 0.05:
                     M.append( gene.SEfc[i])

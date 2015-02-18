@@ -228,7 +228,7 @@ def writeStatus( status, verbose=False ):
     sys.stderr.write( ' %s \n' % ( status ) )
     sys.stderr.write( '%s\n' % ( '-' * n ) )
 
-def runIntron(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
+def runIntron(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
     """Run differential IR analysis
 
     Run **iDiffIR** differential intron retention analysis.
@@ -248,44 +248,42 @@ def runIntron(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
     #            geneRecords, f1Dict, f1Dict, nspace.numClusts)
     #        rmi = rmsip(geneRecords, f1Dict, f2Dict )
     #        plotGBCs( f1Codes, f2Codes, f1Cnt, f2Cnt, rmi, nspace.outdir)
-
+    aVals = range(nspace.krange[0], nspace.krange[1]+1)
     # compute differential IR statistics
     writeStatus('Computing statistics', nspace.verbose)
-    testedGenes, aVals = computeStatistics( geneRecords, nspace, validChroms, f1LNorm, f2LNorm)
+    computeIRStatistics( geneRecords, nspace, validChroms, f1LNorm, f2LNorm )
 
     # create a summary dictionary of results
-    summaryDict = summary( testedGenes, aVals, nspace.fdrlevel)
+    summaryDict = summary( geneRecords, aVals, nspace.fdrlevel)
     # write full latex table
     fullTexTable(summaryDict,os.path.join(nspace.outdir, 'lists')) 
     # write gene lists
     writeLists( summaryDict, os.path.join(nspace.outdir, 'lists'))
     # write all IR events
-    writeAll( testedGenes, aVals, os.path.join(nspace.outdir, 'lists'))
+    writeAll( geneRecords, aVals, os.path.join(nspace.outdir, 'lists'))
     #writeGeneExpression(geneRecords, os.path.join(nspace.outdir, 'lists'))
 
     # plot figures for significant events
     writeStatus('Plotting Depths', nspace.verbose)
-    f1labs = [ '%s Rep %d' % (nspace.factorlabels[0], i+1) for i in xrange( len(nspace.factor1Dirs))]
-    f2labs = [ '%s Rep %d' % (nspace.factorlabels[1], i+1) for i in xrange( len(nspace.factor2Dirs))]
+    f1labs = [ '%s Rep %d' % (nspace.factorlabels[0], i+1) for i in xrange( len(nspace.factor1bamfiles))]
+    f2labs = [ '%s Rep %d' % (nspace.factorlabels[1], i+1) for i in xrange( len(nspace.factor2bamfiles))]
 
     # finish up if we're not plotting
     if nspace.noplot: return
 
     # plot diagnostic figures (p-value distribution and MvA )
-    plotPDist(testedGenes, os.path.join(nspace.outdir, 'figures'))
-    plotMVA(testedGenes, aVals, os.path.join(nspace.outdir, 'figures'))
+    plotPDist(geneRecords, os.path.join(nspace.outdir, 'figures'))
+    plotMVA(geneRecords, aVals, os.path.join(nspace.outdir, 'figures'))
 
-    # plot figures in standard scale
-    plotResults( testedGenes, aVals, f1Dict, f2Dict, f1labs+f2labs, 
+    plotResults( geneRecords, f1labs+f2labs, 
                  nspace, geneModel, False,
                  os.path.join(nspace.outdir, 'figures'))
-
-    # plot figures in log scale
-    plotResults( testedGenes, aVals, f1Dict, f2Dict, f1labs+f2labs, 
+    plotResults( geneRecords, f1labs+f2labs, 
                  nspace, geneModel, True,
                  os.path.join(nspace.outdir, 'figuresLog'))
+
     
-def runExon(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
+def runExon(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
     """Run differential exon skipping analysis
 
     Run iDiffIR's differential exon skipping analysis
@@ -300,7 +298,7 @@ def runExon(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
                   Command line arguments for **idiffir.py**
 
     """
-    aVals = range(nspace.krange[0], nspace.krange[1])
+    aVals = range(nspace.krange[0], nspace.krange[1]+1)
     writeStatus("Computing SE statistics", nspace.verbose)
     computeSEStatistics( geneRecords, nspace, validChroms, f1LNorm, f2LNorm )
     summaryDictSE = summarySE( geneRecords, aVals, nspace.fdrlevel)
@@ -309,9 +307,9 @@ def runExon(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
     writeAllSE( geneRecords, aVals, os.path.join(nspace.outdir, 'lists'))
     writeStatus("Plotting Depths", nspace.verbose)
     f1labs = [ '%s Rep %d' % (nspace.factorlabels[0], i+1) \
-               for i in xrange( len(nspace.factor1Dirs))]
+               for i in xrange( len(nspace.factor1bamfiles))]
     f2labs = [ '%s Rep %d' % (nspace.factorlabels[1], i+1) \
-               for i in xrange( len(nspace.factor2Dirs))]
+               for i in xrange( len(nspace.factor2bamfiles))]
 
     if nspace.noplot: return
     plotPDistSE(geneRecords, os.path.join(nspace.outdir, 'figures'))
@@ -397,8 +395,7 @@ def main():
     geneRecords = makeModels( geneModel, nspace.outdir, verbose=nspace.verbose, 
                               graphDirs=nspace.graphDirs, 
                               exonic=nspace.event=='SE', procs=nspace.procs )
-    del geneModel
-    _dispatch(nspace.event)(geneRecords, nspace, validChroms, f1LNorm, f2LNorm)
+    _dispatch(nspace.event)(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm)
 
 if __name__ == "__main__":
     main()

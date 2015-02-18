@@ -209,7 +209,7 @@ def procCluster( geneCluster, graphs, exonic, clusterFileHandle ):
             if len(geneCluster) == 1 or abs(otherGene.minpos - model.minpos) < 50 and \
                abs(otherGene.maxpos - model.maxpos) < 50 and \
                otherGene.strand==model.strand: continue
-            assert gene.id != otherGene.id # previous filtering should prevent this
+            if gene.id == otherGene.id: continue
             overlap = (max(model.minpos, otherGene.minpos), 
                        min( model.maxpos, otherGene.maxpos))
             if overlap[1] > overlap[0]:
@@ -273,7 +273,7 @@ def procCluster_parallel( tasks, output_queue):
                 model = IntronModel( gene, reducedGraph, newgene, graph, exonsI,
                                      retained=irs, predicted=predicted)
 
-            # indicate which introns overlap on another strand
+            # indicate which regions overlap on another gene
             overlapIntervals = set()
             for otherGene in geneCluster:
                 # eliminates same gene collision and sense genes
