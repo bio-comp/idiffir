@@ -886,7 +886,7 @@ def computeSEStatistics(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
     aVals = range(nspace.krange[0], nspace.krange[1]+1)
     geneStatus = { }
     # parallel call
-    if nspace.procs > 1:
+    if True:
         #freeze_support()
         task_queue = Queue()
         nTasks = 0
