@@ -51,7 +51,7 @@ def processRead( read, depths, junctions, minIdx, maxIdx ):
 
         #insertion
         elif t == INSERT:
-            rpos += l
+            pass
         #deletion
         elif t == DELETE:
             adjPosition = pos-minIdx
