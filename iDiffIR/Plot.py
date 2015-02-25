@@ -25,6 +25,8 @@ from SpliceGrapher.plot.PlotUtils import *
 from sys import maxint as MAXINT
 from itertools import chain
 import os,sys
+sys.setrecursionlimit(10000)
+from multiprocessing import Pool, freeze_support, Queue, Process
 import warnings  
 import numpy, ConfigParser
 from iDiffIR.BamfileIO import *
@@ -918,13 +920,14 @@ def plotMVA(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
                 nsigfcs.append( gene.IRfc[i])
                 nsigexps.append( gene.IRexp[i])
 
-    H, xedges, yedges = np.histogram2d(nsigfcs, nsigexps, bins=(50, 30))
+    H, xedges, yedges = np.histogram2d(nsigfcs, nsigexps, bins=(20, 10))
     ydiff=0#abs(yedges[0]-yedges[1])
     xdiff=0#abs(xedges[0]-xedges[1])
     
     extent = [min(nsigexps)+ydiff, max(nsigexps)+ydiff, -max(nsigfcs), -min(nsigfcs)]
     
-    plt.imshow(H, extent=extent, interpolation='gaussian', origin='upper', cmap=get_cmap('binary'), alpha=1, rasterized=0, vmax=np.max(H)/25.0, aspect=0.66)
+    plt.imshow(H, extent=extent, interpolation='gaussian', origin='upper', cmap=get_cmap('binary'), alpha=0.5, 
+               rasterized=0, vmax=np.max(H)/25.0, aspect='equal')
     plt.autoscale(False)
     plt.axhline(0, ls='--', lw=1, color='r')
     for aidx in xrange(len(aVals)):
@@ -950,7 +953,7 @@ def plotMVA(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
 
     # Put a legend to the right of the current axis
     plot.legend(loc='center left', bbox_to_anchor=(1, 0.5), fancybox=True, shadow=True)
-
+    plot.grid()
     plt.savefig(os.path.join(odir,'mva.%s') % (ext))
     plt.autoscale(True)
     plt.close()
@@ -1006,7 +1009,13 @@ def plotMVASE(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
     plt.xlabel( r'$\frac{1}{2}(\log_2 \hat{f}_1 + \log_2 \hat{f}_2)$', size=18)
     plt.ylabel( r'$\log_{2}\hat{f}_1 - \log_2\hat{f}_2$', size=18)
     plt.grid()
-    plt.legend(ncol=3)
+    # Shrink current axis by 20%
+    box = plot.get_position()
+    plot.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+
+    # Put a legend to the right of the current axis
+    plot.legend(loc='center left', bbox_to_anchor=(1, 0.5), fancybox=True, shadow=True)
+
     plt.savefig(os.path.join(odir,'mvaSE.%s') % (ext))
 
 
