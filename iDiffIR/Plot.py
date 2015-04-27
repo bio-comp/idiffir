@@ -389,7 +389,7 @@ def plotResults(geneRecords, labels, nspace, geneModel, useLog=True, odir=os.get
          highlights = []
          for i in xrange(len(gene.introns)):
              s,e = gene.introns[i]
-             if min(gene.IRQvals[i]) < nspace.fdrlevel:
+             if min(gene.IRQvals[i]) < 0.05:
                  highlights.append( (s,e) )
                  plotme = True
          if plotme:

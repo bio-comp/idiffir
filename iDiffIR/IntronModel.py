@@ -408,7 +408,10 @@ def makeModels( geneModel, outdir, verbose=False, graphDirs=None, exonic=False, 
     if verbose:
         sys.stderr.write('Building splicing models\n')
     indicator = ProgressIndicator(10000, verbose=verbose)
-    clusterFileHandle = open(os.path.join(outdir, 'lists', 'geneClusters.txt'), 'w')
+    if outdir:
+        clusterFileHandle = open(os.path.join(outdir, 'lists', 'geneClusters.txt'), 'w')
+    else:
+        clusterFileHandle = open(os.devnull,"w")
 
     def updateIndicator(pModels):
         """Update indicator

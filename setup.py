@@ -12,7 +12,8 @@ SCRIPTS  = ['scripts/idiffir.py',
             'scripts/convertSam.py',
             'scripts/simulate_IR.py',
             'scripts/make_MISO_IR_GFF.py',
-            'scripts/make_MISO_AS_GFF.py'
+            'scripts/make_MISO_AS_GFF.py',
+            'scripts/get_gene_expression.py'
             ]
 
 PACKAGES = [ 'iDiffIR'

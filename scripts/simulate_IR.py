@@ -164,6 +164,7 @@ def simulateReads( positions, sequence, chrom, strand, depth, length, qname, out
     assert( len(positions) == len(sequence) )
     L = len(sequence)
     nReads = depth * int(L/float(length))
+    #nReads = depth * L
     for _ in xrange( nReads ):
         simulateReads.n += 1
         rid = '%s.%d' % ( qname, simulateReads.n)
@@ -171,7 +172,7 @@ def simulateReads( positions, sequence, chrom, strand, depth, length, qname, out
         start = positions[idx]
         rec, minA = makeSAMRecord( rid, chrom, strand, start, 
                              positions[idx:(idx+length)], sequence[idx:(idx+length)] )
-        if minA <= minAnchor:
+        if 1:
             outstream.write('%s\n' % rec )
 
 def run_test( ):

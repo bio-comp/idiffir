@@ -123,7 +123,7 @@ def _validateBamfiles(bamfileList):
     bamfilesOK = True
     for f in bamfileList:
         if not os.path.exists(f):
-            sys.stderr.write('**Counts directory %s not found\n' % f )
+            sys.stderr.write('**bamfile %s not found\n' % f )
             countFilesOK = False
     return bamfilesOK
     

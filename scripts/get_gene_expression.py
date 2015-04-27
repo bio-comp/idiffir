@@ -20,7 +20,7 @@
 #
 from iDiffIR.IntronModel import *
 
-
+from iDiffIR.BamfileIO import *
 from SpliceGrapher.formats.fasta import *
 from argparse import ArgumentParser, ArgumentTypeError
 import os, sys, numpy
@@ -32,51 +32,87 @@ from SpliceGrapher.formats.loader import loadGeneModels
 def fileList( raw ):
     return [ r.strip() for r in raw.strip().split(':')]
 
-def parseArgs():
-    parser = ArgumentParser(description='Calculate gene expression from read depths file')
 
-    parser.add_argument('-o', '--output-file',dest='outfile', action='store', 
-                        default='expression.txt', help="output file name")
+def parseArgs():
+    """Parse command line arguments
+
+    Returns
+    -------
+    a : argparse.ArgumentParser
+
+    """
+    parser = ArgumentParser(description='Identify differentially expressed introns.')
     parser.add_argument('-v', '--verbose',dest='verbose', action='store_true', 
-                        default=False, help="verbose output")
+                        default=False, help="verbose output [default is quiet running]")
+    parser.add_argument('-p', '--procs', dest='procs', action='store', default=1, 
+                        type=int, help='Number of processing cores to use, [default = 1]')
+    parser.add_argument('-o', '--outfile', dest='outfile', action='store', default='expression.txt', 
+                        type=str, help='output file name')
+
     parser.add_argument('genemodel', type=str,
                         help="gene model file: NAME.gtf[.gz] | NAME.gff[.gz]")
-    parser.add_argument('factor1files', type=fileList,
-                        help="colon-separated list of files: PATH-TO-REPLICATE_1[:PATH-TO-REPLICATE_2,...]")
-    parser.add_argument('factor2files', type=fileList,
-                        help="colon-separated list of files: PATH-TO-REPLICATE_1[:PATH-TO-REPLICATE_2,...]")
+    parser.add_argument('factor1bamfiles', type=fileList,
+                        help="colon-separated list of bamfiles: PATH-TO-REPLICATE_1[:PATH-TO-REPLICATE_2,...]")
+    parser.add_argument('factor2bamfiles', type=fileList,
+                        help="colon-separated list of bamfiles: PATH-TO-REPLICATE_1[:PATH-TO-REPLICATE_2,...]")
     
 
     args = parser.parse_args()
     if not validateArgs( args ):
-        raise Exception("Argument Errors: check usage")
+        raise Exception("Argument Errors: check arguments and usage!")
     return args
 
-def validateArgs( nspace ):
-    """
-    Verify arguments
-    """
-    countFilesOK = True
-    geneModelOK  = True
-    cParamOK     = True
-        
-    # count files
-    for f in nspace.factor1files:
-        if not os.path.exists(f):
-            sys.stderr.write('Counts directory %s not found' % f )
-            countFilesOK = False
+def _validateBamfiles(bamfileList):
+    """Check if bamfiles exist
 
-    for f in nspace.factor2files:
+    Parameters
+    ----------
+    bamfileList : List of paths to check
+
+    Returns
+    -------
+    b : bool
+        True if all files exist at given paths
+
+    """
+    bamfilesOK = True
+    for f in bamfileList:
         if not os.path.exists(f):
-            sys.stderr.write('Counts directory %s not found' % f )
+            sys.stderr.write('**bamfile %s not found\n' % f )
             countFilesOK = False
+    return bamfilesOK
+    
+def validateArgs( nspace ):
+    """Verify program arguments
+
+    Checks all arguments to **idiffir.py** for consistency
+    and feasibilty.
+
+    Parameters
+    ----------
+    nspace : argparse.Namespace object containing **idiffir.py** arguments
+    
+    .. todo:: add rest of argument checks
+ 
+    Returns
+    -------
+    b : bool
+        True if parameters are feasible
+
+    """
+    geneModelOK  = True
+        
+    # bamfiles
+    cfOK1 = _validateBamfiles(nspace.factor1bamfiles)
+    cfOK2 = _validateBamfiles(nspace.factor2bamfiles)
+    countFilesOK = cfOK1 and cfOK2
 
     # gene model
     if not os.path.isfile(nspace.genemodel):
-        sys.stderr.write('File %s not found' % nspace.genemodel )
+        sys.stderr.write('**Genene model file %s not found\n' % nspace.genemodel )
         geneModelOK = False
 
-
+    
     return countFilesOK and geneModelOK
 
 def writeStatus( status ):
@@ -139,20 +175,24 @@ def main():
     writeStatus('Loading models')
     geneModel = loadGeneModels( nspace.genemodel, verbose=nspace.verbose )
     writeStatus('Making reduced models')
-    geneRecords, filtered = makeModels( geneModel, verbose=nspace.verbose )
-    writeStatus( 'Loading Depths' )
-    f1Dict, f2Dict = loadData( nspace, geneModel )
+    geneRecords = makeModels( geneModel, None,
+                              verbose=nspace.verbose, 
+                              graphDirs=None,
+                              exonic=False,
+                              procs=nspace.procs )
+
     writeStatus('Computing depths')
     ofile = open(nspace.outfile, 'w')
     ofile.write('geneID\tf1Exp_gene\tf2Exp_gene\tf1Exp_IR\tf2Exp_IR\n')
     for gene in geneRecords:
-        if gene.gid not in f1Dict or gene.gid not in f2Dict: continue
-        f1EV = f1Dict[gene.gid]
+        f1EV, f2EV, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene, 
+                                                               nspace.factor1bamfiles, 
+                                                               nspace.factor2bamfiles 
+                                                           )
         F1C = numpy.array([ [(f1EV[i][s:(e+1)]).mean() \
-                             for s,e in gene.exons] for i in xrange(len( f1EV))]).mean(0)
-        f2EV = f2Dict[gene.gid]
+                             for s,e in gene.exonsI] for i in xrange(len( f1EV))]).mean(0)
         F2C = numpy.array([ [(f2EV[i][s:(e+1)]).mean() \
-                             for s,e in gene.exons] for i in xrange(len( f2EV))]).mean(0)
+                             for s,e in gene.exonsI] for i in xrange(len( f2EV))]).mean(0)
         f1depth = numpy.mean(F1C)
         f2depth = numpy.mean(F2C)
         F1I = numpy.array([ [(f1EV[i][s:(e+1)]).mean() \
@@ -168,7 +208,7 @@ def main():
                                           for i in xrange(len( f2EV))]).mean(0) )
             
             
-        if len(ires1) > 1:
+        if len(ires1) > 0:
             ofile.write('%s\t%f\t%f\t%f\t%f\n' % ( gene.gid, f1depth, f2depth, numpy.mean(ires1), numpy.mean(ires2)))
         else:
             ofile.write('%s\t%f\t%f\t-\t-\n' % ( gene.gid, f1depth, f2depth) )
