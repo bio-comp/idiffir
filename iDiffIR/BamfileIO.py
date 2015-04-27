@@ -55,7 +55,7 @@ def processRead( read, depths, junctions, minIdx, maxIdx ):
         #deletion
         elif t == DELETE:
             adjPosition = pos-minIdx
-            if adjPosition >= 0:
+            if adjPosition >= 0 and adjPosition < len(depths):
                 depths[adjPosition] += 1
             pos += l
         # junction

@@ -53,7 +53,20 @@ class IntronModel(object):
         self.exons = [(s-self.minpos, e-self.minpos) for s,e in self.exonsR]
         self.exonsI = [(s-self.minpos, e-self.minpos) for s,e in exonsI]
     
-        
+    def __cmp__(self, other):
+        print other.gid
+        return cmp(self.gid, other.gid)
+
+    def __eq__(self, other):
+        return self.gid == other.gid
+
+    def __lt__(self, other):
+        return self.minpos < other.minpos
+
+    def __le__(self, other):
+        return self.minpos <= other.minpos
+
+
 class ExonModel(IntronModel):
     """Container for exon-centric AS analysis
 
@@ -290,10 +303,7 @@ def procCluster_parallel( tasks, output_queue):
 
             model.overlap = overlapIntervals
             models.append(model)
-        #global IND_LOCK
-        #IND_LOCK.acquire()
-        #for _ in xrange( len(models)): ind.update()
-        #IND_LOCK.release()
+
         output_queue.put( models )
 
 def geneClusters( geneModel, graphs, exonic):
