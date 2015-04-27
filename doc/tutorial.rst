@@ -63,28 +63,6 @@ Both methods will produce .bai file, indicating that the BAM file
 has been indexed.
 
 
-Getting chromosomal read depths
-...............................
-Now we are prepared to generate chromosomal read depths from the
-alignments using :program:`getDepths.py`.
-
-.. program-output:: getDepths.py --help
-
-.. note::
-
-   It is *strongly* recommended to use a clear naming system for 
-   the output directories (**-o** option) generated from 
-   :program:`getDepths.py`.  For instance if you have RNA-seq 
-   between an wildtype and mutant with 2 replicates, 
-   you may want to use a naming convention such as:
-   
-   .. code-block:: none
-
-      $getDepths.py -o wt_rep1_depths wt_rep1/filtered.bam
-      $getDepths.py -o wt_rep2_depths wt_rep2/filtered.bam
-      $getDepths.py -o mt_rep1_depths mt_rep1/filtered.bam
-      $getDepths.py -o mt_rep2_depths mt_rep2/filtered.bam
-
 Running **iDiffIR**
 -------------------
 
@@ -96,7 +74,7 @@ for most cases.  Using the above naming convention, a way to run
 
 .. code-block:: none
 
-   $idiffir.py -l Mutant Wildtype -o my_result my_genome.gff mt_rep1_depths:mt_rep2_depths wt_rep1_depths:wt_rep2_depths 
+   $idiffir.py -l Mutant Wildtype -o my_result my_genome.gff mt_rep1.bam:mt_rep2.bam:mt_rep3.bam wt_rep1.bam:wt_rep2.bam:wt_rep3.bam
 
 The **-l** option provides titles for the reads and will be displayed
 on the splice graphs of genes containing significant differential IR
