@@ -42,11 +42,9 @@ acceptor/donor events).
 
 
 
-Getting read depths
--------------------
-
 Creating indexed, sorted BAM files
-..................................
+----------------------------------
+
 If your reads are in the SAM format, you can convert it to a indexed,
 sorted BAM file using :program:`convertSam.py`.  
 
