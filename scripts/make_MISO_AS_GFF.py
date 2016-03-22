@@ -1,6 +1,5 @@
-#! /usr/bin/env python
+#!/bin/python
 """Program for generating miso IR examples."""
-
 from SpliceGrapher.shared.utils        import *
 from SpliceGrapher.shared.GeneModelConverter import *
 from SpliceGrapher.predict.SpliceSite  import* 
@@ -10,13 +9,25 @@ from SpliceGrapher.formats.loader import loadGeneModels
 
 from glob     import glob
 from optparse import OptionParser
-import os, sys, warnings, numpy
 
+a5f = open('a5Maps.txt', 'w')
+a3f = open('a3Maps.txt', 'w')
 def writeEvent( event, outstream, eventID ):
     name = '%s:%d:%d:%s:%s:%s:%d:%s' % (event.geneID, event.minpos,
                                            event.maxpos, event.pathType,
                                            event.chrom, 
                                            event.strand, eventID, event.label)
+    if event.AStype == 'A5':
+        node1 = event.upPath[0]
+        node2 = event.downPath[0]
+        positions = sorted((node1.donorEnd(), node2.donorEnd()))
+        a5f.write('%s\t%d,%d\n' % (name, positions[0], positions[1]))
+    else:
+        node1 = event.upPath[-1]
+        node2 = event.downPath[-1]
+        positions = sorted((node1.acceptorEnd(), node2.acceptorEnd()))
+        a3f.write('%s\t%d,%d\n' % (name, positions[0], positions[1]))
+
 
     # write gene record
     outstream.write( '%s\t%s\tgene\t%d\t%d\t.\t%s\t.\tID=%s;Name=%s\n' % (
@@ -24,25 +35,29 @@ def writeEvent( event, outstream, eventID ):
         event.strand, name, name ) )
 
     # write upstream mRNA record
+    minpos = min( [ node.minpos for node in event.upPath ] )
+    maxpos = max( [ node.maxpos for node in event.upPath ] )
     outstream.write('%s\t%s\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s;Parent=%s\n' % (
-        event.chrom, event.AStype, event.minpos, event.maxpos,
+        event.chrom, event.AStype, minpos, maxpos,
         event.strand, '%s:upstream' %name, name))
 
     # write downstream mRNA record
+    minpos = min( [ node.minpos for node in event.downPath ] )
+    maxpos = max( [ node.maxpos for node in event.downPath ] )
     outstream.write('%s\t%s\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s;Parent=%s\n' % (
-        event.chrom, event.AStype, event.minpos, event.maxpos,
+        event.chrom, event.AStype, minpos, maxpos,
         event.strand, '%s:downstream' %name, name))
 
     # write upstream exon records
     for i,node in enumerate(event.upPath):
         outstream.write('%s\t%s\texon\t%d\t%d\t.\t%s\t.\tID=%s;Parent=%s\n' % (
-            event.chrom, event.AStype, event.minpos, event.maxpos,
+            event.chrom, event.AStype, node.minpos, node.maxpos,
             event.strand, '%s:upstream:exon_%d' % (name, i+1), '%s:upstream' %name))
 
     # write upstream exon records
     for i,node in enumerate(event.downPath):
         outstream.write('%s\t%s\texon\t%d\t%d\t.\t%s\t.\tID=%s;Parent=%s\n' % (
-            event.chrom, event.AStype, event.minpos, event.maxpos,
+            event.chrom, event.AStype, node.minpos, node.maxpos,
             event.strand, '%s:downstream:exon_%d' % (name, i+1), '%s:downstream' %name))
 
 
@@ -51,6 +66,7 @@ parser = OptionParser()
 parser.add_option('-m', dest='model',    default=SG_GENE_MODEL, help='Gene model GFF file [default: %default]')
 parser.add_option('-o', dest='outbase',  default='AS',          help='Output file base')
 parser.add_option('-v', dest='verbose',  default=False,         help='Verbose mode [default: %default]', action='store_true')
+
 parser.add_option( '-s', dest='graphPaths', default=None, help='File containing paths to splice graphs to augment gene models')
 opts, args = parser.parse_args(sys.argv[1:])
 
@@ -72,22 +88,22 @@ spliceGraphs = {}
 if opts.graphPaths != None:
     if opts.verbose: sys.stderr.write('Loading aux. splice graphs\n')
     indicator = ProgressIndicator(10000, description=' files', verbose=opts.verbose)
-    with open( os.path.join( opts.graphPaths, 'allPreds.txt'), 'r' ) as fin:
+    with open( opts.graphPaths, 'r' ) as fin:
         for line in fin:
             fname = line.strip()
             if not os.path.exists(fname):
                 if opts.verbose: 
                     sys.stderr.write('Missing splice graph file: %s\n' % fname)
                     continue
-        indicator.update()
-        graph = getFirstGraph( fname )
-        geneName = graph.name.upper()
-        if geneName in spliceGraphs:
-            spliceGraphs[geneName] = spliceGraphs[geneName].union( graph )
-        else:
-            spliceGraphs[geneName] = graph
-        #for node in graph.unresolvedNodes():
-        #    spliceGraphs[geneName].addNode( node.id, node.start, node.end)
+            indicator.update()
+            graph = getFirstGraph( fname )
+            geneName = graph.name.upper()
+            if geneName in spliceGraphs:
+                spliceGraphs[geneName] = spliceGraphs[geneName].union( graph )
+            else:
+                spliceGraphs[geneName] = graph
+            #for node in graph.unresolvedNodes():
+            #    spliceGraphs[geneName].addNode( node.id, node.start, node.end)
         
     indicator.finish()
     if opts.verbose : sys.stderr.write('Loaded %d aux. splice graphs\n' % (indicator.ctr))
@@ -102,6 +118,7 @@ def upstream_a5( node1, node2 ):
     else:
         return node1.donorEnd() > node2.donorEnd()
 
+
 def upstream_a3( node1, node2 ):
     """
     Determines if node1's 3' splice site is upstream of node2's
@@ -115,22 +132,7 @@ def overlap( node1, node2 ):
     """
     Determines if nodes overlap
     """
-    # subsumed
-    #     |---------------|
-    #       |---------|
-    if node1.minpos >= node2.minpos and node1.maxpos <= node2.maxpos or \
-       node2.minpos >= node1.minpos and node2.maxpos <= node1.maxpos:
-        return True
-    #   |----------------| node1 
-    #        |---------------|  node2
-    elif node1.maxpos > node2.minpos and node1.maxpos <= node2.maxpos:
-        return True
-    #        |----------------| node1 
-    #   |---------------|  node2
-    elif node2.maxpos > node1.minpos and node2.maxpos <= node1.maxpos:
-        return True
-    else:
-        return False
+    return min( node1.maxpos, node2.maxpos) - max( node1.minpos, node2.minpos) > 0
 
 def resolve_a5( node1, node2 ):
     """
@@ -190,6 +192,67 @@ def resolve_a5( node1, node2 ):
 
     return (None, None, None)
 
+def resolve_a3( node1, node2 ):
+    """
+    Return alternative 5p paths representing
+    minimal isoform distinction of the event.
+    """
+    # ignore roots and leaves of splice graphs
+    if node1.isRoot() or node1.isLeaf() or node2.isRoot() or node2.isLeaf(): 
+        return (None, None, None)
+    
+    # alternative donors share a parent ( cake work )
+    for parent1 in node1.parents:
+        for parent2 in node2.parents:
+            if parent1 == parent2:
+                return ( (parent1, node1), (parent2, node2), 'S' )
+
+    # alternative donors share a parent
+    for parent1 in node1.parents:
+        for parent2 in node2.parents:
+            if overlap(parent1, parent2):
+                return ( (parent1, node1), (parent2, node2), 'O' )
+    
+    # check grandparents of node1
+    for parent1 in node1.parents:
+        if parent1.isRoot(): continue
+        for grandparent1 in parent1.parents:
+            for parent2 in node2.parents:
+                if grandparent1 == parent2:
+                    return ( (grandparent1, parent1, node1), (parent2, node2), 'S3' )
+
+    # check grandchildren of node1
+    # alternative donors overlap grand child - child
+    for parent1 in node1.parents:
+        if parent1.isRoot(): continue
+        for grandparent1 in parent1.parents:
+            for parent2 in node2.parents:
+                if overlap(grandparent1, parent2):
+                    return ( (grandparent1, parent1, node1), (parent2, node2), 'O3' )
+
+
+
+    # check grandchildren of node2
+    # alternative donors same grand child - child
+    for parent1 in node1.parents:
+        for parent2 in node2.parents:
+            if parent2.isRoot(): continue
+            for grandparent2 in parent2.parents:
+                if parent1 == grandparent2:
+                    return ( (parent1, node1), (grandparent2, parent2, node2), 'S3' )
+
+    # check grandchildren of node2
+    # alternative donors overlap grand child - child
+    for parent1 in node1.parents:
+        for parent2 in node2.parents:
+            if parent2.isRoot(): continue
+            for grandparent2 in parent2.parents:
+                if overlap(parent1,grandparent2):
+                    return ( (parent1, node1), (grandparent2, parent2, node2), 'O3' )
+
+
+    return (None, None, None)
+
     
 
 class AltEvent(object):
@@ -209,6 +272,8 @@ class AltEvent(object):
         maxpos = max( [node.maxpos for node in path1] )
         self.maxpos = max( maxpos, max( [node.maxpos for node in path2] ) )
         self.label = label
+
+# main loop
 for chrm in geneModel.getChromosomes():
     if opts.verbose: sys.stderr.write('Processing genes from chromosome: %s\n' % chrm )
     indicatorG = ProgressIndicator(10000, description=' genes', verbose=opts.verbose)
@@ -218,6 +283,8 @@ for chrm in geneModel.getChromosomes():
     for g in genes :
         if opts.verbose : indicatorG.update()
         geneGraph = makeSpliceGraph(g)
+        if geneGraph.name.upper() in spliceGraphs:
+            geneGraph = geneGraph.union(spliceGraphs[ geneGraph.name.upper() ])
         geneGraph.annotate()
 
         a5 = [ node for node in geneGraph.resolvedNodes() if node.isAltDonor() ]
@@ -226,7 +293,7 @@ for chrm in geneModel.getChromosomes():
         a3Events = [ ]
         for node1 in a5:
             for node2 in a5:
-                if upstream_a5(node1, node2):
+                if upstream_a5(node1, node2) and overlap(node1, node2):
                     path1, path2, pathType = resolve_a5( node1, node2 )
                     if pathType != None:
                         label = 'P' if node1.isPredicted() or node2.isPredicted() else 'K'
@@ -235,6 +302,18 @@ for chrm in geneModel.getChromosomes():
         
         for i, event in enumerate(a5Events):
             writeEvent( event, outStream_a5, i+1 )
+
+        for node1 in a3:
+            for node2 in a3:
+                if upstream_a3(node1, node2) and overlap(node1, node2):
+                    path1, path2, pathType = resolve_a3( node1, node2 )
+                    if pathType != None:
+                        label = 'P' if node1.isPredicted() or node2.isPredicted() else 'K'
+                        a3Events.append( AltEvent( path1, path2, pathType, 
+                                                 'A3', chrm, geneGraph.name, label ))  
+        
+        for i, event in enumerate(a3Events):
+            writeEvent( event, outStream_a3, i+1 )
                 
     
     if opts.verbose : 
