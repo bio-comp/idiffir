@@ -163,7 +163,7 @@ def decorateNodes( reducedGraph, graph ):
     flavorDict[ 'SE' ] = SEs
     return flavorDict
 
-def procCluster( geneCluster, graphs, exonic, clusterFileHandle ):
+def procCluster( geneCluster, graphs, exonic, onlyGraphs, clusterFileHandle ):
     """Process cluster of overlapping genes.
 
     Process genes whose genomic intervals overlap.  This
@@ -182,7 +182,8 @@ def procCluster( geneCluster, graphs, exonic, clusterFileHandle ):
              empty if no graphs exist for any of the genes in the cluster.
     exonic : bool
              True if analyzing exon skipping
-
+    onlyGraphs : bool
+                 True if only using graphs for generating reduced models.  I.e. not using gene annotations.
     Returns
     -------
     models : list 
@@ -199,7 +200,10 @@ def procCluster( geneCluster, graphs, exonic, clusterFileHandle ):
         if name in graphs:
             if graph != graphs[name]:
                 predicted = True
-                graph=graph.union(graphs[name])
+                if onlyGraphs:
+                    graph = graphs[name]
+                else:
+                    graph=graph.union(graphs[name])
         reducedGraph, irs, newgene = makeReducedGraph(gene, graph)
         exonsI = makeReducedExonModel(gene, graph) # graph where exons exhibit no AS
         # do this if we're looking at exon skipping
@@ -368,7 +372,7 @@ def geneClusters( geneModel, graphs, exonic):
                 clusterGraphs[geneIC.id] = graphs[geneIC.id]
         yield geneCluster, clusterGraphs, exonic
 
-def makeModels( geneModel, outdir, verbose=False, graphDirs=None, exonic=False, procs=1 ):
+def makeModels( geneModel, outdir, verbose=False, graphDirs=None, graphDirsOnly=None, exonic=False, procs=1 ):
     """Make reduced models for all genes in the geneModel.  
 
     Genes are processed in parallel using a thread pool 
@@ -402,8 +406,12 @@ def makeModels( geneModel, outdir, verbose=False, graphDirs=None, exonic=False, 
     """
     # load splice grapher predictions if given
     graphs = [ ]
+    onlyGraphs = False
     if graphDirs:
         graphs = getGraphs( graphDirs, verbose )
+    if graphDirsOnly:
+        graphs = getGraphs( graphDirsOnly, verbose )
+        onlyGraphs = True
     models   = [ ]
     if verbose:
         sys.stderr.write('Building splicing models\n')
@@ -431,7 +439,7 @@ def makeModels( geneModel, outdir, verbose=False, graphDirs=None, exonic=False, 
         task_queue = Queue()
         status_queue = Queue()
         nTasks = 0
-        for clusterTuple in geneClusters(geneModel, graphs, exonic):
+        for clusterTuple in geneClusters(geneModel, graphs, exonic, onlyGraphs):
             task_queue.put( clusterTuple )
             nTasks += 1
 
@@ -450,7 +458,7 @@ def makeModels( geneModel, outdir, verbose=False, graphDirs=None, exonic=False, 
     # run serial
     else:
         for clusterTuple in geneClusters(geneModel, graphs, 
-                                         exonic):
+                                         exonic, onlyGraphs):
             processedModels = procCluster(*clusterTuple, 
                                           clusterFileHandle=clusterFileHandle)
             models.extend(processedModels)

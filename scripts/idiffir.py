@@ -90,6 +90,11 @@ def parseArgs():
 #                        default=False, help='Plot diagnostic figures, default = True')
     parser.add_argument('-g', '--graph-dirs', dest='graphDirs', type=fileList, 
                         help='colon-separated list of directories to recursively search for SpliceGrapher predictions')
+    parser.add_argument('-G', '--graph-dirs-only', dest='graphDirsOnly', type=fileList, 
+                        help='colon-separated list of directories to recursively search for SpliceGrapher predictions. \
+                        In this case only the predicted graphs are used. i.e. the gene models are only used in plots \
+                        and not for building reduced gene models.  Useful for poorly annotated genomes.')
+
     parser.add_argument('-m', '--multTest', dest='multTest', choices=['BF', 'BH', 'QV'], type=str, default='QV',
                         help='Multiple testing adjustment method BF: Bonferroni, BH: Benjamini-Hochberg, QV: q-values [default = QV]')
 
@@ -415,7 +420,8 @@ def main():
     geneModel = loadGeneModels( nspace.genemodel, verbose=nspace.verbose )
     writeStatus('Making reduced models', nspace.verbose)
     geneRecords = makeModels( geneModel, nspace.outdir, verbose=nspace.verbose, 
-                              graphDirs=nspace.graphDirs, 
+                              graphDirs=nspace.graphDirs,
+                              graphDirsOnly=nspace.graphDirsOnly,
                               exonic=nspace.event=='SE', procs=nspace.procs )
     _dispatch(nspace.event)(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm)
 
