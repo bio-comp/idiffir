@@ -98,8 +98,8 @@ def parseArgs():
     parser.add_argument('-m', '--multTest', dest='multTest', choices=['BF', 'BH', 'QV'], type=str, default='QV',
                         help='Multiple testing adjustment method BF: Bonferroni, BH: Benjamini-Hochberg, QV: q-values [default = QV]')
 
-    parser.add_argument('-e', '--event', choices=['IR', 'SE', 'RATIOS'], type=str, default='IR',
-                        help='AS event to test, IR: Intron Retention, SE: Exon Skipping [default = IR], RATIOS: Compute IR ratios')
+    parser.add_argument('-e', '--event', choices=['IR', 'SE'], type=str, default='IR',
+                        help='AS event to test, IR: Intron Retention, SE: Exon Skipping [default = IR] [default is IR]')
     parser.add_argument('genemodel', type=str,
                         help="gene model file: NAME.gtf[.gz] | NAME.gff[.gz]")
     parser.add_argument('factor1bamfiles', type=fileList,
@@ -327,23 +327,6 @@ def runExon(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
                  nspace, geneModel, True,
                  os.path.join(nspace.outdir, 'figuresLog'))
 
-def runRatios(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
-    """Run IR ratios analysis
-
-    Run iDiffIR's intron rentention ratios analysis
-
-    Parameters
-    ----------
-    geneRecords : list
-                  List of IntronModel.IntronModel objects
-    geneModel   : SpliceGrapher.formats.GeneModel.GeneModel
-                  Gene model object for the provided genome
-    nspace      : argparse.ArgumentParser 
-                  Command line arguments for **idiffir.py**
-
-    """
-    writeStatus("Computing IR ratios", nspace.verbose)
-    computeRatios( geneRecords, nspace, validChroms, f1LNorm, f2LNorm )
 
 def _dispatch(event):
     """Run differential event analysis for given event
@@ -363,9 +346,6 @@ def _dispatch(event):
     elif event == 'SE':
         return runExon
 
-    # run IR ratios analysis
-    elif event = 'RATIOS':
-        return runRatios
     # invalalid event ID
     else:
         raise ValueError
