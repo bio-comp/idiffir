@@ -310,7 +310,7 @@ def procCluster_parallel( tasks, output_queue):
 
         output_queue.put( models )
 
-def geneClusters( geneModel, graphs, exonic):
+def geneClusters( geneModel, graphs, exonic, onlyGraphs):
     """Cluster genes that overlap each other
 
     Iterator to cluster and package genes that overlap each other in a 
@@ -370,7 +370,7 @@ def geneClusters( geneModel, graphs, exonic):
         for geneIC in geneCluster:
             if geneIC.id in graphs:
                 clusterGraphs[geneIC.id] = graphs[geneIC.id]
-        yield geneCluster, clusterGraphs, exonic
+        yield geneCluster, clusterGraphs, exonic, onlyGraphs
 
 def makeModels( geneModel, outdir, verbose=False, graphDirs=None, graphDirsOnly=None, exonic=False, procs=1 ):
     """Make reduced models for all genes in the geneModel.  
