@@ -1264,7 +1264,7 @@ def computeSE( gene, f1EV, f2EV, f1LNorm, f2LNorm):
     geostd2 = 2**numpy.sqrt(numpy.sum(numpy.log2(F2/geomean2 )**2 ) / len( F2 ))
 
     #return numpy.sqrt(0.5*(geostd1**2+geostd2**2) ) * numpy.sqrt(2.0/(len(f1EV)+len(f2EV))), f1Norm, f2Norm
-                       return numpy.sqrt(0.5*(geostd1**2+geostd2**2) ), f1Norm, f2Norm, f1Exp, f2Exp, f1Expr, f2Expr, fc
+    return numpy.sqrt(0.5*(geostd1**2+geostd2**2) ), f1Norm, f2Norm, f1Exp, f2Exp, f1Expr, f2Expr, fc
 
 
 
