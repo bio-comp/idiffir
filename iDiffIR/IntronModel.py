@@ -353,7 +353,7 @@ def geneClusters( geneModel, graphs, exonic, onlyGraphs):
                 for geneIC in geneCluster:
                     if geneIC.id in graphs:
                         clusterGraphs[geneIC.id] = graphs[geneIC.id]
-                yield geneCluster, clusterGraphs, exonic
+                yield geneCluster, clusterGraphs, exonic, onlyGraphs
                 # intitalize the next cluster
                 del clusterGraphs
                 geneCluster = [gene]
