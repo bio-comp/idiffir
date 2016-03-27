@@ -119,7 +119,7 @@ def writeAllSE( geneRecords, aVals, odir=os.getcwd() ):
                                'SECoords', 'highExonCoords',
                                'pValue', 'adjPValue', 
                                'logFoldChange','SEExp', 'statistic', 
-                               'bestA']) + '\n')
+                               'bestA', 'IRratio_1', 'IRratio_2']) + '\n')
         for gene in geneRecords:
             if not gene.SEGTested: continue
             # iterate across all exons
@@ -131,7 +131,9 @@ def writeAllSE( geneRecords, aVals, odir=os.getcwd() ):
                              min( 1, min(gene.SEQvals[i])), gene.SEfc[i], 
                              gene.SEexp[i], 
                              gene.SEstat[i][numpy.argmin(gene.SEPvals[i])], 
-                             aVals[numpy.argmin(gene.SEPvals[i])] )) 
+                             aVals[numpy.argmin(gene.SEPvals[i])],
+                             gene.IRrat1[i],
+                             gene.IRrat2[i])) 
     
 def writeLists( summaryDict, odir=os.getcwd() ):
     """
