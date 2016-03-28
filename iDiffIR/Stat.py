@@ -580,13 +580,13 @@ def procGeneStatsIR( tasks, test_status):
                                       for i in xrange(len(f1LNorm))]).mean(0)
                 f2IntR = numpy.array([(f2Depths[i][(s+1):(e)]-1) * f2LNorm[i]\
                                       for i in xrange(len(f2LNorm))]).mean(0)
-                f1Intexp = numpy.array([(f1Depths[i][(s+1):(e)]-1) \
-                                      for i in xrange(len(f1LNorm))]).mean(0)
-                f2Intexp = numpy.array([(f2Depths[i][(s+1):(e)]-1) \
-                                      for i in xrange(len(f2LNorm))]).mean(0)
+                f1Intexp = numpy.array([(f1Depths[i][(s+1):(e)]-1).mean() \
+                                      for i in xrange(len(f1LNorm))])
+                f2Intexp = numpy.array([(f2Depths[i][(s+1):(e)]-1).mean() \
+                                      for i in xrange(len(f2LNorm))])
 
-                IRrat1.append(f1Intexp/f1expr)
-                IRrat2.append(f2Intexp/f2expr)
+                IRrat1.append(numpy.mean(f1Intexp/f1expr))
+                IRrat2.append(numpy.mean(f2Intexp/f2expr))
 
             if False:#biasAdj:
                 f1ExonL = numpy.array([f1ExpV[i][ls:le]*f1LNorm[i]*gene.f1ExonWts[i][k] \
@@ -1231,8 +1231,8 @@ def computeSE( gene, f1EV, f2EV, f1LNorm, f2LNorm):
     F1C = numpy.array([ [(f1EV[i][s:(e+1)]*f1LNorm[i]).mean() \
                          for s,e in gene.exonsI] for i in xrange(len( f1EV))]).mean(0)+EPS
 
-    F1Cr = numpy.array([ [(f1EV[i][s:(e+1)]).mean() \
-                          for s,e in gene.exonsI] for i in xrange(len( f1EV))]).mean(0)+EPS
+    F1Cr = numpy.array([ ([(f1EV[i][s:(e+1)]).mean() \
+                          for s,e in gene.exonsI]).mean() for i in xrange(len( f1EV))]) + EPS
 
     f2ExonExp = [ [(f2EV[i][s:(e+1)]*f2LNorm[i]).mean()+EPS \
                        for s,e in gene.exonsI] for i in xrange(len( f2EV))]
@@ -1243,8 +1243,8 @@ def computeSE( gene, f1EV, f2EV, f1LNorm, f2LNorm):
     # collapse over replicates
     F2C = numpy.array([ [(f2EV[i][s:(e+1)]*f2LNorm[i]).mean() \
                          for s,e in gene.exonsI] for i in xrange(len( f2EV))]).mean(0)+EPS
-    F2Cr = numpy.array([ [(f2EV[i][s:(e+1)]).mean() \
-                          for s,e in gene.exonsI] for i in xrange(len( f2EV))]).mean(0)+EPS
+    F2Cr = numpy.array([ ([(f2EV[i][s:(e+1)]).mean() \
+                          for s,e in gene.exonsI]).mean() for i in xrange(len( f2EV))]) + EPS
 
     F1 = numpy.array(list(chain.from_iterable( [f1ExonExp[i]*f1RepExps[i] for i in xrange(len(f1ExonExp))]))) + EPS
     F2 = numpy.array(list(chain.from_iterable( [f2ExonExp[i]*f2RepExps[i] for i in xrange(len(f2ExonExp))]))) + EPS
@@ -1252,8 +1252,6 @@ def computeSE( gene, f1EV, f2EV, f1LNorm, f2LNorm):
     fc = numpy.log2(F1C.mean() / F2C.mean())
     f1Exp = F1C.mean()
     f2Exp = F2C.mean()
-    f1Expr = F1Cr.mean()
-    f2Expr = F2Cr.mean()
     
     f1Norm = up / F1C.sum()
     f2Norm = up / F2C.sum()
@@ -1264,7 +1262,7 @@ def computeSE( gene, f1EV, f2EV, f1LNorm, f2LNorm):
     geostd2 = 2**numpy.sqrt(numpy.sum(numpy.log2(F2/geomean2 )**2 ) / len( F2 ))
 
     #return numpy.sqrt(0.5*(geostd1**2+geostd2**2) ) * numpy.sqrt(2.0/(len(f1EV)+len(f2EV))), f1Norm, f2Norm
-    return numpy.sqrt(0.5*(geostd1**2+geostd2**2) ), f1Norm, f2Norm, f1Exp, f2Exp, f1Expr, f2Expr, fc
+    return numpy.sqrt(0.5*(geostd1**2+geostd2**2) ), f1Norm, f2Norm, f1Exp, f2Exp, f1Cr, f2Cr, fc
 
 
 
