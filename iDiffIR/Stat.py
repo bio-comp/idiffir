@@ -1231,7 +1231,7 @@ def computeSE( gene, f1EV, f2EV, f1LNorm, f2LNorm):
     F1C = numpy.array([ [(f1EV[i][s:(e+1)]*f1LNorm[i]).mean() \
                          for s,e in gene.exonsI] for i in xrange(len( f1EV))]).mean(0)+EPS
 
-    F1Cr = numpy.array([ ([(f1EV[i][s:(e+1)]).mean() \
+    F1Cr = numpy.array([ numpy.array([(f1EV[i][s:(e+1)]).mean() \
                           for s,e in gene.exonsI]).mean() for i in xrange(len( f1EV))]) + EPS
 
     f2ExonExp = [ [(f2EV[i][s:(e+1)]*f2LNorm[i]).mean()+EPS \
@@ -1243,7 +1243,7 @@ def computeSE( gene, f1EV, f2EV, f1LNorm, f2LNorm):
     # collapse over replicates
     F2C = numpy.array([ [(f2EV[i][s:(e+1)]*f2LNorm[i]).mean() \
                          for s,e in gene.exonsI] for i in xrange(len( f2EV))]).mean(0)+EPS
-    F2Cr = numpy.array([ ([(f2EV[i][s:(e+1)]).mean() \
+    F2Cr = numpy.array([ numpy.array([(f2EV[i][s:(e+1)]).mean() \
                           for s,e in gene.exonsI]).mean() for i in xrange(len( f2EV))]) + EPS
 
     F1 = numpy.array(list(chain.from_iterable( [f1ExonExp[i]*f1RepExps[i] for i in xrange(len(f1ExonExp))]))) + EPS
