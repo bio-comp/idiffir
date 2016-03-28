@@ -824,8 +824,8 @@ def computeIRStatistics(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
         for gene in geneRecords:
             if gene.gid in geneStatus:
                 gene.IRexp, gene.IRfc, gene.IRTested,\
-                    gene.IRstat, gene.IRrat_1, \
-                    gene.IRrat_2 = geneStatus[gene.gid]
+                    gene.IRstat, gene.IRrat1, \
+                    gene.IRrat2 = geneStatus[gene.gid]
                 gene.IRGTested = True
                 gene.IRQvals = [ list() for _ in gene.introns]
                 gene.IRZ     = [ list() for _ in gene.introns]
