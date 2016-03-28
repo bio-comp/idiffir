@@ -96,7 +96,7 @@ def writeAll( geneRecords, aVals, odir=os.getcwd() ):
                                'intronCoords', 'highExonCoords',
                                'pValue', 'adjPValue', 
                                'logFoldChange','intronExp', 'statistic', 
-                               'bestA','known']) + '\n')
+                               'bestA','known','IRratio_1', 'IRratio_2']) + '\n')
         for gene in geneRecords:
             # iterate across all exons
             if not gene.IRGTested: continue
@@ -106,7 +106,9 @@ def writeAll( geneRecords, aVals, odir=os.getcwd() ):
                            ( gene.gid, str(gene.exonsR[i]), str(gene.intronsR[i]), str(gene.exonsR[i+1]), 
                              min(1, min(gene.IRPvals[i])),min( 1, min(gene.IRQvals[i])), gene.IRfc[i], 
                              gene.IRexp[i], gene.IRstat[i][numpy.argmin(gene.IRPvals[i])], 
-                             aVals[numpy.argmin(gene.IRPvals[i])], str(gene.retained[i]) )) 
+                             aVals[numpy.argmin(gene.IRPvals[i])], str(gene.retained[i]),
+                             gene.IRrat1[i],
+                             gene.IRrat2[i])) 
                 
 def writeAllSE( geneRecords, aVals, odir=os.getcwd() ):
     """
