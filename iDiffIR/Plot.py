@@ -102,7 +102,7 @@ def writeAll( geneRecords, aVals, odir=os.getcwd() ):
             if not gene.IRGTested: continue
             for i,intron in enumerate(gene.introns):
                 if not gene.IRTested[i]: continue
-                fout.write('%s\t%s\t%s\t%s\t%f\t%f\t%f\t%f\t%f\t%d\t%s\n' % \
+                fout.write('%s\t%s\t%s\t%s\t%f\t%f\t%f\t%f\t%f\t%d\t%s\t%f\t%f\n' % \
                            ( gene.gid, str(gene.exonsR[i]), str(gene.intronsR[i]), str(gene.exonsR[i+1]), 
                              min(1, min(gene.IRPvals[i])),min( 1, min(gene.IRQvals[i])), gene.IRfc[i], 
                              gene.IRexp[i], gene.IRstat[i][numpy.argmin(gene.IRPvals[i])], 
