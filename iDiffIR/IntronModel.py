@@ -477,8 +477,6 @@ def makeReducedExonModel(gene, graph):
     minGene = graph.minpos
     maxGene = graph.maxpos
     #set min gene area
-    if graph.strand == '+':
-        roots = [(x.minpos, x.maxpos) for x in graph.resolveNodes() if x.isRoot()]
     nodesR = set([ (x.minpos, x.maxpos) for x in graph.resolvedNodes()+graph.unresolvedNodes()])
     exons = [ ]
     edges = set([ (x.minpos, x.maxpos) for x in edgeSet(graph)])
