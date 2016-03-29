@@ -37,7 +37,7 @@ class IntronModel(object):
         self.gid      = gene.id
         self.ogene    = newgene
         self.intronsR  = sorted(list(set([ (x.minpos+1, x.maxpos) for x in edgeSet(graph)])))
-        self.exonsR    = sorted([ (e.minpos, e.maxpos) for e in graph.resolvedNodes() ])
+        self.exonsR    = sorted([ (e.minpos, e.maxpos) for e in graph.resolvedNodes()+graph.unresolvedNodes() ])
         self.graph    = graph
         self.gene     = gene
         self.retained = retained if retained else [False]* len(self.intronsR)
@@ -156,7 +156,7 @@ def decorateNodes( reducedGraph, graph ):
     """
     flavorDict = {}
     #make Skipped Exons
-    SEs = [ getSELocs( node, graph.minpos ) for node in graph.resolvedNodes() \
+    SEs = [ getSELocs( node, graph.minpos ) for node in graph.resolvedNodes()+graph.unresolvedNodes() \
                 if 'SE' in node.altForms() and node.maxpos-node.minpos > 4]
     if SEs:
         SEs.sort( key=lambda x: x[1][0] )
@@ -476,14 +476,16 @@ def makeReducedExonModel(gene, graph):
 
     minGene = graph.minpos
     maxGene = graph.maxpos
-    
-    nodesR = set([ (x.minpos, x.maxpos) for x in graph.resolvedNodes()])
+    #set min gene area
+    if graph.strand == '+':
+        roots = [(x.minpos, x.maxpos) for x in graph.resolveNodes() if x.isRoot()]
+    nodesR = set([ (x.minpos, x.maxpos) for x in graph.resolvedNodes()+graph.unresolvedNodes()])
     exons = [ ]
     edges = set([ (x.minpos, x.maxpos) for x in edgeSet(graph)])
 
-    roots = set([ (x.minpos, x.maxpos) for x in graph.resolvedNodes() if x.isRoot()])
+    roots = set([ (x.minpos, x.maxpos) for x in graph.resolvedNodes()+graph.unresolvedNodes() if x.isRoot()])
 
-    leaves = set([ (x.minpos, x.maxpos) for x in graph.resolvedNodes() if x.isLeaf()])
+    leaves = set([ (x.minpos, x.maxpos) for x in graph.resolvedNodes()+graph.unresolvedNodes() if x.isLeaf()])
     leafEnd = min( [x[1] for x in leaves] ) if gene.strand == '+' else \
               max( [x[0] for x in leaves])
     if gene.strand == '+':
@@ -539,7 +541,7 @@ def makeReducedExonModel(gene, graph):
 
 
     if len(exons) == 0:
-        exons = set([ (x.minpos, x.maxpos) for x in graph.resolvedNodes()])
+        exons = set([ (x.minpos, x.maxpos) for x in graph.resolvedNodes()+graph.unresolvedNodes()])
     exons = sorted(list(exons))
 
     return exons
@@ -553,7 +555,7 @@ def makeReducedModel( gene, graph ):
     maxGene = graph.maxpos
 
     intronsR = set([ (x.minpos, x.maxpos) for x in edgeSet(graph)])
-    nodes   = set([ (x.minpos, x.maxpos) for x in graph.resolvedNodes()])
+    nodes   = set([ (x.minpos, x.maxpos) for x in graph.resolvedNodes()+graph.unresolvedNodes()])
     introns = set([])
     while len( intronsR ) > 0:
         s,e = intronsR.pop()
