@@ -491,7 +491,7 @@ def plotDepth_old( geneM, depths, depthIDs, highlights, outname, de, geneModel, 
         curAxes        = axes([AXIS_LEFT, topLine-height, AXIS_WIDTH, height])
         topLine        = topLine - height - titlePadding         
         GeneView(gene, curAxes).plot()
-        SpliceGraphView(graph, curAxes, xLimits=(minPos, maxPos),includeUnresolved=True ).plot()
+        SpliceGraphView(graph, curAxes, xLimits=(minPos, maxPos),unresolved=True ).plot()
 
     #plot depths
     for i in xrange( len(depths) ):
