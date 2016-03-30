@@ -588,6 +588,9 @@ def procGeneStatsIR( tasks, test_status):
                 IRrat1.append(numpy.mean(f1Intexp/f1expr))
                 IRrat2.append(numpy.mean(f2Intexp/f2expr))
 
+                rat1 = max(1.0, numpy.mean(f1Intexp/f1expr)+EPS)
+                rat2 = max(1.0, numpy.mean(f2Intexp/f2expr)+EPS)
+                
             if False:#biasAdj:
                 f1ExonL = numpy.array([f1ExpV[i][ls:le]*f1LNorm[i]*gene.f1ExonWts[i][k] \
                                            for i in xrange(len(f1LNorm))]).mean(0)
@@ -668,11 +671,11 @@ def procGeneStatsIR( tasks, test_status):
             else:
                 IRTested.append(True)
                 # compute numerators for each value of a
-                numer = [numpy.log2( 2**a + f1Intm * f1Norm  ) \
+                numer = [numpy.log2( 2**a + f1Intm * f1Norm * rat1 ) \
                              for a in aVals ]
 
                 # compute denominators for each value of a
-                denom = [numpy.log2( 2**a + f2Intm * f2Norm ) \
+                denom = [numpy.log2( 2**a + f2Intm * f2Norm * rat2 ) \
                              for a in aVals ]
 
                 IRfc.append( (numpy.log2(f1Intm * f1Norm+EPS)) -  \
