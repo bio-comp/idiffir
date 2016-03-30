@@ -588,8 +588,8 @@ def procGeneStatsIR( tasks, test_status):
                 IRrat1.append(numpy.mean(f1Intexp/f1expr))
                 IRrat2.append(numpy.mean(f2Intexp/f2expr))
 
-                rat1 = max(1.0, numpy.mean(f1Intexp/f1expr)+EPS)
-                rat2 = max(1.0, numpy.mean(f2Intexp/f2expr)+EPS)
+                rat1 = min(1.0, numpy.mean(f1Intexp/f1expr)+EPS)
+                rat2 = min(1.0, numpy.mean(f2Intexp/f2expr)+EPS)
                 
             if False:#biasAdj:
                 f1ExonL = numpy.array([f1ExpV[i][ls:le]*f1LNorm[i]*gene.f1ExonWts[i][k] \
