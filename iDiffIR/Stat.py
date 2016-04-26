@@ -416,11 +416,12 @@ def procGeneStatsIR( tasks, test_status):
                 irJcts2 = numpy.array([ sum( [f2Juncs[i].get(sj, 0) for sj in irJcts] ) for i in xrange(len(f2LNorm))  ])
                 irJcts1A = numpy.array([max(f1Intexp[i], irJcts1[i])+EPS for i in xrange(len(irJcts1))])
                 irJcts2A = numpy.array([max(f2Intexp[i], irJcts2[i])+EPS for i in xrange(len(irJcts2))])
+                ratR1 = numpy.mean(f1Intexp/irJcts1A)
+                ratR2 = numpy.mean(f2Intexp/irJcts2A)
 
-                IRRrat1.append( numpy.mean(f1Intexp/irJcts1A))
-                IRRrat2.append( numpy.mean(f2Intexp/irJcts2A))
-                ratR1 = min(1.0, numpy.mean(f1Intexp/irJcts1A))
-                ratR2 = min(1.0, numpy.mean(f2Intexp/irJcts2A))
+                IRRrat1.append( ratR1 )
+                IRRrat2.append( ratR2 )
+
             if False:#biasAdj:
                 f1ExonL = numpy.array([f1ExpV[i][ls:le]*f1LNorm[i]*gene.f1ExonWts[i][k] \
                                            for i in xrange(len(f1LNorm))]).mean(0)
@@ -502,11 +503,11 @@ def procGeneStatsIR( tasks, test_status):
             else:
                 IRTested.append(True)
                 # compute numerators for each value of a
-                numer = [numpy.log2( 2**a + f1Intm * f1Norm ) \
+                numer = [numpy.log2( 2**a + f1Intm * f1Norm * ratR1) \
                              for a in aVals ]
 
                 # compute denominators for each value of a
-                denom = [numpy.log2( 2**a + f2Intm * f2Norm ) \
+                denom = [numpy.log2( 2**a + f2Intm * f2Norm * ratR2) \
                              for a in aVals ]
 
                 IRfc.append( (numpy.log2(f1Intm * f1Norm+EPS)) -  \
