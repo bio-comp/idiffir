@@ -44,7 +44,6 @@ def parseArgs():
                         help="colon-separated list of directories: PATH-TO-REPLICATE_1[:PATH-TO-REPLICATE_2,...]")
     parser.add_argument('factor2Dirs', type=fileList,
                         help="colon-separated list of directories: PATH-TO-REPLICATE_1[:PATH-TO-REPLICATE_2,...]")
-    
 
     args = parser.parse_args()
     if not validateArgs( args ):

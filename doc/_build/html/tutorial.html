@@ -74,7 +74,7 @@ alignments for false-positive junctions  before beginning
 transcriptome analysis of RNA-Seq.  Assuming your alignments
 are in a file named aligned.bam, run the following to extract
 only uniquely aligned reads:</p>
-<div class="highlight-none"><div class="highlight"><pre>$samtools view -h aligned.bam | grep -we &#39;NH:i:1&#39; -e &#39;^@*&#39; &gt; unique.sam
+<div class="highlight-none"><div class="highlight"><pre><span></span>$samtools view -h aligned.bam | grep -we &#39;NH:i:1&#39; -e &#39;^@*&#39; &gt; unique.sam
 </pre></div>
 </div>
 <p>You may wish to filter out potential false-positive splice junctions
@@ -84,7 +84,7 @@ of false-positive splice junctions may not adversely affect
 identifying differential IR analysis, it is a critical step for
 detecting all other forms of AS (exon skipping, alternative
 acceptor/donor events).</p>
-<div class="highlight-text"><div class="highlight"><pre>Usage: sam_filter.py SAM/BAM-file classifiers [options]
+<div class="highlight-text"><div class="highlight"><pre><span></span>Usage: sam_filter.py SAM/BAM-file classifiers [options]
 
 Removes false-positive spliced alignments from a SAM or BAM file.
 The classifers may be given as a zip-file or as a list of classifier
@@ -104,13 +104,11 @@ Options:
 </pre></div>
 </div>
 </div>
-<div class="section" id="getting-read-depths">
-<h2>Getting read depths<a class="headerlink" href="#getting-read-depths" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="creating-indexed-sorted-bam-files">
-<h3>Creating indexed, sorted BAM files<a class="headerlink" href="#creating-indexed-sorted-bam-files" title="Permalink to this headline">¶</a></h3>
+<h2>Creating indexed, sorted BAM files<a class="headerlink" href="#creating-indexed-sorted-bam-files" title="Permalink to this headline">¶</a></h2>
 <p>If your reads are in the SAM format, you can convert it to a indexed,
 sorted BAM file using <strong class="program">convertSam.py</strong>.</p>
-<div class="highlight-text"><div class="highlight"><pre>usage: convertSam.py [-h] [-o BAMFILE] [-p PROCS] [-m MEMORY] [-v] samfile
+<div class="highlight-text"><div class="highlight"><pre><span></span>usage: convertSam.py [-h] [-o BAMFILE] [-p PROCS] [-m MEMORY] [-v] samfile
 
 Generate sorted BAM and index files for given SAM file
 
@@ -132,49 +130,15 @@ optional arguments:
 </div>
 <p>If your alignments are in a sorted BAM file, an index can be
 generated using:</p>
-<div class="highlight-none"><div class="highlight"><pre>$samtools index &lt;BAMFILE&gt;
+<div class="highlight-none"><div class="highlight"><pre><span></span>$samtools index &lt;BAMFILE&gt;
 </pre></div>
 </div>
 <p>Both methods will produce .bai file, indicating that the BAM file
 has been indexed.</p>
 </div>
-<div class="section" id="getting-chromosomal-read-depths">
-<h3>Getting chromosomal read depths<a class="headerlink" href="#getting-chromosomal-read-depths" title="Permalink to this headline">¶</a></h3>
-<p>Now we are prepared to generate chromosomal read depths from the
-alignments using <strong class="program">getDepths.py</strong>.</p>
-<div class="highlight-text"><div class="highlight"><pre>usage: getDepths.py [-h] [-o OUTDIR] [-v] bamfile_in
-
-Get chromosomal read depths and junctions
-
-positional arguments:
-  bamfile_in            Name of sorted, indexed BAM file
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -o OUTDIR, --output-dir OUTDIR
-                        output file directory name
-  -v, --verbose         verbose output
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p>It is <em>strongly</em> recommended to use a clear naming system for
-the output directories (<strong>-o</strong> option) generated from
-<strong class="program">getDepths.py</strong>.  For instance if you have RNA-seq
-between an wildtype and mutant with 2 replicates,
-you may want to use a naming convention such as:</p>
-<div class="last highlight-none"><div class="highlight"><pre>$getDepths.py -o wt_rep1_depths wt_rep1/filtered.bam
-$getDepths.py -o wt_rep2_depths wt_rep2/filtered.bam
-$getDepths.py -o mt_rep1_depths mt_rep1/filtered.bam
-$getDepths.py -o mt_rep2_depths mt_rep2/filtered.bam
-</pre></div>
-</div>
-</div>
-</div>
-</div>
 <div class="section" id="running-idiffir">
 <h2>Running <strong>iDiffIR</strong><a class="headerlink" href="#running-idiffir" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-text"><div class="highlight"><pre>$ idiffir.py --help
+<div class="highlight-text"><div class="highlight"><pre><span></span>$ idiffir.py --help
 usage: idiffir.py [-h] [-v] [-n] [-l FACTORLABEL FACTORLABEL] [-o OUTDIR] [-s]
                   [-k KRANGE KRANGE] [-c COVERAGE] [-d DEXPTHRESH]
                   [-f FDRLEVEL] [-g GRAPHDIRS] [-m {BF,BH,QV}] [-e {IR,SE}]
@@ -221,7 +185,7 @@ optional arguments:
 <p>While <strong>iDiffIR</strong> offers many options, default values should work
 for most cases.  Using the above naming convention, a way to run
 <strong>iDiffIR</strong> would be:</p>
-<div class="highlight-none"><div class="highlight"><pre>$idiffir.py -l Mutant Wildtype -o my_result my_genome.gff mt_rep1_depths:mt_rep2_depths wt_rep1_depths:wt_rep2_depths
+<div class="highlight-none"><div class="highlight"><pre><span></span>$idiffir.py -l Mutant Wildtype -o my_result my_genome.gff mt_rep1.bam:mt_rep2.bam:mt_rep3.bam wt_rep1.bam:wt_rep2.bam:wt_rep3.bam
 </pre></div>
 </div>
 <p>The <strong>-l</strong> option provides titles for the reads and will be displayed
@@ -236,7 +200,7 @@ be necessary.</p>
 <div class="section" id="interpreting-idiffir-output">
 <h2>Interpreting iDiffIR output<a class="headerlink" href="#interpreting-idiffir-output" title="Permalink to this headline">¶</a></h2>
 <p><strong>iDiffIR</strong> builds an output directory as follows:</p>
-<div class="highlight-python"><div class="highlight"><pre>$ tree my_result
+<div class="highlight-python"><div class="highlight"><pre><span></span>$ tree my_result
   my_result
   |-- figures
   |   |-- gene1.pdf
