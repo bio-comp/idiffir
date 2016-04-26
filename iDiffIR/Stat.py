@@ -503,11 +503,11 @@ def procGeneStatsIR( tasks, test_status):
             else:
                 IRTested.append(True)
                 # compute numerators for each value of a
-                numer = [numpy.log2( 2**a + f1Intm * f1Norm * ratR1) \
+                numer = [numpy.log2( 2**a + f1Intm * f1Norm ) * ratR1\
                              for a in aVals ]
 
                 # compute denominators for each value of a
-                denom = [numpy.log2( 2**a + f2Intm * f2Norm * ratR2) \
+                denom = [numpy.log2( 2**a + f2Intm * f2Norm ) * ratR2 \
                              for a in aVals ]
 
                 IRfc.append( (numpy.log2(f1Intm * f1Norm+EPS)) -  \
