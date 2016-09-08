@@ -13,7 +13,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#    Author: Michael Hamilton, Colorado State University, 2013
+#    Author: Michael Hamilton, Colorado State University, 2016
 #    Contact: <hamiltom@cs.colostate.edu>
 """Statistical functions for **iDiffIR**
 
