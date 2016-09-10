@@ -813,8 +813,7 @@ def procGeneStatsSE( tasks, test_status):
                 f2Coverage = numpy.sum(f2SER > 0 )/float(len(f2SER))
 
                 # check if event has read coverage
-                if f1Coverage < nspace.cverage and f2Coverage < nspace.coverage:
-
+                if f1Coverage < nspace.coverage and f2Coverage < nspace.coverage:
                     tested = False
 
             # check if gene is DE and if sufficient read 
