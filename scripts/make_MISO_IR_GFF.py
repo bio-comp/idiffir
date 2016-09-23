@@ -118,7 +118,7 @@ class InferredIntron(object) :
         return self.__str__().__hash__()
 
     def __str__(self) :
-        return "%s,%s,%s" % (self.chrom, self.minpos, self.maxpos, self.strand)
+        return "%s,%d,%d,%s" % (self.chrom, self.minpos, self.maxpos, self.strand)
 
 def getGraphIntrons(graph) :
     """Uses a splice graph to infer all the introns in a gene."""
