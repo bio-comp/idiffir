@@ -157,6 +157,8 @@ if errStrings :
 outStream = open(opts.outfile, 'w')
 geneModel = loadGeneModels(opts.model, verbose=opts.verbose, alltypes=True)
 
+irs = 0
+ies = 0
 for chrm in geneModel.getChromosomes():
     if opts.verbose: sys.stderr.write('Processing genes from chromosome: %s\n' % chrm )
     indicatorG = ProgressIndicator(10000, description=' genes', verbose=opts.verbose)
@@ -172,13 +174,15 @@ for chrm in geneModel.getChromosomes():
         # get introns from gene models
         irGM, ieGM = getGraphIntrons(geneGraph)
         writeIntrons( g, irGM, 'K', outStream )
-        #writeIntrons( g, ieGM, 'P', outStream )
+        writeIntrons( g, ieGM, 'P', outStream )
 
-    
+        irs += len(irGM)
+        ies += len(ieGM)
+        
     if opts.verbose : 
         indicatorG.finish()
         sys.stderr.write('%d genes\n' % indicatorG.ctr)
-    
+        sys.stderr.write('Found %d retained introns and %d excised introns\n' % (irs, ies)) 
 outStream.flush()
 outStream.close()
 
