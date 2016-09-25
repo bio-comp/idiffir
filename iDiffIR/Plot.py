@@ -408,6 +408,24 @@ def plotResults(geneRecords, labels, nspace, geneModel, useLog=True, odir=os.get
                         os.path.join(odir,gene.gid+'.pdf'), useLog, 
                         geneModel, nspace.shrink_introns )
 
+def plotList(geneRecords, geneDict, labels, nspace, geneModel, useLog=True, odir=os.getcwd()):
+     for gene in geneRecords:
+         if gene.gid.lower() not in geneDict: continue
+         highlights = []
+         for s,e in geneDict[gene.gid.lower()]:
+             highlights.append((s-gene.minpos, e-gene.minpos))
+
+         if True:
+             f1Depths, f2Depths, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene, 
+                                                                            nspace.factor1bamfiles, 
+                                                                            nspace.factor2bamfiles 
+                                                                        )
+             depths = f1Depths.tolist() + f2Depths.tolist()
+             plotDepth( gene, depths, labels,
+                        highlights,  
+                        os.path.join(odir,gene.gid+'.pdf'), useLog, 
+                        geneModel, nspace.shrink_introns )
+             
 def plotResultsSE(geneRecords, labels, nspace, geneModel, useLog=True, odir=os.getcwd()):
      for gene in geneRecords:
          if not gene.SEGTested: continue
