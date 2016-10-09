@@ -410,9 +410,9 @@ def plotResults(geneRecords, labels, nspace, geneModel, useLog=True, odir=os.get
 
 def plotList(geneRecords, geneDict, labels, nspace, geneModel, useLog=True, odir=os.getcwd()):
      for gene in geneRecords:
-         if gene.gid.lower() not in geneDict: continue
+         if gene.gid.lower()[:-1] not in geneDict: continue
          highlights = []
-         for s,e in geneDict[gene.gid.lower()]:
+         for s,e in geneDict[gene.gid.lower()[:-1]]:
              highlights.append((s-gene.minpos, e-gene.minpos))
 
          if True:

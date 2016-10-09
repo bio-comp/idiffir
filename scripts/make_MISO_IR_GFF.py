@@ -120,9 +120,8 @@ class InferredIntron(object) :
     def __str__(self) :
         return "%s,%d,%d,%s" % (self.chrom, self.minpos, self.maxpos, self.strand)
 
-def getGraphIntrons(graph) :
+def getGraphIntrons(graph, chrom) :
     """Uses a splice graph to infer all the introns in a gene."""
-    chrom    = graph.chromosome
     strand   = graph.strand
     resIR    = set([ ])
     resIE    = set([ ])
@@ -166,13 +165,14 @@ for chrm in geneModel.getChromosomes():
     genes.sort()
 
     for g in genes :
+        chrom = g.gffString().split('\t')[0]
         if opts.verbose : indicatorG.update()
 
         geneGraph = makeSpliceGraph(g)
         geneGraph.annotate()
 
         # get introns from gene models
-        irGM, ieGM = getGraphIntrons(geneGraph)
+        irGM, ieGM = getGraphIntrons(geneGraph, chrom)
         writeIntrons( g, irGM, 'K', outStream )
         writeIntrons( g, ieGM, 'P', outStream )
 
@@ -182,7 +182,8 @@ for chrm in geneModel.getChromosomes():
     if opts.verbose : 
         indicatorG.finish()
         sys.stderr.write('%d genes\n' % indicatorG.ctr)
-        sys.stderr.write('Found %d retained introns and %d excised introns\n' % (irs, ies)) 
+if opts.verbose : 
+    sys.stderr.write('Found %d retained introns and %d excised introns\n' % (irs, ies)) 
 outStream.flush()
 outStream.close()
 
