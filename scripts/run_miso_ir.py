@@ -4,7 +4,7 @@ from argparse import ArgumentParser, ArgumentTypeError
 
 GFF_CMD   = 'make_MISO_IR_GFF.py -m %s -o %s'
 INDEX_CMD = 'index_gff --index %s %s'
-RUN_CMD   = 'miso --run %s %s --output-dir %s --read-len %d -p %d'
+RUN_CMD   = 'miso --run %s %s --prefilter --output-dir %s --read-len %d -p %d'
 COMP_CMD  = 'compare_miso --compare-samples %s %s %s'
 def parseArgs():
     """Parse command line arguments
