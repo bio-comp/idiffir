@@ -33,28 +33,7 @@ from iDiffIR.BamfileIO import *
 from numpy.linalg import norm
 EPS=10**-5
 
-class Results(object):
-    """
-    Container for results
-    """
-    
-    def __init__(self, nspace):
-        self.nspace = nspace
 
-    def addLibrarySizes(f1LibSizes, f2LibSizes):
-        self.f1LibSizes = f1LibSizes
-        self.f2LibSizes = f2LibSizes
-
-
-def rmsip( geneRecords, f1Dict, f2Dict ):
-    cosL = []
-    for gene in geneRecords:
-        v1 = f1Dict[gene.gid][0]
-        v2 = f2Dict[gene.gid][0]
-        if numpy.sum(v1) == 0 or numpy.sum(v2) == 0: continue
-        cosL.append( numpy.dot( v1, v2) / ( numpy.linalg.norm( v1 ) *  numpy.linalg.norm( v2) ))
-    return numpy.sqrt( numpy.sum( [ x**2 for x in cosL ]) / float(len(cosL)) )
-        
 def removePositionalBias( geneRecords, f1Dict, f2Dict, numClusts, verbose=True ):
     """Removes primer bias by smoothing read depths.
 
@@ -473,8 +452,8 @@ def procGeneStatsIR( tasks, test_status):
             #    tested = False
             #if numpy.sum(f1LSS) == 0 or numpy.sum(f1RSS) == 0 or numpy.sum(f2LSS) == 0 or numpy.sum(f2RSS) == 0:
             #    tested = False
-            if sum(irJcts1) < len(f1LNorm) or sum(irJcts2) < len(f2LNorm):
-                tested = False
+#            if sum(irJcts1) < len(f1LNorm) or sum(irJcts2) < len(f2LNorm):
+#                tested = False
             if max(f1Coverage, f2Coverage) < nspace.coverage:
                 tested = False
             # check if gene is DE and if sufficient read 

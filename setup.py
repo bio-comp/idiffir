@@ -15,7 +15,7 @@ SCRIPTS  = ['scripts/idiffir.py',
             'scripts/make_MISO_AS_GFF.py',
             'scripts/get_gene_expression.py',
             'scripts/idiffir_plotter.py',
-            'scripts/run_miso_ir.py            
+            'scripts/run_miso_ir.py'            
             ]
 
 PACKAGES = [ 'iDiffIR'
