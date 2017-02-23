@@ -21,11 +21,11 @@
 from iDiffIR.IntronModel import *
 
 from iDiffIR.BamfileIO import *
-from SpliceGrapher.formats.fasta import *
+from iDiffIR.SpliceGrapher.formats.fasta import *
 from argparse import ArgumentParser, ArgumentTypeError
 import os, sys, numpy
-from SpliceGrapher.shared.utils      import *
-from SpliceGrapher.formats.loader import loadGeneModels
+from iDiffIR.SpliceGrapher.shared.utils      import *
+from iDiffIR.SpliceGrapher.formats.loader import loadGeneModels
 
 
 

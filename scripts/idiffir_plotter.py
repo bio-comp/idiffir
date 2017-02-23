@@ -24,10 +24,10 @@ import matplotlib
 matplotlib.use('agg')
 from iDiffIR.Plot import *
 import os, sys, numpy, pysam
-from SpliceGrapher.formats.fasta import *
+from iDiffIR.SpliceGrapher.formats.fasta import *
 from argparse import ArgumentParser, ArgumentTypeError
-from SpliceGrapher.shared.utils      import *
-from SpliceGrapher.formats.loader import loadGeneModels
+from iDiffIR.SpliceGrapher.shared.utils      import *
+from iDiffIR.SpliceGrapher.formats.loader import loadGeneModels
 from iDiffIR.IntronModel import *
 
 def fileList( raw ):

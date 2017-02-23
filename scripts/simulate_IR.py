@@ -24,13 +24,13 @@ Generate differential isoform reads
 .. moduleauthor:: Mike Hamilton <hamiltom@cs.colostate.edu>  
 """
 
-from SpliceGrapher.shared.utils        import *
-from SpliceGrapher.shared.GeneModelConverter import *
-from SpliceGrapher.formats.FastaLoader import FastaLoader
-from SpliceGrapher.formats.GeneModel   import *
-from SpliceGrapher.formats.fasta       import FastaRecord
+from iDiffIR.SpliceGrapher.shared.utils        import *
+from iDiffIR.SpliceGrapher.shared.GeneModelConverter import *
+from iDiffIR.SpliceGrapher.formats.FastaLoader import FastaLoader
+from iDiffIR.SpliceGrapher.formats.GeneModel   import *
+from iDiffIR.SpliceGrapher.formats.fasta       import FastaRecord
 
-from SpliceGrapher.formats.loader import loadGeneModels
+from iDiffIR.SpliceGrapher.formats.loader import loadGeneModels
 
 from optparse import OptionParser
 import os, sys, warnings, numpy, itertools, random, math

@@ -18,10 +18,10 @@
 #
 import matplotlib
 matplotlib.use('agg')
-from SpliceGrapher.shared.utils       import *
-from SpliceGrapher.plot.PlotterConfig import *
-from SpliceGrapher.view.ViewerUtils   import *
-from SpliceGrapher.plot.PlotUtils import *
+from iDiffIR.SpliceGrapher.shared.utils       import *
+from iDiffIR.SpliceGrapher.plot.PlotterConfig import *
+from iDiffIR.SpliceGrapher.view.ViewerUtils   import *
+from iDiffIR.SpliceGrapher.plot.PlotUtils import *
 from sys import maxint as MAXINT
 from itertools import chain
 import os,sys

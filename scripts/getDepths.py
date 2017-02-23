@@ -21,7 +21,7 @@
 import sys, os, numpy, pysam, gzip
 from subprocess import Popen, PIPE
 from argparse import ArgumentParser
-from SpliceGrapher.shared.utils      import *
+from iDiffIR.SpliceGrapher.shared.utils      import *
 
 
 MATCH    = 0   #M

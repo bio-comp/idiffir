@@ -13,7 +13,6 @@ use --home=/PATH/TO/LOCAL/LIBRARY
 Required Packages
 -------------------------
 
-- SpliceGrapher
 - SciPy
 - Pysam
 - matplotlib

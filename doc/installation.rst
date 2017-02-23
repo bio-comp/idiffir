@@ -6,7 +6,6 @@ Required packages
 =================
 The following packages are required for iDiffIR core functions.
 
-- SpliceGrapher_ 
 - SciPy_ 
 - Pysam_ 
 - matplotlib_ 
@@ -39,7 +38,6 @@ Install
 
       
 
-.. _SpliceGrapher: http://splicegrapher.sourceforge.net/
 .. _SciPy: http://www.scipy.org/scipylib/index.html
 .. _Pysam: https://code.google.com/p/pysam/
 .. _matplotlib: http://matplotlib.org/

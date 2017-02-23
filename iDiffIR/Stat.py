@@ -14,12 +14,12 @@
 #
 #
 #    Author: Michael Hamilton, Colorado State University, 2016
-#    Contact: <hamiltom@cs.colostate.edu>
+#    Contact: <mike.hamilton7@gmail.com>
 """Statistical functions for **iDiffIR**
 
 """
 
-from SpliceGrapher.SpliceGraph       import *
+from iDiffIR.SpliceGrapher.SpliceGraph       import *
 from scipy.stats import t,gmean, hmean, sem, ttest_1samp
 from scipy.stats import norm as sNorm
 #from scipy.stats import variance as coeffVar
@@ -421,8 +421,8 @@ def procGeneStatsIR( tasks, test_status):
                                            for i in xrange(len(f2LNorm))]).mean(0)
 
             #intserrs.append(serr)
-            f1Intm = numpy.mean(f1Int)
-            f2Intm = numpy.mean(f2Int)
+            f1Intm = numpy.mean(f1Int) 
+            f2Intm = numpy.mean(f2Int) 
 
             f1IntmR = numpy.mean(f1IntR)
             f2IntmR = numpy.mean(f2IntR)
@@ -482,12 +482,12 @@ def procGeneStatsIR( tasks, test_status):
             else:
                 IRTested.append(True)
                 # compute numerators for each value of a
-                numer = [numpy.log2( 2**a + f1Intm * f1Norm ) * ratR1\
-                             for a in aVals ]
+                numer = [numpy.log2( 2**a + f1Intm * f1Norm )
+                         for a in aVals ]
 
                 # compute denominators for each value of a
-                denom = [numpy.log2( 2**a + f2Intm * f2Norm ) * ratR2 \
-                             for a in aVals ]
+                denom = [numpy.log2( 2**a + f2Intm * f2Norm )
+                         for a in aVals ]
 
                 IRfc.append( (numpy.log2(f1Intm * f1Norm+EPS)) -  \
                                   (numpy.log2(f2Intm * f2Norm+EPS)))
@@ -499,7 +499,7 @@ def procGeneStatsIR( tasks, test_status):
                 IRFC.append( [(numer[i] - denom[i]) / (cosL + cosR) \
                                    for i in xrange(len(numer))])
 
-                IRstat.append( [ ((numer[i] - denom[i] ) / (cosL + cosR))/gene.serr \
+                IRstat.append( [ (((numer[i] - denom[i]) * numpy.log2(e-s+1)) / (cosL + cosR))#/gene.serr \
                                   for i in xrange(len(numer))])
 
 

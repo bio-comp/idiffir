@@ -19,9 +19,9 @@
 #
 import os, sys, numpy
 numpy.seterr(invalid='raise')
-from SpliceGrapher.formats.GeneModel import *
-from SpliceGrapher.SpliceGraph       import *
-from SpliceGrapher.shared.GeneModelConverter import *
+from iDiffIR.SpliceGrapher.formats.GeneModel import *
+from iDiffIR.SpliceGrapher.SpliceGraph       import *
+from iDiffIR.SpliceGrapher.shared.GeneModelConverter import *
 from multiprocessing import Process, Queue, current_process, freeze_support                                                                           
 
 class IntronModel(object):

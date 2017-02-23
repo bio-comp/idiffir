@@ -16,18 +16,24 @@ SCRIPTS  = ['scripts/idiffir.py',
             'scripts/get_gene_expression.py',
             'scripts/idiffir_plotter.py',
             'scripts/run_miso_ir.py'            
-            ]
+]
 
-PACKAGES = [ 'iDiffIR'
-             ]
+PACKAGES = [ 'iDiffIR',
+             'iDiffIR.SpliceGrapher',
+             'iDiffIR.SpliceGrapher.formats',
+             'iDiffIR.SpliceGrapher.plot',
+             'iDiffIR.SpliceGrapher.predict',
+             'iDiffIR.SpliceGrapher.shared',
+             'iDiffIR.SpliceGrapher.statistics',
+             'iDiffIR.SpliceGrapher.view',
+]
 
 
-REQUIRES = ['SpliceGrapher',
-            'scipy',
+REQUIRES = ['scipy',
             'numpy',
             'matplotlib',
             'pysam'
-            ]
+]
 
 # check for dependencies if we're building or installing
 installable = True
@@ -47,7 +53,7 @@ setup(name='iDiffIR',
       version='0.3.1',
       description='Identifying differential intron retention from RNA-seq',
       author='Michael Hamilton',
-      author_email='hamiltom@cs.colostate.edu',
+      author_email='mike.hamilton7@gmail.com',
       url='combi.cs.colostate.edu/idiffir',
       packages=PACKAGES,
       requires=REQUIRES,

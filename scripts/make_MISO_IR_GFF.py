@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 """Program for generating miso IR examples."""
-from SpliceGrapher.shared.utils        import *
-from SpliceGrapher.shared.GeneModelConverter import *
-from SpliceGrapher.predict.SpliceSite  import* 
-from SpliceGrapher.formats.GeneModel   import *
-from SpliceGrapher.SpliceGraph         import *
-from SpliceGrapher.formats.loader import loadGeneModels
+from iDiffIR.SpliceGrapher.shared.utils        import *
+from iDiffIR.SpliceGrapher.shared.GeneModelConverter import *
+from iDiffIR.SpliceGrapher.predict.SpliceSite  import* 
+from iDiffIR.SpliceGrapher.formats.GeneModel   import *
+from iDiffIR.SpliceGrapher.SpliceGraph         import *
+from iDiffIR.SpliceGrapher.formats.loader import loadGeneModels
 
 from glob     import glob
 from optparse import OptionParser
