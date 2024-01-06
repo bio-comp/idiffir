@@ -29,7 +29,7 @@ Main iDiffIR script
 
 :author: Mike Hamilton
 """
-import os, sys, numpy, pysam
+import os, sys, numpy, pysam, logging
 from iDiffIR.IntronModel import *
 from iDiffIR.Plot import *
 from iDiffIR.Stat import *
@@ -67,8 +67,17 @@ def parseArgs():
 
     """
     parser = ArgumentParser(description='Identify differentially expressed introns.')
-    parser.add_argument('-v', '--verbose',dest='verbose', action='store_true', 
-                        default=False, help="verbose output [default is quiet running]")
+    parser.add_argument(
+        '-d', '--debug',
+        help="Print lots of debugging statements",
+        action="store_const", dest="loglevel", const=logging.DEBUG,
+        default=logging.WARNING,
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        help="Be verbose",
+        action="store_const", dest="loglevel", const=logging.INFO,
+    )
     parser.add_argument('-n', '--noplot', dest='noplot', action='store_true', 
                         default=False, help="Do not plot figures [default is to make figures]")
 
@@ -118,6 +127,7 @@ def parseArgs():
     
 
     args = parser.parse_args()
+    logging.basicConfig(level=args.loglevel)
     if not validateArgs( args ):
         raise Exception("Argument Errors: check arguments and usage!")
     return args
@@ -138,7 +148,7 @@ def _validateBamfiles(bamfileList):
     bamfilesOK = True
     for f in bamfileList:
         if not os.path.exists(f):
-            sys.stderr.write('**bamfile %s not found\n' % f )
+            logging.error('**bamfile %s not found\n' % f )
             countFilesOK = False
     return bamfilesOK
     
@@ -170,12 +180,12 @@ def validateArgs( nspace ):
 
     # gene model
     if not os.path.isfile(nspace.genemodel):
-        sys.stderr.write('**Genene model file %s not found\n' % nspace.genemodel )
+        logging.error('**Genene model file %s not found\n' % nspace.genemodel )
         geneModelOK = False
 
     # check event coverage parameter
     if nspace.coverage < 0 or nspace.coverage > 1:
-        sys.stderr.write( 'Feasible values of coverage filter `-c`, `--coverage`: 0 <= c <= 1\n')
+        logging.error( 'Feasible values of coverage filter `-c`, `--coverage`: 0 <= c <= 1\n')
         cParamOK = False
 
     
@@ -265,7 +275,7 @@ def runIntron(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
     #        plotGBCs( f1Codes, f2Codes, f1Cnt, f2Cnt, rmi, nspace.outdir)
     aVals = range(nspace.krange[0], nspace.krange[1]+1)
     # compute differential IR statistics
-    writeStatus('Computing statistics', nspace.verbose)
+    logging.info('Computing statistics', nspace.verbose)
     computeIRStatistics( geneRecords, nspace, validChroms, f1LNorm, f2LNorm )
 
     # create a summary dictionary of results
