@@ -158,14 +158,14 @@ unresolved = 0
 for f in fileList :
     indicator.update()
     graph         = getFirstGraph(f)
-    hasUnresolved = hasUnresolvedNodes(graph.nodeDict.values())
+    hasUnresolved = hasUnresolvedNodes(list(graph.nodeDict.values()))
     if not (opts.allgenes or hasUnresolved) : continue
 
     if hasUnresolved :
         # update parent/child relationships for
         # unresolved nodes and "pretend" they are predicted
         unresolved += 1
-        nodes = graph.nodeDict.values()
+        nodes = list(graph.nodeDict.values())
         for n in nodes :
             if not n.isUnresolved() : continue
 
@@ -216,7 +216,7 @@ for c in chromList :
         indicator.update()
         graph   = graphs[c][gid]
         reverse = (graph.strand == '-')
-        nodes   = graph.nodeDict.values()
+        nodes   = list(graph.nodeDict.values())
         chrom   = graph.chromosome
 
         # Grab the DNA sequence for every distinct exon
@@ -232,14 +232,14 @@ for c in chromList :
         try :
             paths = getAllPaths(graph, limit=opts.seqlimit)
             paths.sort()
-        except ValueError, ve :
+        except ValueError as ve :
             tooLong += 1
             continue
 
         isoDict    = graph.isoformDict()
         isoStrings = {}
         # Map node strings back to isoform name
-        for k in isoDict.keys() :
+        for k in list(isoDict.keys()) :
             nodes = isoDict[k]
             key   = nodeString(nodes)
             isoStrings[key] = k

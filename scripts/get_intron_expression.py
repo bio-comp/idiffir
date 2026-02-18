@@ -135,7 +135,7 @@ def loadData( nspace, geneModel ):
             genes     = geneModel.getGeneRecords(chrm)
             genes.sort()
 
-            for i in xrange(len(factorfiles)):
+            for i in range(len(factorfiles)):
                 fname = os.path.join(factorfiles[i], 
                                      '%s.cnt.gz' % chrm) 
                 if not os.path.exists(fname):
@@ -144,7 +144,7 @@ def loadData( nspace, geneModel ):
                 itr = fasta_itr( fname )
                 if nspace.verbose:
                     sys.stderr.write("Reading depths from %s\n" % ( fname ) )
-                rec = itr.next() 
+                rec = next(itr) 
                 key = rec.header
                 depths = numpy.array( rec.sequence.strip().split(), int )
                 counter = 0
@@ -192,13 +192,13 @@ def main():
                                                                nspace.factor2bamfiles 
                                                            )
         F1C = numpy.array([ [(f1EV[i][s:(e+1)]).mean() \
-                             for s,e in gene.exonsI] for i in xrange(len( f1EV))]).mean(0)
+                             for s,e in gene.exonsI] for i in range(len( f1EV))]).mean(0)
         F2C = numpy.array([ [(f2EV[i][s:(e+1)]).mean() \
-                             for s,e in gene.exonsI] for i in xrange(len( f2EV))]).mean(0)
+                             for s,e in gene.exonsI] for i in range(len( f2EV))]).mean(0)
         f1depth = numpy.mean(F1C)
         f2depth = numpy.mean(F2C)
         F1I = numpy.array([ [(f1EV[i][s:(e+1)]).mean() \
-                             for s,e in gene.introns] for i in xrange(len( f1EV))]).mean(0)
+                             for s,e in gene.introns] for i in range(len( f1EV))]).mean(0)
         ires1 = [ ]
         ires2 = [ ]
         nr1 = [ ]
@@ -207,25 +207,25 @@ def main():
             s,e = r
             if gene.retained[i]:
                 ires1.append( numpy.array([(f1EV[i][s:(e)]).mean() \
-                                           for i in xrange(len( f1EV))]).mean(0) )
+                                           for i in range(len( f1EV))]).mean(0) )
                 ires2.append( numpy.array([(f2EV[i][s:(e)]).mean() \
-                                           for i in xrange(len( f2EV))]).mean(0) )
+                                           for i in range(len( f2EV))]).mean(0) )
                 IRs.append( (ires1[-1] +  ires2[-1])/2.0) 
             else:
                 nr1.append( numpy.array([(f1EV[i][s:(e)]).mean() \
-                                           for i in xrange(len( f1EV))]).mean(0) )
+                                           for i in range(len( f1EV))]).mean(0) )
                 nr2.append( numpy.array([(f2EV[i][s:(e)]).mean() \
-                                           for i in xrange(len( f2EV))]).mean(0) )
+                                           for i in range(len( f2EV))]).mean(0) )
                 IEs.append( (nr1[-1] +  nr2[-1])/2.0) 
                 
         if len(ires1) > 0:
             ofile.write('%s\t%f\t%f\t%f\t%f\n' % ( gene.gid, f1depth, f2depth, numpy.mean(ires1), numpy.mean(ires2)))
         else:
             ofile.write('%s\t%f\t%f\t-\t-\n' % ( gene.gid, f1depth, f2depth) )
-    print numpy.sum( IRs > 0 )/ float(len(IRs))
-    print numpy.mean(IRs)
-    print numpy.sum( IEs > 0 )/ float(len(IEs))
-    print numpy.mean(IEs)
+    print(numpy.sum( IRs > 0 )/ float(len(IRs)))
+    print(numpy.mean(IRs))
+    print(numpy.sum( IEs > 0 )/ float(len(IEs)))
+    print(numpy.mean(IEs))
     ofile.close()
 
 if __name__ == "__main__":

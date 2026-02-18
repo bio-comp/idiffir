@@ -19,7 +19,7 @@
 from SpliceGrapher.shared.utils import *
 from SpliceGrapher.formats.gtf  import *
 from optparse                   import OptionParser
-from sys import maxint as MAXINT
+from sys import maxsize as MAXINT
 import os,sys,gzip
 
 USAGE = """%prog GTF-file [options]
@@ -39,9 +39,9 @@ parser.add_option('--show-types', dest='showtypes', default=False, help='Outputs
 opts, args = parser.parse_args(sys.argv[1:])
 
 if opts.showtypes :
-    print "Known ENSEMBL source types:"
+    print("Known ENSEMBL source types:")
     for t in ALL_ENSEMBL_SOURCES :
-        print "  ", t
+        print("  ", t)
     sys.exit(0)
 
 if len(args) != 1 :
@@ -88,25 +88,25 @@ indicator.finish()
 # Sort records by chromosome before writing them to GFF3 file
 keys = sorted(chromDict.keys())
 if opts.verbose :
-    print "Stored information for %d chromosomes:" % len(keys)
+    print("Stored information for %d chromosomes:" % len(keys))
     if skipped :
-        print "  skipped the following record types:"
+        print("  skipped the following record types:")
         for k in sorted(skipped.keys()) :
-            print "   %s (%s records)" % (k, commaFormat(skipped[k]))
+            print("   %s (%s records)" % (k, commaFormat(skipped[k])))
 
 for k in keys :
     # Search chromosome for invalid genes
     invalid = False
-    for g in chromDict[k].keys() :
+    for g in list(chromDict[k].keys()) :
         if not chromDict[k][g].valid :
             invalid = True
             break
 
     if opts.verbose : 
         if invalid :
-            print "  chromosome %s: %12d genes (%d invalid **)" % (k, len(chromDict[k]), invalid)
+            print("  chromosome %s: %12d genes (%d invalid **)" % (k, len(chromDict[k]), invalid))
         else :
-            print "  chromosome %s: %12d genes" % (k, len(chromDict[k]))
+            print("  chromosome %s: %12d genes" % (k, len(chromDict[k])))
 
     # Write out entire chromosome
     chromDict[k].writeGFF3(outStream)

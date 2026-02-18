@@ -406,7 +406,7 @@ class Isoform(BaseFeature) :
         result   = []
         # Always sort in ascending order by position
         exonList = sorted(self.exons)
-        for i in xrange(len(exonList)) :
+        for i in range(len(exonList)) :
             exon = exonList[i]
             result.append(exon.gtfString(self.id, self.parent, i+1))
         return result
@@ -589,7 +589,7 @@ class mRNA(Isoform) :
 
         # Always sort in ascending order by position
         cdsList = sorted(self.cds)
-        for i in xrange(len(cdsList)) :
+        for i in range(len(cdsList)) :
             c = cdsList[i]
             result.append(c.gtfString(self.id, self.parent, i+1))
 
@@ -614,7 +614,7 @@ class mRNA(Isoform) :
         minintron = getAttribute('minintron', 2, **args)
         cdsList   = self.sortedCDS()
         result    = []
-        for i in xrange(len(cdsList)) :
+        for i in range(len(cdsList)) :
             cds  = cdsList[i]
             if len(result) > 0 and abs(cds.start() - result[-1].end()) < minintron :
                 prev       = result[-1]
@@ -664,9 +664,9 @@ class Gene(BaseFeature) :
         Returns a list of acceptors for this gene.
         """
         acceptorSet = set()
-        for k in self.isoforms.keys() :
+        for k in list(self.isoforms.keys()) :
             acceptorSet.update(self.isoforms[k].acceptorList())
-        for k in self.mrna.keys() :
+        for k in list(self.mrna.keys()) :
             acceptorSet.update(self.mrna[k].acceptorList())
         return sorted(list(acceptorSet), reverse=(self.strand=='-'))
 
@@ -738,7 +738,7 @@ class Gene(BaseFeature) :
     def detailString(self) :
         result = "%s (%s): %d-%d (len=%d, strand=%s), %d exons/cds, range %d to %d\n" % \
                 (self.id, self.chromosome, self.start(), self.end(), len(self), self.strand, (len(self.exons)+len(self.cds)), self.minpos, self.maxpos)
-        result += '\n  '.join([x.detailString() for x in self.isoforms.values()])
+        result += '\n  '.join([x.detailString() for x in list(self.isoforms.values())])
         return result
 
     def donorList(self) :
@@ -746,9 +746,9 @@ class Gene(BaseFeature) :
         Returns a list of donors for this gene.
         """
         donorSet = set()
-        for k in self.isoforms.keys() :
+        for k in list(self.isoforms.keys()) :
             donorSet.update(self.isoforms[k].donorList())
-        for k in self.mrna.keys() :
+        for k in list(self.mrna.keys()) :
             donorSet.update(self.mrna[k].donorList())
         return sorted(list(donorSet), reverse=(self.strand=='-'))
 
@@ -765,19 +765,19 @@ class Gene(BaseFeature) :
         Returns a list of duples containing start/end positions of introns in this gene.
         """
         result = {}
-        for iid in self.isoforms.keys() :
+        for iid in list(self.isoforms.keys()) :
             exons = self.isoforms[iid].sortedExons()
-            for i in xrange(1,len(exons)) :
+            for i in range(1,len(exons)) :
                 key = (exons[i-1].end(), exons[i].start())
                 result[key] = 1
 
-        for mid in self.mrna.keys() :
+        for mid in list(self.mrna.keys()) :
             cds = self.mrna[mid].sortedExons()
-            for i in xrange(1,len(cds)) :
+            for i in range(1,len(cds)) :
                 key = (cds[i-1].end(), cds[i].start())
                 result[key] = 1
 
-        return result.keys()
+        return list(result.keys())
 
     def getIsoform(self, id) :
         return self.isoforms[id]
@@ -789,13 +789,13 @@ class Gene(BaseFeature) :
         donor-acceptor duples.
         """
         result = {}
-        for iid in self.isoforms.keys() :
+        for iid in list(self.isoforms.keys()) :
             iso   = self.isoforms[iid]
             exons = sorted(iso.exons, reverse=(self.strand=='-'))
-            for i in xrange(1,len(exons)) :
+            for i in range(1,len(exons)) :
                 duple = (exons[i-1].donor(), exons[i].acceptor())
                 result[duple] = 1
-        return result.keys()
+        return list(result.keys())
 
     def gffStrings(self) :
         """Returns a GFF string representation of the gene record plus
@@ -851,7 +851,7 @@ class Gene(BaseFeature) :
 
                 eCtr = 0
                 cCtr = 0
-                for i in xrange(len(allExons)) :
+                for i in range(len(allExons)) :
                     item = allExons[i]
                     if item.featureType == EXON_TYPE :
                         eCtr += 1
@@ -875,12 +875,12 @@ class Gene(BaseFeature) :
     def sortedExons(self) :
         """Returns a list of all exons inferred by the gene model, sorted 5' to 3'."""
         tmpset = set()
-        for iid in self.isoforms.keys() :
+        for iid in list(self.isoforms.keys()) :
             tmpset.update(self.isoforms[iid].sortedExons())
 
         # Avoid returning duplicates:
         stored = set([(e.minpos,e.maxpos) for e in tmpset])
-        for mid in self.mrna.keys() :
+        for mid in list(self.mrna.keys()) :
             tmpset.update([e for e in self.mrna[mid].sortedExons() if (e.minpos,e.maxpos) not in stored])
 
         result = list(tmpset)
@@ -943,7 +943,7 @@ class GeneModel(object) :
 
     def __contains__(self, gene) :
         """Returns true if a gene is in the model; false otherwise."""
-        return self.allGenes.has_key(str(gene))
+        return str(gene) in self.allGenes
 
     def addChromosome(self, start, end, name) :
         """Adds a chromosome to a gene model or updates the end points
@@ -994,8 +994,8 @@ class GeneModel(object) :
         """
         Some feature names include URL characters that we may wish to fix.
         """
-        import urllib
-        revised = urllib.unquote(s)
+        import urllib.request, urllib.parse, urllib.error
+        revised = urllib.parse.unquote(s)
         revised = revised.replace(',','')
         return revised.replace(' ','-')
 
@@ -1005,7 +1005,7 @@ class GeneModel(object) :
         indexed by chromosome and strand.
         """
         result = {}
-        for chrom in self.model.keys() :
+        for chrom in list(self.model.keys()) :
             result[chrom] = self.getKnownAcceptors(chrom, geneFilter)
         return result
 
@@ -1015,20 +1015,20 @@ class GeneModel(object) :
         indexed by chromosome and strand.
         """
         result = {}
-        for chrom in self.model.keys() :
+        for chrom in list(self.model.keys()) :
             result[chrom] = self.getKnownDonors(chrom, geneFilter)
         return result
 
     def getAllGeneIds(self, geneFilter=defaultGeneFilter) :
         """Returns a list of ids for all genes stored."""
-        return [g.id for g in self.allGenes.values() if geneFilter(g)]
+        return [g.id for g in list(self.allGenes.values()) if geneFilter(g)]
 
     def getAllGenes(self, geneFilter=defaultGeneFilter, **args) :
         """Returns a list of all genes stored."""
         verbose   = getAttribute('verbose', False, **args)
         indicator = ProgressIndicator(10000, verbose=verbose)
         result    = []
-        for g in self.allGenes.values() :
+        for g in list(self.allGenes.values()) :
             indicator.update()
             if geneFilter(g) : result.append(g)
         indicator.finish()
@@ -1066,14 +1066,14 @@ class GeneModel(object) :
 
     def getChromosomes(self) :
         """Returns a list of all chromosomes represented in the model."""
-        return self.model.keys()
+        return list(self.model.keys())
 
     def getFeatureList(self, featureType) :
         """
         Returns a list of all features of the given type found in all genes.
         """
         result = []
-        for gene in self.allGenes.values() :
+        for gene in list(self.allGenes.values()) :
             fList = gene.getFeatureList(featureType)
             if fList :
                 result += fList
@@ -1093,7 +1093,7 @@ class GeneModel(object) :
         """
         Returns a gene with the given id if it exists.
         """
-        for k in self.model.keys() :
+        for k in list(self.model.keys()) :
             try :
                 return self.model[k][id.upper()]
             except KeyError :
@@ -1109,7 +1109,7 @@ class GeneModel(object) :
         try :
             geneList  = self.sorted[chrom.lower()][strand]
         except KeyError :
-            raise KeyError('Key %s not found in %s' % (chrom.lower(), ','.join(self.sorted.keys())))
+            raise KeyError('Key %s not found in %s' % (chrom.lower(), ','.join(list(self.sorted.keys()))))
 
         (logene,higene) = self.binarySearchGenes(geneList, startPos, 0, len(geneList)-1)
 
@@ -1132,7 +1132,7 @@ class GeneModel(object) :
             #return [g for g in self.model[chrom.lower()].values() if geneFilter(g)]
             indicator = ProgressIndicator(10000, verbose=verbose)
             result    = []
-            for g in self.model[chrom.lower()].values() :
+            for g in list(self.model[chrom.lower()].values()) :
                 indicator.update()
                 if geneFilter(g) : result.append(g)
             indicator.finish()
@@ -1145,7 +1145,7 @@ class GeneModel(object) :
         Returns a list of all genes represented within a given chromosome.
         """
         try :
-            return self.model[chrom.lower()].keys()
+            return list(self.model[chrom.lower()].keys())
         except KeyError :
             return []
 
@@ -1192,7 +1192,7 @@ class GeneModel(object) :
             parts  = fullString.split(d)
             result = []
             # most-to-least specific: 'a-b-c-d' --> ['a-b-c', 'a-b', 'a'] or 'a,b,c' --> ['a,b', 'a']
-            for i in xrange(len(parts)-1,0,-1) :
+            for i in range(len(parts)-1,0,-1) :
                 result.append(d.join(parts[:i]))
             return result
 
@@ -1244,7 +1244,7 @@ class GeneModel(object) :
         isoform identifiers.  Each gene is associated with a set of isoform ids."""
         result = {}
         for g in self.getAllGenes(**args) :
-            result[g.id] = set(g.mrna.keys() + g.isoforms.keys())
+            result[g.id] = set(list(g.mrna.keys()) + list(g.isoforms.keys()))
         return result
 
     def loadGeneModel(self, gffRecords, **args) :
@@ -1432,7 +1432,7 @@ class GeneModel(object) :
             elif recType in [MRNA_TYPE, PSEUDOTRANS_TYPE] :
                 if chrName not in self.model :
                     conditionalException("line %d: mRNA with missing chromosome dictionary %s (known: %s)" \
-                            % (lineCtr, chrName, ','.join(self.model.keys())))
+                            % (lineCtr, chrName, ','.join(list(self.model.keys()))))
 
                 if not ID_FIELD in annots :
                     conditionalException("line %d: mRNA with missing ID" % lineCtr)
@@ -1470,10 +1470,10 @@ class GeneModel(object) :
             elif recType in CDS_TYPES :
                 if chrName not in self.model :
                     conditionalException("line %d: %s has unrecognized chromosome: %s (known: %s)" % \
-                            (lineCtr, recType, chrName, ','.join(self.model.keys())))
+                            (lineCtr, recType, chrName, ','.join(list(self.model.keys()))))
                 if chrName not in self.mRNAforms :
                     conditionalException("line %d: %s has unrecognized chromosome: %s (known: %s)" % \
-                            (lineCtr, recType, chrName, ','.join(self.mRNAforms.keys())))
+                            (lineCtr, recType, chrName, ','.join(list(self.mRNAforms.keys()))))
 
                 mrna = self.getParent(annots[PARENT_FIELD], chrName, searchGenes=False)
                 if not mrna :
@@ -1521,7 +1521,7 @@ class GeneModel(object) :
                 gene = self.model[chrName][parent]
                 try :
                     gene.addFeature(BaseFeature(recType, startPos, endPos, chrName, strand, annots))
-                except Exception,e :
+                except Exception as e :
                     conditionalException("line %d: %s" % (lineCtr, e))
 
         indicator.finish()
@@ -1534,10 +1534,10 @@ class GeneModel(object) :
 
     def makeSortedModel(self) :
         self.sorted = {}
-        for chrom in self.model.keys() :
+        for chrom in list(self.model.keys()) :
             self.sorted[chrom] = {}
             # Get a list of gene objects sorted by position
-            geneList = self.model[chrom].values()
+            geneList = list(self.model[chrom].values())
             geneList.sort()
             # Note: we accept unknown ('.') strands, but it's
             # up to calling routines to ask for them specifically

@@ -54,7 +54,7 @@ class IntronModel(object):
         self.exonsI = [(s-self.minpos, e-self.minpos) for s,e in exonsI]
     
     def __cmp__(self, other):
-        print other.gid
+        print(other.gid)
         return cmp(self.gid, other.gid)
 
     def __eq__(self, other):
@@ -430,7 +430,7 @@ def makeModels( geneModel, outdir, verbose=False, graphDirs=None, graphDirsOnly=
                   List of reduced models
 
         """
-        for i in xrange(len(pModels)):             
+        for i in range(len(pModels)):             
             indicator.update()
 
     # run parallel
@@ -443,14 +443,14 @@ def makeModels( geneModel, outdir, verbose=False, graphDirs=None, graphDirsOnly=
             task_queue.put( clusterTuple )
             nTasks += 1
 
-        for _ in xrange(procs):
+        for _ in range(procs):
             Process(target=procCluster,
                     args=(task_queue, status_queue)).start()
 
-        for _ in xrange(procs):
+        for _ in range(procs):
             task_queue.put('STOP')
 
-        for _ in xrange(nTasks):
+        for _ in range(nTasks):
             processedModels = status_queue.get()
             models.extend(processedModels)
             updateIndicator(processedModels)

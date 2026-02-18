@@ -20,7 +20,7 @@ Module for manipulating SAM-formatted files.
 """
 from SpliceGrapher.shared.utils import ProgressIndicator, ezopen, getAttribute
 from SpliceGrapher.shared.ShortRead import *
-from sys import maxint as MAXINT
+from sys import maxsize as MAXINT
 import sys,re
 
 # Header tags
@@ -55,7 +55,7 @@ HEADER_SQ_LINE = '@SQ'
 # B -- Integer or numeric array
 VALID_VTYPES = ['A', 'i', 'f', 'Z', 'H', 'B']
 
-ALL_COLUMNS      = [QNAME, FLAG, RNAME, POS, MAPQ, CIGAR, MRNM, MPOS, ISIZE, SEQ, QUAL, TAGS] = range(12)
+ALL_COLUMNS      = [QNAME, FLAG, RNAME, POS, MAPQ, CIGAR, MRNM, MPOS, ISIZE, SEQ, QUAL, TAGS] = list(range(12))
 REQUIRED_COLUMNS = ALL_COLUMNS[:-1]
 INT_COLUMNS      = [FLAG, POS, MPOS, MAPQ]
 
@@ -150,7 +150,7 @@ def acceptSAMRecord(s, counter, **args) :
 
     try :
         rec = SAMRecord(s)
-    except ValueError, ve :
+    except ValueError as ve :
         sys.stderr.write('\n*** Error in SAM file at line %d ***\n' % counter)
         sys.stderr.write('Line: %s\n' % s)
         raise ve
@@ -167,7 +167,7 @@ def acceptSAMRecord(s, counter, **args) :
         # Convert S,H,I and D tokens into M or N:
         try :
             newCigar = convertCigarString(tokens, len(rec.attrs[SEQ]))
-        except ValueError, ve :
+        except ValueError as ve :
             raise ve
         rec.attrs[CIGAR] = newCigar
         tokens = cigarTokens(newCigar)
@@ -225,7 +225,7 @@ def convertCigarString(tokens, requiredSize) :
         try :
             # Tokens must be an integer followed by a single character
             size = int(curr[:-1])
-        except ValueError,ve :
+        except ValueError as ve :
             raise ValueError('Unrecognized CIGAR string: "%s"' % s)
 
         if symbol == 'M' :
@@ -297,7 +297,7 @@ def pysamChromosomeMap(pysamFile) :
     result = {}
     if HEADER_SQ_TAG in pysamFile.header :
         chromList = pysamFile.header[HEADER_SQ_TAG]
-        for i in xrange(len(chromList)) :
+        for i in range(len(chromList)) :
             result[str(i)] = chromList[i][HEADER_SN_TAG]
     return result
 
@@ -381,7 +381,7 @@ def pysamReadDepths(bamFile, chromosome, gene, **args) :
                 if tok[0] == BAM_CMATCH :
                     start = max(pos, loBound) - loBound
                     end   = min(upBound, pos+tok[1]) - loBound
-                    for i in xrange(start, end) :
+                    for i in range(start, end) :
                         result[i] += 1
                 pos += tok[1]
         else : # ungapped alignment
@@ -389,7 +389,7 @@ def pysamReadDepths(bamFile, chromosome, gene, **args) :
             nUngapped += 1
             start = max(r.pos+1, loBound) - loBound
             end   = min(r.pos+r.qlen+1, upBound) - loBound
-            for i in xrange(start, end+1) :
+            for i in range(start, end+1) :
                 result[i] += 1
 
     if verbose : sys.stderr.write('Loaded %d ungapped and %d spliced reads for %s\n' % (nUngapped, nSpliced, gene.id))
@@ -440,7 +440,7 @@ def pysamSpliceJunctions(pysamRecord, chrMap) :
     k      = 0
     chrom  = chrMap[str(pysamRecord.tid)]
     strand = pysamStrand(pysamRecord,tagDict)
-    for i in xrange(0,len(pos),2) :
+    for i in range(0,len(pos),2) :
         jct = SpliceJunction(chrom, pos[i], pos[i+1]+1, [exons[k],exons[k+1]], jctCode, strand)
         result.append(jct)
         k  += 1
@@ -510,7 +510,7 @@ def getSamAlignments(samRecords, **args) :
             try :
                 code   = m[-1]
                 delta  = int(m[:-1])
-            except Exception, e :
+            except Exception as e :
                 sys.stderr.write('\n*** Error in SAM file at line %d ***\n' % indicator.ctr)
                 sys.stderr.write('Line: %s\n' % line)
                 raise e
@@ -572,7 +572,7 @@ def getSamDepths(samRecords, **args) :
             try :
                 code   = m[-1]
                 delta  = int(m[:-1])
-            except Exception, e :
+            except Exception as e :
                 sys.stderr.write('\n*** Error in SAM file at line %d ***\n' % indicator.ctr)
                 sys.stderr.write('Line: %s\n' % line)
                 raise e
@@ -584,7 +584,7 @@ def getSamDepths(samRecords, **args) :
 
             # Update depth for matches only
             if code == 'M' :
-                for i in xrange(prvPos, curPos) :
+                for i in range(prvPos, curPos) :
                     depths[c][i] += 1
             prvPos = curPos
 
@@ -764,7 +764,7 @@ def getSamReadData(samRecords, **args) :
             try :
                 code   = m[-1]
                 delta  = int(m[:-1])
-            except Exception, e :
+            except Exception as e :
                 sys.stderr.write('\n*** Error in SAM file: invalid CIGAR string (column 5) at line %d ***\n' % indicator.ctr)
                 sys.stderr.write('Invalid record: %s\n' % line)
                 sys.stderr.write('CIGAR string:   %s\n' % rec.cigar())
@@ -778,7 +778,7 @@ def getSamReadData(samRecords, **args) :
 
             # Update depth for matches only
             if code == 'M' :
-                for i in xrange(prvPos, curPos) :
+                for i in range(prvPos, curPos) :
                     depths[c][i] += 1
                 if alignments :
                     align[c].append((prvPos,delta))
@@ -890,7 +890,7 @@ def recordToSpliceJunction(samRec, matches) :
     result = []
     exons  = [int(m[:-1]) for m in matches if m[-1]=='M']
     k      = 0
-    for i in xrange(0,len(pos),2) :
+    for i in range(0,len(pos),2) :
         jct = SpliceJunction(samRec.chromosome(), pos[i], pos[i+1]+1, [exons[k],exons[k+1]], jctCode, samRec.attrs[STRAND_TAG])
         result.append(jct)
         k  += 1
@@ -938,7 +938,7 @@ class SAMRecord(object) :
                 else :
                     self.attrs[col]  = parts[col]
                     self.vtypes[col] = 'A'
-            except IndexError, ie :
+            except IndexError as ie :
                 raise ValueError('Too few columns (%d<%d) in input record:\n%s' % (len(parts), len(REQUIRED_COLUMNS), s))
             col += 1
 

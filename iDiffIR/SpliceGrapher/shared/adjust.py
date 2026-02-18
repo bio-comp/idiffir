@@ -76,17 +76,17 @@ def adjustDepths(depths, ranges, **args) :
     gaps      = getGaps(ranges)
     minpos    = ranges[0].minpos
     maxpos    = min(len(depths), ranges[-1].maxpos)
-    fullRange = range(minpos,maxpos+1)
+    fullRange = list(range(minpos,maxpos+1))
 
     # Easy part -- simply shift values within an exon:
     # Create map from positions to associated ranges
     rangeMap = {}.fromkeys(fullRange, None)
     for r in ranges :
-        for i in xrange(r.minpos,r.maxpos+1) :
+        for i in range(r.minpos,r.maxpos+1) :
             rangeMap[i] = r
 
     # Simply shift values that fall into exon ranges 
-    for i in xrange(minpos,maxpos) :
+    for i in range(minpos,maxpos) :
         if not rangeMap[i] : continue
         result[rangeMap[i].shift(i)] = depths[i]
 
@@ -95,7 +95,7 @@ def adjustDepths(depths, ranges, **args) :
     for g in gaps :
         # Associate gap with range that immediately precedes it:
         g.setShift(rangeMap[g.minpos-1].shift(g.minpos))
-        for i in xrange(g.minpos,g.maxpos+1) :
+        for i in range(g.minpos,g.maxpos+1) :
             gapMap[i] = g
 
     # Shift and scale values within an intron:
@@ -105,7 +105,7 @@ def adjustDepths(depths, ranges, **args) :
         gamma      = float(len(g))/intronSize
         # Each value of the shrunken intron is the average of
         # the values in its corresponding range:
-        for i in xrange(g.shiftedMin(), g.shiftedMin()+intronSize+1) :
+        for i in range(g.shiftedMin(), g.shiftedMin()+intronSize+1) :
             a         = g.minpos + int(round(gamma*(i-g.shiftedMin())))
             b         = int(round(a+gamma))
             result[i] = float(sum(depths[a:b+1]))/(b-a+1)
@@ -206,7 +206,7 @@ def adjustIntron(gap, **args) :
     gapSize     = len(gap)
     try :
         return min(logScale(gapSize,scaleFactor), gapSize)
-    except ValueError, ve :
+    except ValueError as ve :
         sys.stderr.write('Unable to rescale intron gap %s size %d\n' % (gap, gapSize))
         raise ve
 
@@ -260,7 +260,7 @@ def adjustRanges(rangeList, **args) :
     gaps = getGaps(rangeList)
     pos  = 0
     j    = 0
-    for i in xrange(len(rangeList)) :
+    for i in range(len(rangeList)) :
         r = rangeList[i]
         if i == 0 :
             newc = r
@@ -310,7 +310,7 @@ def closestRangeBelow(ranges, pos, **args) :
 def getGaps(ranges) :
     """Returns adjustable range instances for all the gaps between the ranges
     in the given list."""
-    gaps = [AdjustableRange(ranges[i-1].maxpos+1, ranges[i].minpos-1) for i in xrange(1,len(ranges))]
+    gaps = [AdjustableRange(ranges[i-1].maxpos+1, ranges[i].minpos-1) for i in range(1,len(ranges))]
     #assert(len(gaps) == len(ranges)-1)
     return gaps
 
@@ -324,7 +324,7 @@ def getGraphRanges(G, **args) :
     that represent all the overlapping nodes in the graph."""
     unresolved = getAttribute('unresolved', False, **args)
     if unresolved :
-        return getRanges(G.nodeDict.values(), **args)
+        return getRanges(list(G.nodeDict.values()), **args)
     else :
         return getRanges(G.resolvedNodes(), **args)
 
