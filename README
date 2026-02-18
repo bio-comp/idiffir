@@ -1,21 +1,51 @@
-Developed for Python 2.x--refactor in progress (2024 branch)
+# iDiffIR
 
-Install
------------
- python setup.py build
+iDiffIR identifies differential intron retention from RNA-seq data.
 
- python setup.py install
+## Python support
 
+Python 2 is **formally dropped**. This project supports Python:
 
-**Note**:
+- 3.9
+- 3.10
+- 3.11
+- 3.12
 
-To install to a local set of python libraries
-use --home=/PATH/TO/LOCAL/LIBRARY
+## Installation and development with `uv`
 
-Required Packages
--------------------------
+### One-time setup
 
-- SciPy
-- Pysam
-- matplotlib
-- NumPy
+```bash
+uv sync --extra dev
+```
+
+This creates/uses a local virtual environment and installs project + development dependencies from `uv.lock`.
+
+### Run tests
+
+```bash
+uv run pytest
+```
+
+### Run project scripts/tools
+
+Use `uv run` for project commands, for example:
+
+```bash
+uv run python scripts/idiffir.py --help
+```
+
+Use `uv tool` for standalone CLI tools that are not project dependencies, for example:
+
+```bash
+uv tool run ruff --version
+```
+
+## Packaging
+
+The project uses PEP 621 metadata in `pyproject.toml` with the `setuptools.build_meta` backend.
+
+Runtime dependencies are declared in `project.dependencies`, with optional groups in:
+
+- `project.optional-dependencies.dev`
+- `project.optional-dependencies.test`

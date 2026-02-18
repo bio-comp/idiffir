@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iDiffIR"
+version = "0.3.1"
+description = "Identifying differential intron retention from RNA-seq"
+readme = "README"
+requires-python = ">=3.9"
+license = { text = "GNU General Public License" }
+authors = [
+  { name = "Michael Hamilton", email = "mike.hamilton7@gmail.com" },
+]
+urls = { Homepage = "https://combi.cs.colostate.edu/idiffir" }
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: GNU General Public License (GPL)",
+  "Operating System :: OS Independent",
+]
+dependencies = [
+  "scipy",
+  "numpy",
+  "matplotlib",
+  "pysam",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "build>=1.2",
+]
+test = [
+  "pytest>=8.0",
+]
+
+[tool.setuptools]
+include-package-data = true
+script-files = [
+  "scripts/idiffir.py",
+  "scripts/getDepths.py",
+  "scripts/convertSam.py",
+  "scripts/simulate_IR.py",
+  "scripts/make_MISO_IR_GFF.py",
+  "scripts/make_MISO_AS_GFF.py",
+  "scripts/get_gene_expression.py",
+  "scripts/idiffir_plotter.py",
+  "scripts/run_miso_ir.py",
+]
+
+[tool.setuptools.packages.find]
+include = ["iDiffIR*"]
