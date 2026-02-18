@@ -1,28 +1,28 @@
 #! /usr/bin/env python
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
-from SpliceGrapher.shared.config          import *
-from SpliceGrapher.shared.utils           import *
-from SpliceGrapher.formats.fasta          import FastaRecord
-from SpliceGrapher.formats.FastaLoader    import *
-from SpliceGrapher.formats.GeneModel      import *
-from SpliceGrapher.SpliceGraph            import *
-from SpliceGrapher.shared.SpliceGraphPath import *
+from iDiffIR.SpliceGrapher.shared.config          import *
+from iDiffIR.SpliceGrapher.shared.utils           import *
+from iDiffIR.SpliceGrapher.formats.fasta          import FastaRecord
+from iDiffIR.SpliceGrapher.formats.FastaLoader    import *
+from iDiffIR.SpliceGrapher.formats.GeneModel      import *
+from iDiffIR.SpliceGrapher.SpliceGraph            import *
+from iDiffIR.SpliceGrapher.shared.SpliceGraphPath import *
 
 from optparse import OptionParser
 import os,sys
@@ -232,7 +232,7 @@ for c in chromList :
         try :
             paths = getAllPaths(graph, limit=opts.seqlimit)
             paths.sort()
-        except ValueError, ve :
+        except ValueError as ve:
             tooLong += 1
             continue
 
@@ -243,7 +243,7 @@ for c in chromList :
             nodes = isoDict[k]
             key   = nodeString(nodes)
             isoStrings[key] = k
-            
+
         isoCtr = 0
         for path in paths :
             marked = hasMarkedNodes(path.nodes)

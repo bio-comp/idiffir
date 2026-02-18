@@ -1,16 +1,16 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -18,9 +18,9 @@
 """
 Module for converting GFF gene models into a splice graph.
 """
-from SpliceGrapher.shared.config     import *
-from SpliceGrapher.SpliceGraph       import *
-from SpliceGrapher.shared.utils      import idFactory, getAttribute
+from iDiffIR.SpliceGrapher.shared.config     import *
+from iDiffIR.SpliceGrapher.SpliceGraph       import *
+from iDiffIR.SpliceGrapher.shared.utils      import idFactory, getAttribute
 
 def forceAddChild(parent, child) :
     """Forces a child node to be added to a parent if the
@@ -130,7 +130,7 @@ def geneModelToSpliceGraph(gene, **args) :
             badForms.update(exon.parents)
             continue
 
-        eid  = exonIds.next()
+        eid  = next(exonIds)
         node = graph.addNode(eid, exon.minpos, exon.maxpos)
         exonDict[exon_key] = node.id
 

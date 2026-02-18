@@ -1,17 +1,17 @@
 #! /usr/bin/env python
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -23,16 +23,16 @@ predict splice graphs along with the predicted graph itself:
   2. Splice junctions
   3. Short read depths
 """
-from SpliceGrapher.shared.config             import *
-from SpliceGrapher.shared.utils              import *
-from SpliceGrapher.shared.ShortRead          import *
-from SpliceGrapher.shared.GeneModelConverter import *
-from SpliceGrapher.view.ViewerUtils          import *
-from SpliceGrapher.view.GeneView             import GeneView
-from SpliceGrapher.formats.loader            import *
-from SpliceGrapher.formats.sam               import *
-from SpliceGrapher                           import SpliceGraph
-from SpliceGrapher.formats                   import gtf, wig, bed, xydata
+from iDiffIR.SpliceGrapher.shared.config             import *
+from iDiffIR.SpliceGrapher.shared.utils              import *
+from iDiffIR.SpliceGrapher.shared.ShortRead          import *
+from iDiffIR.SpliceGrapher.shared.GeneModelConverter import *
+from iDiffIR.SpliceGrapher.view.ViewerUtils          import *
+from iDiffIR.SpliceGrapher.view.GeneView             import GeneView
+from iDiffIR.SpliceGrapher.formats.loader            import *
+from iDiffIR.SpliceGrapher.formats.sam               import *
+from iDiffIR.SpliceGrapher                           import SpliceGraph
+from iDiffIR.SpliceGrapher.formats                   import gtf, wig, bed, xydata
 
 from optparse import OptionParser, OptionGroup
 
@@ -110,7 +110,7 @@ displayGroup.add_option('-D', dest='display',  default='OPJR',
         help="Display order string for plots (O=original model, P=predicted graph, J=splice junctions, R=read depth, X=XY graph).  Examples: 'OPR', 'RJP' [default: '%default']")
 parser.add_option_group(displayGroup)
 
-# Deprecated to simplify interface: 
+# Deprecated to simplify interface:
 ## fileGroup.add_option('-b', dest='bed_file',     default=None,          help='BED predicted junctions file [default: %default]')
 ## fileGroup.add_option('-j', dest='junctions',    default=None,          help='SAM spliced alignment file (spliced reads only) [default: %default]')
 ## fileGroup.add_option('-t', dest='gtf_file',     default=None,          help='GTF file [default: %default]')
@@ -131,7 +131,7 @@ opts.display = opts.display.upper()
 opts.wig_file  = False
 opts.bed_file  = False
 opts.gtf_file  = None
-opts.urmargin  = sys.maxint
+opts.urmargin  = sys.maxsize
 opts.junctions = None
 opts.adjust    = False
 opts.clusters  = False
@@ -289,7 +289,7 @@ rcParams['font.weight']    = 'bold'
 totalHeight = sum([DISPLAY_HEIGHT[d] for d in displayList])
 topLine     = 0.94 if opts.legend else 0.92
 axLeft      = 0.05
-axWidth     = 0.90 
+axWidth     = 0.90
 
 # Establish reference height for subplots
 patchDict   = {}
@@ -357,7 +357,7 @@ for i in range(len(displayList)) :
     # Tasks common to all graphs:
     if tmpPatches :
         patchDict.update(tmpPatches)
-    
+
     # curAxes.grid(True)
     if gene.strand == '+' :
         curAxes.set_xlim(minpos-padding, maxpos+padding)

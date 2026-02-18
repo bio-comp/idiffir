@@ -1,16 +1,16 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -18,11 +18,11 @@
 """
 Module that loads and converts PSL-formatted EST alignments.
 """
-from SpliceGrapher.SpliceGraph        import SpliceGraph, updateRoot, updateLeaf, donor, acceptor
-from SpliceGrapher.formats.GeneModel  import Exon
-from SpliceGrapher.shared.utils       import *
-from SpliceGrapher.predict.SpliceSiteValidator import *
-from sys import maxint
+from iDiffIR.SpliceGrapher.SpliceGraph        import SpliceGraph, updateRoot, updateLeaf, donor, acceptor
+from iDiffIR.SpliceGrapher.formats.GeneModel  import Exon
+from iDiffIR.SpliceGrapher.shared.utils       import *
+from iDiffIR.SpliceGrapher.predict.SpliceSiteValidator import *
+from sys import maxsize as maxint
 
 def estsToSpliceGraph(geneName, recs, chromosome, **args) :
     """Method that creates a splice graph from a list of PSLRecord instances.  Single-exon
@@ -35,7 +35,7 @@ def estsToSpliceGraph(geneName, recs, chromosome, **args) :
     verbose        = getAttribute('verbose', False, **args)
 
     if verbose : import sys
-    
+
     exonIds  = idFactory('%s_' % geneName)
     if not strand : strand = inferStrand(recs)
     graph    = SpliceGraph(geneName, chromosome, strand)
@@ -68,7 +68,7 @@ def estsToSpliceGraph(geneName, recs, chromosome, **args) :
         prev     = None
         for i in range(len(exons)) :
             exon = exons[i]
-            eid  = exonIds.next()
+            eid  = next(exonIds)
             node = subgraph.addNode(eid, exon.minpos, exon.maxpos)
             #assert(node.id == eid)
             node.addIsoform(r.Qname)
@@ -100,7 +100,7 @@ def estsToSpliceGraph(geneName, recs, chromosome, **args) :
                 if verbose :
                     sys.stderr.write('Omitting subgraph for %s: outside gene boundaries (%d < %d or %d > %d)\n' % (r.Qname,subgraph.maxpos, geneMin, subgraph.minpos, geneMax))
                 continue
-            
+
         # Must merge nodes in both directions since
         # PSL records are in no particular order:
         updateRoot(subgraph, graph)
@@ -193,16 +193,16 @@ class PSLRecord(object) :
     def __eq__(self,o) :
         try :
             return all([self.__dict__[f]==o.__dict__[f] for f in PSLRecord.FIELDS])
-        except AttributeError,e :
+        except AttributeError as e:
             raise Exception('Argument to PSLRecord.__cmp__(o) must be a PSLRecord instance. Exception: %s'%e)
 
     def __cmp__(self,o) :
         try :
-            c = cmp(self.Tname,o.Tname)
+            c = (self.Tname > o.Tname) - (self.Tname < o.Tname)
             if c == 0 :
-                return cmp(self.Tstart,o.Tstart)
+                return (self.Tstart > o.Tstart) - (self.Tstart < o.Tstart)
             return c
-        except AttributeError,e :
+        except AttributeError as e:
             raise Exception('Argument to PSLRecord.__cmp__(o) must be a PSLRecord instance. Exception: %s'%e)
 
     def __hash__(self) :

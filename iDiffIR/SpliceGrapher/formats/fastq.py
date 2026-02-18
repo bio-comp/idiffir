@@ -1,16 +1,16 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -18,7 +18,7 @@
 """
 A parser for FASTQ files.
 """
-from SpliceGrapher.shared.utils import ezopen, getAttribute
+from iDiffIR.SpliceGrapher.shared.utils import ezopen, getAttribute
 import os, sys, time
 
 class MalformedInput :
@@ -51,7 +51,7 @@ class FastqRecord :
         #   +<header>
         #   quality scores
         return '@' + self.header + '\n' + self.sequence + '\n+' + self.header2 + '\n' + self.quality + '\n'
-        
+
 def _fastq_itr_from_file(file) :
     "Provide an iteration through the fastq records in file."
 
@@ -97,7 +97,7 @@ def _fastq_itr_from_name(fname):
 
 def _fastq_itr(src):
     """Provide an iteration through the fastq records in file `src'.
-    
+
     Here `src' can be either a file object or the name of a file.
     """
     if type(src) == str :
@@ -129,8 +129,11 @@ class fastq_itr (object) :
     def __iter__(self) :
         return self
 
-    def next(self) :
-        return self.__itr.next()
+    def __next__(self) :
+        return next(self.__itr)
+
+    # Python 2 compatibility alias
+    next = __next__
 
     def __getitem__(self,name) :
         return fastq_get_by_name(iter(self),name)
@@ -158,7 +161,7 @@ def solexa_prob(k) :
     """
     For a given solexa score, returns the probability that a
     character is incorrect.
-       k = -10 log(p/(1-p)) ---> p = 10**t/(10**t + 1), where t = -k/10 and -5 <= k <= 40 
+       k = -10 log(p/(1-p)) ---> p = 10**t/(10**t + 1), where t = -k/10 and -5 <= k <= 40
     """
     t   = -0.10 * k
     val = 10.0**t

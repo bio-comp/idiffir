@@ -1,16 +1,16 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -18,12 +18,12 @@
 """
 Module that adds a splice junction view to a matplotlib figure.
 """
-from SpliceGrapher.shared.utils      import *
-from SpliceGrapher.shared.ShortRead  import KNOWN_JCT, UNKNOWN_JCT, PREDICTED_JCT, UNLABELED_JCT
+from iDiffIR.SpliceGrapher.shared.utils      import *
+from iDiffIR.SpliceGrapher.shared.ShortRead  import KNOWN_JCT, UNKNOWN_JCT, PREDICTED_JCT, UNLABELED_JCT
 
 from matplotlib import patches
 from matplotlib.path import Path
-from sys        import maxint as MAXINT
+from sys import maxsize as MAXINT
 import sys
 
 # Color coding:
@@ -193,7 +193,7 @@ class SpliceJunctionView(object) :
                 openPositions  = maxRangeSet - usedPositions
                 if openPositions :
                     tmpHeight[jct] = min(openPositions)
-                else : 
+                else :
                     tmpHeight[jct] = max(maxRangeSet) + 1
                 self.maxHeight = max(self.maxHeight, tmpHeight[jct])
 

@@ -1,16 +1,16 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -18,8 +18,8 @@
 """
 Module that adds a background view of gene boundaries to a figure.
 """
-from SpliceGrapher.shared.utils      import *
-from SpliceGrapher.formats.GeneModel import *
+from iDiffIR.SpliceGrapher.shared.utils      import *
+from iDiffIR.SpliceGrapher.formats.GeneModel import *
 
 from pylab import *
 import sys
@@ -57,7 +57,7 @@ class GeneView(object) :
         for gene in self.genes :
             features = gene.exons + gene.cds
             for f in features :
-                for i in xrange(f.minpos,f.maxpos+1) :
+                for i in range(f.minpos,f.maxpos+1) :
                     if i not in area :
                         raise KeyError('%s position %d is not within %d-%d\n' % (f, i, minpos, maxpos))
                     if AREA_VALUE[f.featureType] > AREA_VALUE[area[i]] :

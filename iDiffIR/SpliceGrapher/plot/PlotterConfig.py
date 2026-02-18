@@ -1,16 +1,16 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -18,9 +18,9 @@
 """
 Module that encapsulates a configuration for a meta-plotter.
 """
-from SpliceGrapher.shared.utils import getAttribute
-from SpliceGrapher.shared.adjust import MIN_INTRON_SIZE
-from ConfigParser import ConfigParser
+from iDiffIR.SpliceGrapher.shared.utils import getAttribute
+from iDiffIR.SpliceGrapher.shared.adjust import MIN_INTRON_SIZE
+from configparser import ConfigParser
 import re, os
 
 ENV_MATCH = re.compile('\${\w\w*}')
@@ -162,8 +162,8 @@ class PlotInfo(object) :
         self.codons         = False
         self.donors         = ''
         self.edge_weight    = 1
-        self.features       = None 
-        self.file_format    = None 
+        self.features       = None
+        self.file_format    = None
         self.gene_name      = None
         self.hide           = False
         self.highlight      = ''
@@ -252,7 +252,7 @@ class SinglePlotConfig(object) :
                 return parseEnvironmentVars(value)
             else : # STRING_TAGS
                 return value
-        except ValueError, ve :
+        except ValueError as ve:
             raise ValueError('Invalid assignment in config file: %s is %s, should be %s\n' % (tag, value, TAG_TYPE[tag]))
 
     def instantiate(self) :

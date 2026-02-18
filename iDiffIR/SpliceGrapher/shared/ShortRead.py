@@ -1,16 +1,16 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -18,10 +18,10 @@
 """
 Module containing classes and methods for handling short-read data.
 """
-from SpliceGrapher.formats.fasta import *
-from SpliceGrapher.shared.utils  import idFactory, getAttribute, ProgressIndicator, commaFormat
+from iDiffIR.SpliceGrapher.formats.fasta import *
+from iDiffIR.SpliceGrapher.shared.utils  import idFactory, getAttribute, ProgressIndicator, commaFormat
 
-from sys import maxint as MAXINT
+from sys import maxsize as MAXINT
 import sys
 
 #################################################
@@ -80,7 +80,7 @@ def depthsToClusters(chromosome, depths, **args) :
     while maxpos > minpos > 0 and depths[minpos] >= threshold : minpos -= 1
     while minpos < maxpos < len(depths) and depths[maxpos] >= threshold : maxpos += 1
 
-    for i in xrange(minpos,maxpos) :
+    for i in range(minpos,maxpos) :
         if depths[i] >= threshold :
             if not current :
                 # start with a 1-nt cluster at a single position
@@ -272,7 +272,7 @@ class Read(object) :
         self.strand = strand
         self.count  = 1
         self.code   = READ_CODE
-        self.id     = Read.id_gen.next()
+        self.id     = next(Read.id_gen)
 
     def __eq__(self, other) :
         return self.chromosome == other.chromosome and self.strand == other.strand \
@@ -365,7 +365,7 @@ class SplicedRead(Read) :
 
     def __str__(self) :
         return "%s [%d-%d,%d-%d] (%s)" % (self.chromosome, self.p1, self.p2, self.p3, self.p4, self.strand)
-            
+
     def acceptor(self) :
         return self.accval
 
@@ -459,7 +459,7 @@ class Cluster(object) :
     id_gen = idFactory('c_')
 
     def __init__(self, chromosome, pos, totDepth, id=None) :
-        self.id          = id if id else Cluster.id_gen.next()
+        self.id          = id if id else next(Cluster.id_gen)
         self.chromosome  = chromosome.lower()
         self.minpos      = pos
         self.maxpos      = pos

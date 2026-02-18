@@ -1,22 +1,22 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
-from SpliceGrapher.shared.utils import *
-from SpliceGrapher.SpliceGraph  import *
+from iDiffIR.SpliceGrapher.shared.utils import *
+from iDiffIR.SpliceGrapher.SpliceGraph  import *
 
 import sys
 
@@ -37,11 +37,11 @@ def countFunctionName(asType) :
 class AbstractStatistics(object) :
     """Base class for all statistics classes."""
     def alt3Count(self) : raise NotImplementedError()
-    def alt5Count(self) : raise NotImplementedError() 
-    def altBCount(self) : raise NotImplementedError() 
+    def alt5Count(self) : raise NotImplementedError()
+    def altBCount(self) : raise NotImplementedError()
     def edgeCount(self) : raise NotImplementedError()
-    def esCount(self)   : raise NotImplementedError() 
-    def irCount(self)   : raise NotImplementedError() 
+    def esCount(self)   : raise NotImplementedError()
+    def irCount(self)   : raise NotImplementedError()
     def nodeCount(self) : raise NotImplementedError()
 
 class GraphStatistics(AbstractStatistics) :
@@ -72,7 +72,7 @@ class GraphStatistics(AbstractStatistics) :
             result += len(event)-1
         return result
 
-    def altBCount(self) : 
+    def altBCount(self) :
         """Returns the number of simultaneous 3'/5' (alt. both) events in a graph."""
         # Idea is to identify groups of nodes involved in simultaneous events.
         # A distinct complete event is one that contains two or more 5' splice
@@ -100,8 +100,8 @@ class GraphStatistics(AbstractStatistics) :
         # Count inter-group connections by identifying nodes in
         # one group that are children of nodes in the other.
         eventCount = 0
-        for i in xrange(len(groups)-1) :
-            for j in xrange(i+1,len(groups)) :
+        for i in range(len(groups)-1) :
+            for j in range(i+1,len(groups)) :
                 A     = groups[i]
                 B     = groups[j]
                 Akids = set([c for n in A for c in n.children])
@@ -208,7 +208,7 @@ class SummaryStatistics(AbstractStatistics) :
             indicator.update()
             try :
                 g = getFirstGraph(f)
-            except KeyError, ke :
+            except KeyError as ke:
                 raise KeyError('Invalid graph in file %s: %s' % (f,str(ke)))
             except ValueError :
                 continue

@@ -1,16 +1,16 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -18,8 +18,8 @@
 """
 Module that adds a simple graph to a plot.
 """
-from SpliceGrapher.shared.utils import *
-from sys import maxint as MAXINT
+from iDiffIR.SpliceGrapher.shared.utils import *
+from sys import maxsize as MAXINT
 
 BAR_GRAPH     = 'bar'
 LINE_GRAPH    = 'line'
@@ -57,7 +57,7 @@ class XYGraphView(object) :
             minHeight = yRange/40.0
             plotX     = []
             plotY     = []
-            for i in xrange(len(self.X)) :
+            for i in range(len(self.X)) :
                 if self.X[i] < self.minpos : continue
                 if self.X[i] > self.maxpos : break
                 if abs(self.Y[i]) > minHeight :
@@ -65,7 +65,7 @@ class XYGraphView(object) :
                     plotY.append(self.Y[i])
 
             # Leave about 1/4 the distance between X positions as a gap between bars
-            delta    = min([self.X[i]-self.X[i-1] for i in xrange(1,len(self.X))])
+            delta    = min([self.X[i]-self.X[i-1] for i in range(1,len(self.X))])
             barWidth = 2*0.75*delta
             p1 = self.axis.bar(plotX, plotY, barWidth, ec=color, fc=color)
             self.axis.plot([self.minpos,self.maxpos], [0.0,0.0], linestyle='solid', color=color, linewidth=1.0)

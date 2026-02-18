@@ -1,16 +1,16 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -19,7 +19,7 @@
 Stores gene annotation information from a GFF3 annotation
 file and provides methods for searching on the data.
 """
-from SpliceGrapher.shared.utils import ProgressIndicator, ezopen, getAttribute, commaFormat
+from iDiffIR.SpliceGrapher.shared.utils import ProgressIndicator, ezopen, getAttribute, commaFormat
 
 # TRYING A NEW WAY TO IDENTIFY GENES:
 import difflib
@@ -170,7 +170,7 @@ def featureCmp(a, b) :
         return a.maxpos - b.maxpos
     else :
         return a.minpos - b.minpos
-    
+
 def featureOverlaps(a, b) :
     """
     General function for determining whether feature 'a' and feature 'b' overlap.
@@ -406,7 +406,7 @@ class Isoform(BaseFeature) :
         result   = []
         # Always sort in ascending order by position
         exonList = sorted(self.exons)
-        for i in xrange(len(exonList)) :
+        for i in range(len(exonList)) :
             exon = exonList[i]
             result.append(exon.gtfString(self.id, self.parent, i+1))
         return result
@@ -444,7 +444,9 @@ class CDS(Exon) :
     def __cmp__(self, o) :
         """Special for CDS records, as two records may be the same in other regards but different types."""
         result = BaseFeature.__cmp__(self,o)
-        return cmp(self.featureType, o.featureType) if result == 0 else result
+        if result != 0:
+            return result
+        return (self.featureType > o.featureType) - (self.featureType < o.featureType)
 
     def __eq__(self, o) :
         """Special for CDS records, as two records may have the same locations but different types."""
@@ -589,7 +591,7 @@ class mRNA(Isoform) :
 
         # Always sort in ascending order by position
         cdsList = sorted(self.cds)
-        for i in xrange(len(cdsList)) :
+        for i in range(len(cdsList)) :
             c = cdsList[i]
             result.append(c.gtfString(self.id, self.parent, i+1))
 
@@ -614,7 +616,7 @@ class mRNA(Isoform) :
         minintron = getAttribute('minintron', 2, **args)
         cdsList   = self.sortedCDS()
         result    = []
-        for i in xrange(len(cdsList)) :
+        for i in range(len(cdsList)) :
             cds  = cdsList[i]
             if len(result) > 0 and abs(cds.start() - result[-1].end()) < minintron :
                 prev       = result[-1]
@@ -767,13 +769,13 @@ class Gene(BaseFeature) :
         result = {}
         for iid in self.isoforms.keys() :
             exons = self.isoforms[iid].sortedExons()
-            for i in xrange(1,len(exons)) :
+            for i in range(1,len(exons)) :
                 key = (exons[i-1].end(), exons[i].start())
                 result[key] = 1
 
         for mid in self.mrna.keys() :
             cds = self.mrna[mid].sortedExons()
-            for i in xrange(1,len(cds)) :
+            for i in range(1,len(cds)) :
                 key = (cds[i-1].end(), cds[i].start())
                 result[key] = 1
 
@@ -792,7 +794,7 @@ class Gene(BaseFeature) :
         for iid in self.isoforms.keys() :
             iso   = self.isoforms[iid]
             exons = sorted(iso.exons, reverse=(self.strand=='-'))
-            for i in xrange(1,len(exons)) :
+            for i in range(1,len(exons)) :
                 duple = (exons[i-1].donor(), exons[i].acceptor())
                 result[duple] = 1
         return result.keys()
@@ -851,7 +853,7 @@ class Gene(BaseFeature) :
 
                 eCtr = 0
                 cCtr = 0
-                for i in xrange(len(allExons)) :
+                for i in range(len(allExons)) :
                     item = allExons[i]
                     if item.featureType == EXON_TYPE :
                         eCtr += 1
@@ -943,7 +945,7 @@ class GeneModel(object) :
 
     def __contains__(self, gene) :
         """Returns true if a gene is in the model; false otherwise."""
-        return self.allGenes.has_key(str(gene))
+        return ((str(gene) in self.allGenes))
 
     def addChromosome(self, start, end, name) :
         """Adds a chromosome to a gene model or updates the end points
@@ -1042,7 +1044,7 @@ class GeneModel(object) :
             return annotDict[key]
         except KeyError :
             return default
-        
+
     def getAnnotationDict(self, s) :
         """
         Parses a ';'-separated annotation string containing key-value pairs
@@ -1056,7 +1058,7 @@ class GeneModel(object) :
                 keyval = p.split('=')
                 result[keyval[0]] = keyval[1]
         return result
-        
+
     def getChromosome(self, chrName) :
         """Returns a simple record with basic chromosome information."""
         try :
@@ -1192,7 +1194,7 @@ class GeneModel(object) :
             parts  = fullString.split(d)
             result = []
             # most-to-least specific: 'a-b-c-d' --> ['a-b-c', 'a-b', 'a'] or 'a,b,c' --> ['a,b', 'a']
-            for i in xrange(len(parts)-1,0,-1) :
+            for i in range(len(parts)-1,0,-1) :
                 result.append(d.join(parts[:i]))
             return result
 
@@ -1210,7 +1212,7 @@ class GeneModel(object) :
             except KeyError :
                 pass
 
-        # Iterate over a set of known delimiters 
+        # Iterate over a set of known delimiters
         delim      = [c for c in FORM_DELIMITERS if c in parentString]
         candidates = [parentString]
         for c in delim :
@@ -1229,7 +1231,7 @@ class GeneModel(object) :
                 except KeyError :
                     pass
 
-        # Next try known genes; 
+        # Next try known genes;
         if searchGenes and chrom in self.model :
             for c in candidates :
                 if c in self.model[chrom] :
@@ -1521,7 +1523,7 @@ class GeneModel(object) :
                 gene = self.model[chrName][parent]
                 try :
                     gene.addFeature(BaseFeature(recType, startPos, endPos, chrName, strand, annots))
-                except Exception,e :
+                except Exception as e:
                     conditionalException("line %d: %s" % (lineCtr, e))
 
         indicator.finish()

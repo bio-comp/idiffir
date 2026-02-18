@@ -1,24 +1,24 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
-from SpliceGrapher.shared.utils import *
-from SpliceGrapher.SpliceGraph  import SpliceGraph
+from iDiffIR.SpliceGrapher.shared.utils import *
+from iDiffIR.SpliceGrapher.SpliceGraph  import SpliceGraph
 
-from sys import maxint as MAXINT
+from sys import maxsize as MAXINT
 import sys
 
 # GTF columns (summarized from GTF 2.2 spec):
@@ -40,13 +40,13 @@ import sys
 #      UTR           (optional)
 #      Selenocysteine
 #  3 - <start> (1-based start, end positions; start <= end)
-#  4 - <end> 
+#  4 - <end>
 #  5 - <score>  confidence score
-#  6 - <strand> 
+#  6 - <strand>
 #  7 - <frame>  0=5' most base; 1=next one; 2 = next one after that
 #  8 - [attributes] All features have the same two mandatory attributes:
 #      gene_id <value>;
-#      transcript_id <value>; 
+#      transcript_id <value>;
 #  [comments] Comments begin with a hash ('#') and continue to the end of the line.
 
 # All known ENSEMBL GTF gene types:
@@ -160,7 +160,7 @@ class GTF_Gene(object) :
         self.chrom    = chrom
         self.strand   = strand
         self.source   = None
-        self.geneType = None 
+        self.geneType = None
         self.minpos   = MAXINT
         self.maxpos   = 0
         self.valid    = True
@@ -410,12 +410,15 @@ class GTFParser(object) :
     def __iter__(self) :
         return self
 
-    def next(self) :
+    def __next__(self) :
         """Iterator implementation."""
         try :
-            return self.graphDict[self.graphIter.next()]
+            return self.graphDict[next(self.graphIter)]
         except Exception :
             raise StopIteration
+
+    # Python 2 compatibility alias
+    next = __next__
 
     def finishGraphs(self, **args) :
         """Completes all graphs and annotates them."""
@@ -484,7 +487,7 @@ class GTFParser(object) :
                 else :
                     edges.add((node.id, currentNodeId))
             currentNodeId = node.id
-            
+
         indicator.finish()
         self.graphIter = iter(self.graphIds)
 
@@ -497,4 +500,4 @@ def keyString(rec) :
 
 def getFirstCufflinksGraph(f) :
     """Returns the first graph in a Cufflinks GTF file."""
-    return GTFParser(f).next()
+    return next(GTFParser(f))

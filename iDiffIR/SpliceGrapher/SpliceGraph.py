@@ -1,16 +1,16 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -18,8 +18,8 @@
 """
 Module that encapsulates a splice graph.
 """
-from SpliceGrapher.shared.utils import *
-from sys import maxint as MAXINT
+from iDiffIR.SpliceGrapher.shared.utils import *
+from sys import maxsize as MAXINT
 import sys
 
 # Attributes used in standard GFF3 files:
@@ -238,11 +238,11 @@ def detectAltAcceptor(n, nodes, edges) :
         if o.acceptorEnd() != n.acceptorEnd() :
             n.addAltForm(ALT3_ABBREV)
             return
-        
+
 def detectAltBoth(nodes, verbose=False) :
     """Looks for evidence of simultaneous 3'/5' events (alt. both).  Assumes alt. 3' and
     alt. 5' nodes have already been identified."""
-    # Using 5' events as a reference... 
+    # Using 5' events as a reference...
     # For each 5' (donor site) event, we look at the nodes to see if any of them share
     # the same child (acceptor site).
     #
@@ -292,7 +292,7 @@ def detectAltBoth(nodes, verbose=False) :
             shared      = nodeDonors & otherDonors
             if not shared :
                 n.removeAltForm(ALT3_ABBREV)
-                n.addAltForm(ALTB3_ABBREV) 
+                n.addAltForm(ALTB3_ABBREV)
 
 def detectAltDonor(n, nodes, edges, verbose=False) :
     """Looks for evidence that identifies the given node as an alternate donor."""
@@ -370,7 +370,7 @@ def getFirstGraph(f, **args) :
     """Returns just the first splice graph found in a file."""
     annotate = getAttribute('annotate', False, **args)
     try :
-        result = SpliceGraphParser(f, **args).next()
+        result = next(SpliceGraphParser(f, **args))
         if annotate : result.annotate()
         return result
     except StopIteration :
@@ -965,7 +965,7 @@ class SpliceGraph(object) :
             node              = self.nodeDict[newId]
             self.minpos       = min(self.minpos, node.minpos)
             self.maxpos       = max(self.maxpos, node.maxpos)
-     
+
         return node
 
     def addCodons(self, codonList, codonType) :
@@ -1034,10 +1034,10 @@ class SpliceGraph(object) :
             detectRetainedIntron(n, edges)
             if n.children : detectAltDonor(n, nodes, edges, verbose=verbose)
             if n.parents  : detectAltAcceptor(n, nodes, edges)
-            
+
         # Removed (11/21/2011) after conversation with Asa:
         ## detectAltBoth(nodes)
-            
+
     def attributeString(self) :
         """Returns a string of all graph attributes, for GFF attributes fields."""
         return ';'.join(['%s=%s'%(k,self.attrs[k]) for k in sorted(self.attrs.keys())])
@@ -1123,7 +1123,7 @@ class SpliceGraph(object) :
             newNode.attrs.update(n.attrs)
             newNode.isoformSet     = set(n.isoformSet)
             newNode.attrs[ISO_KEY] = ','.join(newNode.isoformSet)
-            
+
         # Second pass: create edges in graph
         for n in self.nodeDict.values() :
             for c in n.children :
@@ -1355,12 +1355,12 @@ class SpliceGraph(object) :
         result   = SpliceGraph(newName, self.chromosome, self.strand)
         allNodes = self.resolvedNodes() + other.resolvedNodes()
         for node in allNodes :
-            newNode = result.addNode(idgen.next(), node.minpos, node.maxpos)
+            newNode = result.addNode(next(idgen), node.minpos, node.maxpos)
             for c in node.children :
-                cNode = result.addNode(idgen.next(), c.minpos, c.maxpos)
+                cNode = result.addNode(next(idgen), c.minpos, c.maxpos)
                 newNode.addChild(cNode)
             for p in node.parents :
-                pNode = result.addNode(idgen.next(), p.minpos, p.maxpos)
+                pNode = result.addNode(next(idgen), p.minpos, p.maxpos)
                 pNode.addChild(newNode)
             for iso in node.isoformSet :
                 newNode.addIsoform(iso)
@@ -1477,14 +1477,17 @@ class SpliceGraphParser(object) :
         """Iterator implementation."""
         return self
 
-    def next(self) :
+    def __next__(self) :
         """Iterator implementation."""
         try :
-            key = self.graphDict.keys()[self.graphId]
+            key = list(self.graphDict.keys())[self.graphId]
             self.graphId += 1
             return self.graphDict[key]
         except Exception :
             raise StopIteration
+
+    # Python 2 compatibility alias
+    next = __next__
 
     def __len__(self) :
         """Returns the number of nodes in the graph."""
@@ -1518,7 +1521,7 @@ class SpliceGraphParser(object) :
             try :
                 # Convert 'ID=ABC;Parent=X,Y,Z' into {'ID':'ABC', 'Parent':'X,Y,Z'}
                 attrs = dict([tuple(p.split('=')) for p in parts[-1].split(';') if p])
-            except Exception,eee :
+            except Exception as eee:
                 raise ValueError("Illegal attribute field '%s' at line %d in GFF file." % (parts[-1],lineNo))
 
             try :

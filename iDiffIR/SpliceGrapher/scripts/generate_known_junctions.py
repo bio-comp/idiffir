@@ -1,18 +1,18 @@
 #! /usr/bin/env python
-# 
+#
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -20,13 +20,13 @@
 """
 Program for generating known splice junction sequences.
 """
-from SpliceGrapher.shared.config       import *
-from SpliceGrapher.shared.utils        import *
-from SpliceGrapher.predict.SpliceSite  import *
-from SpliceGrapher.formats.loader      import *
-from SpliceGrapher                     import SpliceGraph
-from SpliceGrapher.formats.FastaLoader import FastaLoader
-from SpliceGrapher.formats.fasta       import FastaRecord
+from iDiffIR.SpliceGrapher.shared.config       import *
+from iDiffIR.SpliceGrapher.shared.utils        import *
+from iDiffIR.SpliceGrapher.predict.SpliceSite  import *
+from iDiffIR.SpliceGrapher.formats.loader      import *
+from iDiffIR.SpliceGrapher                     import SpliceGraph
+from iDiffIR.SpliceGrapher.formats.FastaLoader import FastaLoader
+from iDiffIR.SpliceGrapher.formats.fasta       import FastaRecord
 
 from glob     import glob
 from optparse import OptionParser
@@ -83,13 +83,13 @@ def getGeneIntrons(gene, min_intron=4) :
 
     for isoform in gene.isoforms.values() :
         exons = isoform.sortedExons() # exons sorted according to strand
-        for i in xrange(1,len(exons)) :
+        for i in range(1,len(exons)) :
             intron = InferredIntron(chr, strand, exons[i-1].donor(), exons[i].acceptor())
             if len(intron) >= min_intron : result.add(intron)
 
     for mrna in gene.mrna.values() :
         cds = mrna.sortedExons() # exons inferred from CDS and sorted according to strand
-        for i in xrange(1,len(cds)) :
+        for i in range(1,len(cds)) :
             intron = InferredIntron(chr, strand, cds[i-1].donor(), cds[i].acceptor())
             if len(intron) >= min_intron : result.add(intron)
 
@@ -197,7 +197,7 @@ for gid in geneIds :
         name   = gene.id
         # Use introns as references:
         introns   = getGeneIntrons(gene, min_intron=opts.minintron)
-    
+
     # Augment known sites with splice graphs (if any)
     try :
         sg       = spliceGraphs[gid]
@@ -208,7 +208,7 @@ for gid in geneIds :
         introns |= getGraphIntrons(sg, min_intron=opts.minintron)
     except KeyError :
         pass # Not all genes may have graphs
-    
+
     chrCounter.setdefault(chrom,0)
 
     # Known junctions

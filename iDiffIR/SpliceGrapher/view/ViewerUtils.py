@@ -1,16 +1,16 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -18,15 +18,15 @@
 """
 Module of viewer utilities used by several different example scripts.
 """
-from SpliceGrapher.shared.config           import *
-from SpliceGrapher.shared.utils            import *
-from SpliceGrapher.view.SpliceGraphView    import SpliceGraphView
-from SpliceGrapher.view.IsoformView        import IsoformView
-from SpliceGrapher.view.SpliceJunctionView import SpliceJunctionView
-from SpliceGrapher.view.ReadDepthView      import ReadDepthView
-from SpliceGrapher.view.ClusterView        import ClusterView
-from SpliceGrapher.view.XYGraphView        import XYGraphView
-from SpliceGrapher                         import SpliceGraph
+from iDiffIR.SpliceGrapher.shared.config           import *
+from iDiffIR.SpliceGrapher.shared.utils            import *
+from iDiffIR.SpliceGrapher.view.SpliceGraphView    import SpliceGraphView
+from iDiffIR.SpliceGrapher.view.IsoformView        import IsoformView
+from iDiffIR.SpliceGrapher.view.SpliceJunctionView import SpliceJunctionView
+from iDiffIR.SpliceGrapher.view.ReadDepthView      import ReadDepthView
+from iDiffIR.SpliceGrapher.view.ClusterView        import ClusterView
+from iDiffIR.SpliceGrapher.view.XYGraphView        import XYGraphView
+from iDiffIR.SpliceGrapher                         import SpliceGraph
 
 from pylab import *
 from glob  import glob
@@ -106,8 +106,8 @@ def plotSpliceJunctions(junctions, displayAxes, minpos, maxpos, **args) :
     """
     Renders a splice junction plot within the given viewing area.
     """
-    mindepth = getAttribute('mindepth', 0, **args) 
-    title    = getAttribute('title', '', **args) 
+    mindepth = getAttribute('mindepth', 0, **args)
+    title    = getAttribute('title', '', **args)
     jctList  = [j for j in junctions if j.maxpos >= minpos and j.minpos <= maxpos and j.count >= mindepth]
     jctView  = SpliceJunctionView(jctList, displayAxes, **args)
     jctView.plot(**args)
@@ -119,7 +119,7 @@ def plotSpliceJunctions(junctions, displayAxes, minpos, maxpos, **args) :
 
     return jctView.patchDict
 
-def plotXYGraph(X, Y, displayAxes, minpos=0, maxpos=sys.maxint, **args) :
+def plotXYGraph(X, Y, displayAxes, minpos=0, maxpos=sys.maxsize, **args) :
     """
     Renders an X-Y graph within the viewing area.  Assumes X values
     are sorted in ascending order.
@@ -147,7 +147,7 @@ def setXticks(minpos, maxpos, minTicks=4, maxTicks=10) :
 
     # Remove every other tick label
     if len(result) > maxTicks :
-        revised = [result[i] for i in xrange(0,len(result),2)]
+        revised = [result[i] for i in range(0,len(result),2)]
         result  = revised
 
     return result

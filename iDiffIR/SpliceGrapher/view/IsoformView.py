@@ -2,11 +2,11 @@
 Module that adds a graph's annotated isoforms to a matplotlib figure
 using a separate graph for each isoform.
 """
-from SpliceGrapher.shared.utils                 import *
-from SpliceGrapher.shared.subgraph              import *
-from SpliceGrapher.view.SpliceGraphView         import *
-from SpliceGrapher.SpliceGraph                  import *
-from SpliceGrapher.predict.SpliceGraphPredictor import DISPOSITION_KEY, UNRESOLVED_NODE, ACCEPTORS_KEY, DONORS_KEY, INFORMATION_KEY
+from iDiffIR.SpliceGrapher.shared.utils                 import *
+from iDiffIR.SpliceGrapher.shared.subgraph              import *
+from iDiffIR.SpliceGrapher.view.SpliceGraphView         import *
+from iDiffIR.SpliceGrapher.SpliceGraph                  import *
+from iDiffIR.SpliceGrapher.predict.SpliceGraphPredictor import DISPOSITION_KEY, UNRESOLVED_NODE, ACCEPTORS_KEY, DONORS_KEY, INFORMATION_KEY
 
 from pylab import *
 import sys
@@ -130,7 +130,7 @@ class IsoformView(SpliceGraphView) :
             level += 1
             nodes = self.isoformMap[formName]
 
-            for i in xrange(len(nodes)) :
+            for i in range(len(nodes)) :
                 node       = nodes[i]
                 Ypos       = offset + level*self.trackHeight()
                 #assert(Ypos >= 0)

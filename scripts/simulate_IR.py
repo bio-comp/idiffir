@@ -20,8 +20,8 @@
 
 """
 Generate differential isoform reads
- 
-.. moduleauthor:: Mike Hamilton <hamiltom@cs.colostate.edu>  
+
+.. moduleauthor:: Mike Hamilton <hamiltom@cs.colostate.edu>
 """
 
 from iDiffIR.SpliceGrapher.shared.utils        import *
@@ -47,11 +47,11 @@ parser.add_option('-o', dest='outfile',  default=None,          help='Output fil
 parser.add_option('-g', dest='diffGExp', default=0.25, type=float, help='Frequency of differential gene expression [default: %default]')
 parser.add_option('-i', dest='diffIExp', default=0.10, type=float, help='Frequency of differential isoform expression [default: %default]')
 parser.add_option('-D', dest='diffIso', default=2.0, type=float, help='Relative differential isoform expression')
-parser.add_option('-l', dest='read_length', default=80, type=int, help='Length of simulated reads [default: %default]') 
-parser.add_option('-a', dest='minAnchor', default=8, type=int, help='Minimum anchor length for a spliced alignment [default: %default]') 
+parser.add_option('-l', dest='read_length', default=80, type=int, help='Length of simulated reads [default: %default]')
+parser.add_option('-a', dest='minAnchor', default=8, type=int, help='Minimum anchor length for a spliced alignment [default: %default]')
 parser.add_option('-t', dest='test', default=False, action='store_true', help='Run test [default: %default]')
 parser.add_option('-v', dest='verbose',  default=False,         help='Verbose mode [default: %default]', action='store_true')
-parser.add_option('-d', dest='depth', default=50, type=int, help='Depth of up-regulated and equal expression') 
+parser.add_option('-d', dest='depth', default=50, type=int, help='Depth of up-regulated and equal expression')
 parser.add_option('-e', dest='expfile', default=None, type=str, help='path of expression file')
 parser.add_option('-s', dest='summary_file', default='summary.txt', type=str, help='name of summary file')
 parser.add_option('-r', dest='reps', default=1, type=int, help='number of replicates for each condition')
@@ -95,7 +95,7 @@ else:
 genes.sort()
 loader = FastaLoader(opts.fasta, verbose=opts.verbose)
 multi_isos = [ gene.id for gene in genes if len(gene.isoforms) > 1 ]
-gene_IDs = [ gene.id for gene in genes ]               
+gene_IDs = [ gene.id for gene in genes ]
 
 # select differential isoform genes
 diffIsos = random.sample( multi_isos, int( len(multi_isos) * opts.diffIExp) )
@@ -120,7 +120,7 @@ def makeCIGAR( positions):
     return cigar
 
 def makeSAMRecord( rid, chrom, strand, start, positions, sequence ):
-    quality = 'F' 
+    quality = 'F'
     cigar = makeCIGAR( positions )
     minAnchor = numpy.inf
     if 'N' in cigar:
@@ -128,12 +128,12 @@ def makeSAMRecord( rid, chrom, strand, start, positions, sequence ):
             anchor= int(x.split('M')[0])
             if anchor < minAnchor:
                 minAnchor = anchor
-        
-    record = '%s\t%d\t%s\t%d\t50\t%s\t*\t0\t0\t%s\t%s\tAS:i:0\tXN:i:0\tXM:i:0\tXO:i:0\tXG:i:0\tNM:i:0\tMD:Z:%d\tNH:i:1' % (rid, 
-                                                                                                                        0 if strand =='+' else 16, 
-                                                                                                                        chrom, start, cigar, 
-                                                                                                                        sequence, 
-                                                                                                                        quality*len(sequence), 
+
+    record = '%s\t%d\t%s\t%d\t50\t%s\t*\t0\t0\t%s\t%s\tAS:i:0\tXN:i:0\tXM:i:0\tXO:i:0\tXG:i:0\tNM:i:0\tMD:Z:%d\tNH:i:1' % (rid,
+                                                                                                                        0 if strand =='+' else 16,
+                                                                                                                        chrom, start, cigar,
+                                                                                                                        sequence,
+                                                                                                                        quality*len(sequence),
                                                                                                                         len(sequence))
     return record, minAnchor
 
@@ -165,12 +165,12 @@ def simulateReads( positions, sequence, chrom, strand, depth, length, qname, out
     L = len(sequence)
     nReads = depth * int(L/float(length))
     #nReads = depth * L
-    for _ in xrange( nReads ):
+    for _ in range( nReads ):
         simulateReads.n += 1
         rid = '%s.%d' % ( qname, simulateReads.n)
         idx = random.randint( 0, L-length )
         start = positions[idx]
-        rec, minA = makeSAMRecord( rid, chrom, strand, start, 
+        rec, minA = makeSAMRecord( rid, chrom, strand, start,
                              positions[idx:(idx+length)], sequence[idx:(idx+length)] )
         if 1:
             outstream.write('%s\n' % rec )
@@ -182,7 +182,7 @@ def run_test( ):
     for gene in genes:
         gene_dict[gene.id] = gene
     gene       = gene_dict[diffIsos[0]]
-    print gene.id, gene.strand
+    print(gene.id, gene.strand)
 
     g = makeSpliceGraph(gene)
     g.annotate()
@@ -197,23 +197,23 @@ def run_test( ):
     mt_exp     = numpy.random.poisson( 50, 1 )
     mt_diffExp = int(mt_exp * 0.75)
     mt_eqExp   = max(1, int((mt_exp*0.25)/ (len(gene.isoforms)-1) ))
-    mt_IsoDepths = [ mt_diffExp if i == diffIso_n else mt_eqExp for i in xrange( len(gene.isoforms ) ) ]
+    mt_IsoDepths = [ mt_diffExp if i == diffIso_n else mt_eqExp for i in range( len(gene.isoforms ) ) ]
 
     wt_exp     = numpy.random.poisson( 50, 1 )
     wt_eqExp   = max(1, int(wt_exp/ float(len(gene.isoforms) )))
 
 
-    wt_IsoDepths = [ wt_eqExp ] * len( gene.isoforms ) 
+    wt_IsoDepths = [ wt_eqExp ] * len( gene.isoforms )
 
     for i,iso in enumerate(gene.isoforms):
         exons = sorted( [sorted( [x.start(), x.end()] ) for x in gene.isoforms.values()[i].sortedExons() ] )
-        sequence = ''.join([ loader.subsequence( gene.chromosome, 
-                                                 exon[0]-1, exon[1]-1, 
+        sequence = ''.join([ loader.subsequence( gene.chromosome,
+                                                 exon[0]-1, exon[1]-1,
                                                  reverse=gene.strand=='-') for exon in exons])
         positions = list(itertools.chain( *[range( x[0], x[1]+1) for x in exons ] ))
-        simulateReads( positions, sequence, gene.chromosome, gene.strand, 
+        simulateReads( positions, sequence, gene.chromosome, gene.strand,
                        mt_IsoDepths[i], opts.read_length, 'mutant_1', mt_OutStream)
-        simulateReads( positions, sequence, gene.chromosome, gene.strand, 
+        simulateReads( positions, sequence, gene.chromosome, gene.strand,
                        wt_IsoDepths[i], opts.read_length, 'wildtype_1', wt_OutStream)
     mt_OutStream.close()
     wt_OutStream.close()
@@ -225,10 +225,10 @@ def run_test( ):
         key2 = (start,end)
         for key in as_map:
             if key == key2:
-                print key, as_map[key]
+                print(key, as_map[key])
             elif key2[0] >= key[0] and key2[1] >= key[1]:
-                print key, as_map[key]
-    print as_map
+                print(key, as_map[key])
+    print(as_map)
     template = \
                """[SinglePlotConfig]
 legend        = True
@@ -237,7 +237,7 @@ height        = 8.0
 width         = 16.0
 fontsize      = 16
 shrink_introns= False
-               
+
 [GeneModel]
 plot_type     = gene
 hide          = False
@@ -252,7 +252,7 @@ source_file   = mutant.sam
 title_string  = Mutant
 log_threshold = 100
 labels        = False
-            
+
 [JunctionsMT]
 plot_type     = junctions
 source_file   = mutant.sam
@@ -278,28 +278,28 @@ labels        = True
     with open('plot.config', 'w') as fout:
         fout.write( '%s' % template )
     os.system( 'plotter.py plot.config' )
-    
+
 def makeSingleIsoform( gene, depths1, label1, outstream1, depths2, label2, outstream2, minAnchor ):
-    exons = sorted( [sorted( [x.start(), x.end()] ) for x in gene.isoforms.values()[0].sortedExons() ] )    
-    sequence = ''.join([ loader.subsequence( gene.chromosome, 
-                                             exon[0]-1, exon[1]-1, 
+    exons = sorted( [sorted( [x.start(), x.end()] ) for x in gene.isoforms.values()[0].sortedExons() ] )
+    sequence = ''.join([ loader.subsequence( gene.chromosome,
+                                             exon[0]-1, exon[1]-1,
                                              reverse=gene.strand=='-') for exon in exons])
     positions = list(itertools.chain( *[range( x[0], x[1]+1) for x in exons ] ))
-    simulateReads( positions, sequence, gene.chromosome, gene.strand, 
+    simulateReads( positions, sequence, gene.chromosome, gene.strand,
                    depths1, opts.read_length, label1, outstream1, minAnchor)
-    simulateReads( positions, sequence, gene.chromosome, gene.strand, 
+    simulateReads( positions, sequence, gene.chromosome, gene.strand,
                    depths2, opts.read_length, label2, outstream2, minAnchor)
-    
+
 def makeMultiIsoform( gene,  depths1, label1, outstream1, depths2, label2, outstream2, minAnchor ):
     for i, iso in enumerate(gene.isoforms):
         exons = sorted( [sorted( [x.start(), x.end()] ) for x in gene.isoforms.values()[i].sortedExons() ] )
-        sequence = ''.join([ loader.subsequence( gene.chromosome, 
-                                                 exon[0]-1, exon[1]-1, 
+        sequence = ''.join([ loader.subsequence( gene.chromosome,
+                                                 exon[0]-1, exon[1]-1,
                                                  reverse=gene.strand=='-') for exon in exons])
         positions = list(itertools.chain( *[range( x[0], x[1]+1) for x in exons ] ))
-        simulateReads( positions, sequence, gene.chromosome, gene.strand, 
+        simulateReads( positions, sequence, gene.chromosome, gene.strand,
                        depths1[i], opts.read_length, label1, outstream1, minAnchor)
-        simulateReads( positions, sequence, gene.chromosome, gene.strand, 
+        simulateReads( positions, sequence, gene.chromosome, gene.strand,
                        depths2[i], opts.read_length, label2, outstream2, minAnchor)
 
 def annotateIRs(gene):
@@ -315,8 +315,8 @@ def annotateIRs(gene):
                     break
         isoIRs.append(hasIR)
     return isoIRs
-    
-    
+
+
 
 def main():
     summary_stream = open(opts.summary_file, 'w')
@@ -324,7 +324,7 @@ def main():
     IR_events = { }
     mt_OutStreams = [ ]
     wt_OutStreams = [ ]
-    for r in xrange(opts.reps):
+    for r in range(opts.reps):
         mt_OutStreams.append( open('mutant_%d.sam' % (r+1), 'w'))
         wt_OutStreams.append( open('wildtype_%d.sam' % (r+1), 'w'))
 
@@ -333,7 +333,7 @@ def main():
 
     if opts.expfile:
         loadExp()
-    indicator = ProgressIndicator(10000, description=' genes', verbose=opts.verbose)        
+    indicator = ProgressIndicator(10000, description=' genes', verbose=opts.verbose)
     for gene in genes:
 
         indicator.update()
@@ -349,7 +349,7 @@ def main():
                 dn_outstreams = wt_OutStreams
                 dn_label = 'wildtype'
                 dn_depth = int(wte)
-                
+
             # pick wildtype as up-regulated
             else:
                 dn_outstreams = mt_OutStreams
@@ -358,7 +358,7 @@ def main():
                 up_outstreams = wt_OutStreams
                 up_label = 'wildtype'
                 up_depth = int(wte)
-            
+
             summary_stream.write( '%s\t%d\t%d\t%s\t' % (gene.id, up_depth, dn_depth, 'True' ))
         #otherwise pick random expression
         else:
@@ -393,7 +393,7 @@ def main():
                 summary_stream.write( '%s\t%d\t%d\t%s\t' % (gene.id, up_depth, dn_depth, 'False' ))
         # only one isoform
         if len( gene.isoforms ) < 2:
-            for r in xrange(opts.reps):
+            for r in range(opts.reps):
                 makeSingleIsoform( gene, up_depth, up_label, up_outstreams[r], dn_depth, dn_label, dn_outstreams[r], opts.minAnchor )
             summary_stream.write('False\t\n')
             continue
@@ -402,7 +402,7 @@ def main():
         g = makeSpliceGraph(gene)
         g.annotate()
         irIsos = annotateIRs(gene)
-        
+
         for ev in g.distinctAltEvents():
             key = tuple(sorted( [ev[0], ev[1]]))
             l = as_map.get(key, set([]))
@@ -413,7 +413,7 @@ def main():
         # get differntial IR events, if there are any in the selected isoform
         evs = set([])
         diso_start, diso_end = sorted( (diso.start(), diso.end()) )
-        did = gene.isoforms.keys()[diffIso_n]
+        did = list(gene.isoforms.keys())[diffIso_n]
         for start,end in sorted( [sorted( [x.start(), x.end()] ) for x in diso.sortedExons() ] ):
             key2 = (start,end)
             for key in as_map:
@@ -421,7 +421,7 @@ def main():
                     if 'IR' in as_map[key]:
                         evs.add( (start, end, 'P') )
 
-        for j in xrange ( len ( gene.isoforms ) ):
+        for j in range( len ( gene.isoforms ) ):
             if j == diffIso_n: continue
             for start,end in sorted( [sorted( [x.start(), x.end()] ) for x in gene.isoforms.values()[j].sortedExons() ] ):
                 key2 = (start,end)
@@ -429,13 +429,13 @@ def main():
                     if key == key2:
                         if 'IR' in as_map[key] and (start >= diso_start and start <= diso_end or end >= diso_start and end <= diso_end):
                             evs.add( (start, end, 'S') )
-            
-        lambdasEq = numpy.array([ max(0.15,ire) if irIsos[i] else max(0.15,1.0-ire) for i in xrange( len( gene.isoforms ) ) ])
+
+        lambdasEq = numpy.array([ max(0.15,ire) if irIsos[i] else max(0.15,1.0-ire) for i in range( len( gene.isoforms ) ) ])
         lambdasEq = lambdasEq/sum(lambdasEq)
         isoScalar = random.uniform(1.5,5)
         if random.randint(0,1):
-            isoScalar = 1.0 / isoScalar 
-        lambdasDiff = numpy.array( [ isoScalar*lambdasEq[i] if i == diffIso_n else lambdasEq[i] for i in xrange( len(gene.isoforms))])
+            isoScalar = 1.0 / isoScalar
+        lambdasDiff = numpy.array( [ isoScalar*lambdasEq[i] if i == diffIso_n else lambdasEq[i] for i in range( len(gene.isoforms))])
         lambdasDiff = lambdasDiff/sum(lambdasDiff)
 
         if gene.id in diffIsos:
@@ -447,10 +447,10 @@ def main():
                 eiso_label = dn_label
                 eiso_outstreams = dn_outstreams
                 eiso_depths = [ int(math.ceil(x)) for x in lambdasEq*dn_depth]
-                summary_stream.write('True\t%s\t' % (did))            
+                summary_stream.write('True\t%s\t' % (did))
                 summary_stream.write( '%s\n' % ( ';'.join( ['%d,%d,%s' % ( start, stop, t) for start, stop, t in evs ] ) ) )
 
-                
+
             else:
                 diso_label = dn_label
                 diso_outstreams = dn_outstreams
@@ -458,7 +458,7 @@ def main():
                 eiso_label = up_label
                 eiso_outstreams = up_outstreams
                 eiso_depths = [ int(math.ceil(x)) for x in lambdasEq*up_depth]
-                summary_stream.write('True\t%s\t' % (did))            
+                summary_stream.write('True\t%s\t' % (did))
                 summary_stream.write( '%s\n' % ( ';'.join( ['%d,%d,%s' % ( start, stop, t) for start, stop, t in evs ] ) ) )
             summary_stream.flush()
         else:
@@ -468,11 +468,11 @@ def main():
             eiso_label = dn_label
             eiso_outstreams = dn_outstreams
             eiso_depths =  [ int(x) for x in lambdasEq*dn_depth]
-            summary_stream.write('False\t\n')            
-        for r in xrange(opts.reps):
+            summary_stream.write('False\t\n')
+        for r in range(opts.reps):
             makeMultiIsoform( gene,  diso_depths, diso_label, diso_outstreams[r], eiso_depths, eiso_label, eiso_outstreams[r], opts.minAnchor )
     indicator.finish()
-    for r in xrange(opts.reps):
+    for r in range(opts.reps):
         mt_OutStreams[r].close()
         wt_OutStreams[r].close()
     summary_stream.close()
@@ -483,7 +483,7 @@ def main():
 
 if __name__ == '__main__':
     simulateReads.n = 0
-    if opts.test: 
+    if opts.test:
         run_test()
     else:
         main()

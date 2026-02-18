@@ -1,29 +1,29 @@
 #!/bin/python
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
-from SpliceGrapher.predict.SpliceSiteValidator import *
-from SpliceGrapher.predict.SiteClassifier      import *
-from SpliceGrapher.formats.loader              import *
-from SpliceGrapher.formats.FastaLoader         import *
-from SpliceGrapher.shared.config               import *
-from SpliceGrapher.shared.utils                import *
-from SpliceGrapher.shared.streams              import *
-from SpliceGrapher.formats.sam                 import *
+from iDiffIR.SpliceGrapher.predict.SpliceSiteValidator import *
+from iDiffIR.SpliceGrapher.predict.SiteClassifier      import *
+from iDiffIR.SpliceGrapher.formats.loader              import *
+from iDiffIR.SpliceGrapher.formats.FastaLoader         import *
+from iDiffIR.SpliceGrapher.shared.config               import *
+from iDiffIR.SpliceGrapher.shared.utils                import *
+from iDiffIR.SpliceGrapher.shared.streams              import *
+from iDiffIR.SpliceGrapher.formats.sam                 import *
 
 import sys, gzip, zipfile
 from optparse import OptionParser
@@ -50,9 +50,11 @@ def cmpQuintuple(a,b) :
     # quintuple: chromosome, strand, position, type, score
     # sort by chromosome, then position, then strand
     if a[0] == b[0] :
-        return cmp(a[1],b[1]) if a[2]==b[2] else a[2]-b[2]
+        if a[2] == b[2]:
+            return (a[1] > b[1]) - (a[1] < b[1])
+        return a[2] - b[2]
     else :
-        return cmp(a[0],b[0])
+        return (a[0] > b[0]) - (a[0] < b[0])
 
 def jctString(c,d,a,s) :
     return '%s;%d;%d;%s' % (c,d,a,s)
@@ -132,7 +134,7 @@ def validSpliceSite(chrom, strand, pos, classifiers, storedValues, **args) :
 
         if svm.config.normalize() :
             ssData.attachKernel('cosine')
-            
+
         (ssClass,score) = svm.classify(ssData,0)
         showStdout() # Reinstate stream
 
@@ -281,7 +283,7 @@ for line in samIterator(samFile, isBam=bamFormat) :
 
     try :
         rec, matches = acceptSAMRecord(s, indicator.ctr)
-    except ValueError,ve :
+    except ValueError as ve:
         invalidCigar += 1
         continue
 
@@ -352,14 +354,14 @@ for line in samIterator(samFile, isBam=bamFormat) :
                     commonGenes = accGenes.intersection(donGenes)
                 except KeyError :
                     commonGenes = set()
-        
+
                 if commonGenes :
                     validJct.add(jctString(chrom,don,acc,jct.strand))
                 else :
                     transgenicJct.add(jctString(chrom,don,acc,jct.strand))
             else :
                 validJunctions = False
-                # Use line.strip() in case 
+                # Use line.strip() in case
                 if badStream : badStream.write('%s\n' % s)
                 invalidJct.add(jctString(chrom,don,acc,jct.strand))
         else :

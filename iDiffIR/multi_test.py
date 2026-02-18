@@ -21,7 +21,7 @@ Adjust for multiple testing
 import numpy as np
 from scipy.interpolate import splrep, splev
 import matplotlib
-matplotlib.use('agg', warn=0) 
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from matplotlib import rc
 rc('text', usetex=False)
@@ -38,10 +38,10 @@ def bh( pvalues ):
     """
     Benjamini-Hochberg adjustment:
 
-    reject p_r, r=1...k, where k = max_i: p_i < i * alpha / m 
+    reject p_r, r=1...k, where k = max_i: p_i < i * alpha / m
 
     'FDR <= # true null hypotheses / all tests * alpha'
-    
+
     **preserves original order
     """
     order = np.argsort( np.array( pvalues ) )
@@ -50,10 +50,10 @@ def bh( pvalues ):
     adj = [0]*m
     adj[m-1] = min(1.0,p[m-1] / (1.0+(m-1)) * m)
 
-    for i in xrange(m-2,-1,-1):
+    for i in range(m-2,-1,-1):
         adj[i] = min( p[i] / (1.0+i) * m, adj[i+1] )
     rtn = [0]*m
-    for i in xrange(m):
+    for i in range(m):
         rtn[ order[i]] = adj[i]
     return rtn
 
@@ -76,8 +76,8 @@ def qvalues( pvalues, splineDF=3, qplot=False ):
     qvals = [0]*m
     qvals[m-1] = min(pi0*p[m-1], 1.0)
 
-    
-    for i in xrange(m-2,-1,-1):
+
+    for i in range(m-2,-1,-1):
         qvals[i] = min( qvals[i+1], pi0*m*p[i]/float(i+1))
     if qplot:
         plt.figure()
@@ -85,7 +85,7 @@ def qvalues( pvalues, splineDF=3, qplot=False ):
         plt.plot(lams,preds[:-2],'-')
         plt.savefig('lamdas.pdf')
     rtn = [0]*m
-    for i in xrange(m):
+    for i in range(m):
         rtn[order[i]] = qvals[i]
     return rtn, preds,pi0
 
@@ -117,12 +117,12 @@ if __name__ == '__main__':
     ax.set_ylabel(r'adj $p$-value', size=18)
     axins = inset_axes(ax,
                    width="40%",
-                   height="40%", 
+                   height="40%",
                    loc=5)
     axins.set_ylim( 0,0.1)
     axins.set_xticks([0, sorted(pvals)[k-1]])
 
-    
+
     majorFormatter = FormatStrFormatter(r'%0.1g')
     axins.xaxis.set_major_formatter(majorFormatter)
     axins.grid()

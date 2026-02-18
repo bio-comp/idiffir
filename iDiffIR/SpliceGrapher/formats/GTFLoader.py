@@ -1,23 +1,23 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
-from SpliceGrapher.shared.utils      import *
-from SpliceGrapher.formats.gtf       import *
-from SpliceGrapher.formats.GeneModel import *
+from iDiffIR.SpliceGrapher.shared.utils      import *
+from iDiffIR.SpliceGrapher.formats.gtf       import *
+from iDiffIR.SpliceGrapher.formats.GeneModel import *
 
 import sys
 
@@ -171,14 +171,14 @@ class GTFLoader(object) :
             indicator.update()
             try :
                 rec   = GTF_Line(line.strip())
-            except ValueError, ve :
+            except ValueError as ve:
                 raise ValueError('line %d: invalid GTF record:\n%s%s' % (indicator.ctr, line, str(ve)))
 
             ftype = rec.parts[FEATURE_INDEX].lower()
             if ftype not in KNOWN_TYPES :
                 unknown.add(ftype)
                 continue
-    
+
             # Ensure that chromosomes are always in lower case
             rec.parts[SEQNAME_INDEX] = rec.parts[SEQNAME_INDEX].lower()
             start  = rec.start()
@@ -187,7 +187,7 @@ class GTFLoader(object) :
             result.addChromosome(1, end, rec.parts[SEQNAME_INDEX])
             gene  = self.addGeneToModel(result, rec, start, end)
 
-            # When we switch from one gene to the next, 
+            # When we switch from one gene to the next,
             # make sure UTRs are created for the old gene:
             if oldGene and gene != oldGene :
                 for cds in oldGene.cds :

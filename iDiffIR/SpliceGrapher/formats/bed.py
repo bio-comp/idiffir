@@ -1,16 +1,16 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -27,8 +27,8 @@ Example:
   Chr2	4080	8224	JUNC00000003	5	-	4080	8224	255,0,0	2	33,8	0,4136
   Chr2	4257	9081	JUNC00000004	2	+	4257	9081	255,0,0	2	28,10	0,4814
 """
-from SpliceGrapher.shared.utils     import ezopen, getAttribute
-from SpliceGrapher.shared.ShortRead import SpliceJunction
+from iDiffIR.SpliceGrapher.shared.utils     import ezopen, getAttribute
+from iDiffIR.SpliceGrapher.shared.ShortRead import SpliceJunction
 
 HEADER_PFX  = 'track'
 
@@ -74,7 +74,7 @@ def loadBedJunctions(bedFile, **args) :
 def loadBEDRecords(f, header=True) :
     """Loads BED records from a file and returns them in a list.
     Assumes first line is a header string unless 'header' is set to False."""
-    from SpliceGrapher.shared.utils import ezopen
+    from iDiffIR.SpliceGrapher.shared.utils import ezopen
     hstring   = None
     result    = []
     bedStream = ezopen(f)
@@ -96,7 +96,7 @@ class BEDRecord(object) :
         for col in ALL_COLUMNS :
             try :
                 self.attrs[col] = parts[col]
-            except IndexError, ie :
+            except IndexError as ie:
                 if col in REQUIRED_COLUMNS :
                     raise ie
                 self.attrs[col] = None

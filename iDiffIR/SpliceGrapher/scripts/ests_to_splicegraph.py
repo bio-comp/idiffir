@@ -1,17 +1,17 @@
 #! /usr/bin/env python
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -19,12 +19,12 @@
 """
 Script for converting EST/cDNA alignments into splice graphs.
 """
-from SpliceGrapher.shared.config     import *
-from SpliceGrapher.shared.utils      import *
-from SpliceGrapher.formats.psl       import *
-from SpliceGrapher.formats.loader    import *
-from SpliceGrapher.predict.SpliceSiteValidator import *
-from SpliceGrapher.SpliceGraph       import SpliceGraph, updateRoot, updateLeaf
+from iDiffIR.SpliceGrapher.shared.config     import *
+from iDiffIR.SpliceGrapher.shared.utils      import *
+from iDiffIR.SpliceGrapher.formats.psl       import *
+from iDiffIR.SpliceGrapher.formats.loader    import *
+from iDiffIR.SpliceGrapher.predict.SpliceSiteValidator import *
+from iDiffIR.SpliceGrapher.SpliceGraph       import SpliceGraph, updateRoot, updateLeaf
 
 from optparse import OptionParser
 import sys, os
@@ -132,7 +132,7 @@ for chrom in pslDict :
             outPath   = os.path.join(opts.dir, '%s%s.gff' % (gene.id,opts.suffix))
             graph.writeGFF(outPath, haltOnError=True)
             counts[gene.strand] += 1
-        except ValueError, ve :
+        except ValueError as ve:
             if len(graph.nodeDict) == 0 :
                 if opts.singles :
                     sys.stderr.write('Unable to create graph for %s: created 0 nodes from %d PSL records.\n' % (gene.id, len(pslRecs)))

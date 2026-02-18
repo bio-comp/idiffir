@@ -1,16 +1,16 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -18,12 +18,20 @@
 """
 Module containing general utility methods.
 """
-import ConfigParser, gzip, locale, os, random, subprocess, sys, time, streams
+import configparser as ConfigParser
+import gzip
+import locale
+import os
+import random
+import subprocess
+import sys
+import time
+from iDiffIR.SpliceGrapher.shared import streams
 from glob import glob
 
 def asList(value, delim=',') :
     """Generic method for creating a list from a given value.
-    The value may be a string of delimiter-separated values, 
+    The value may be a string of delimiter-separated values,
     a list or a set."""
     if type(value) == str :
         return value.split(delim)
@@ -36,7 +44,7 @@ def asList(value, delim=',') :
 
 def asSet(value, delim=',') :
     """Generic method for creating a set from a given value.
-    The value may be a string of delimiter-separated values, 
+    The value may be a string of delimiter-separated values,
     a list or a set."""
     if type(value) == str :
         return set(value.split(delim))
@@ -59,7 +67,7 @@ def bsearch(X, target, getValue=lambda a:a, **args) :
     hi  = getAttribute('high', len(X)-1, **args)
     mid = lo
     while lo < hi :
-        mid    = (lo+hi)/2
+        mid    = (lo + hi) // 2
         midval = getValue(X[mid])
         if midval < target :
             lo = mid+1
@@ -104,8 +112,8 @@ def dictString(valDict, delim=',') :
 def ezopen(fileName) :
     """Allows clients to open files without regard for whether they're gzipped."""
     if not (os.path.exists(fileName) and os.path.isfile(fileName)):
-        raise ValueError, 'file does not exist at %s' % fileName
-    
+        raise ValueError('file does not exist at %s' % fileName)
+
     fileHandle  = gzip.GzipFile(fileName)
     gzippedFile = True
     try :
@@ -194,7 +202,7 @@ def process_fasta_header(header) :
     return header.split()[0]
 
 def process_labeled_fasta_header(header) :
-    """ 
+    """
     Extract a sequence ID and its label from a fasta file.
     Used with training data FASTA files, so it assumes
     headers have the form "ID label=#".
@@ -341,8 +349,11 @@ class RandomListIterator(object) :
     def __iter__(self) :
         return self
 
-    def next(self) :
+    def __next__(self) :
         """Iterator implementation that returns a random value, with
         replacement, from a list."""
         i = self.rand.randint(0,self.limit)
         return self.values[i]
+
+    # Python 2 compatibility alias
+    next = __next__
