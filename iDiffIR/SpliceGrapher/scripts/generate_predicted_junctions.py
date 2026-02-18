@@ -1,18 +1,18 @@
 #! /usr/bin/env python
-# 
+#
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -22,13 +22,13 @@ Python script that generates splice-junction sequences for short-read
 alignments based on predicted splice sites.  Output includes combinations
 of known splice sites with predicted sites.
 """
-from SpliceGrapher.shared.config          import *
-from SpliceGrapher.shared.utils           import *
-from SpliceGrapher.formats.loader         import *
-from SpliceGrapher.formats.FastaLoader    import FastaLoader
-from SpliceGrapher.formats.fasta          import FastaRecord
-from SpliceGrapher.predict.PredictedSites import *
-from SpliceGrapher.predict.SpliceSite     import *
+from iDiffIR.SpliceGrapher.shared.config          import *
+from iDiffIR.SpliceGrapher.shared.utils           import *
+from iDiffIR.SpliceGrapher.formats.loader         import *
+from iDiffIR.SpliceGrapher.formats.FastaLoader    import FastaLoader
+from iDiffIR.SpliceGrapher.formats.fasta          import FastaRecord
+from iDiffIR.SpliceGrapher.predict.PredictedSites import *
+from iDiffIR.SpliceGrapher.predict.SpliceSite     import *
 
 from optparse import OptionParser
 import gzip, os, sys
@@ -150,7 +150,7 @@ for gene in geneList :
     acceptors = list(acceptorSet)
     donors.sort(reverse=reversed)
     acceptors.sort(reverse=reversed)
-    
+
     knownJunctions = gene.getJunctions()
     geneSequences  = 0
     for d in donors :
@@ -188,7 +188,7 @@ for gene in geneList :
             if gene.strand == '+' :
                 ## header = HEADER_FORMAT % (chrom.capitalize(), seqID, gene.id, d-opts.window+2, d+1, a, a+opts.window-1, gene.strand, PREDICTED_JCT)
                 header = HEADER_FORMAT % (chrom.capitalize(), seqID, gene.id, d-opts.window+1, d, a+2, a+opts.window+1, gene.strand, PREDICTED_JCT)
-            else : 
+            else :
                 header = HEADER_FORMAT % (chrom.capitalize(), seqID, gene.id, d+opts.window, d+2, a, a-opts.window+1, gene.strand, PREDICTED_JCT)
 
             seq = exon1 + exon2

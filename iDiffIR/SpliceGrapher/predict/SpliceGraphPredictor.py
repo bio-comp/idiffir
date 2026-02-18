@@ -1,16 +1,16 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -31,12 +31,12 @@ The predictor uses three stages:
   4. Build and output a revised splice graph that may predict novel
      exons and introns based on the new evidence.
 """
-from SpliceGrapher.shared.utils     import *
-from SpliceGrapher.shared.config    import *
-from SpliceGrapher.shared.ShortRead import SpliceJunction, PREDICTED_JCT, KNOWN_JCT, depthsToClusters
-from SpliceGrapher.shared.GeneModelConverter  import makeSpliceGraph
-from SpliceGrapher.formats.sam      import *
-from SpliceGrapher.SpliceGraph      import *
+from iDiffIR.SpliceGrapher.shared.utils     import *
+from iDiffIR.SpliceGrapher.shared.config    import *
+from iDiffIR.SpliceGrapher.shared.ShortRead import SpliceJunction, PREDICTED_JCT, KNOWN_JCT, depthsToClusters
+from iDiffIR.SpliceGrapher.shared.GeneModelConverter  import makeSpliceGraph
+from iDiffIR.SpliceGrapher.formats.sam      import *
+from iDiffIR.SpliceGrapher.SpliceGraph      import *
 
 import sys, os, re
 
@@ -183,7 +183,7 @@ class VirtualCluster(object) :
     """Class that encapsulates a virtual cluster of contiguous
     overlapping short-read clusters and graph nodes."""
     def __init__(self, node=None, cluster=None) :
-        self.minpos   = sys.maxint
+        self.minpos   = sys.maxsize
         self.maxpos   = 0
         self.nodes    = set()
         self.clusters = set()
@@ -342,7 +342,7 @@ class SpliceGraphPredictor(object) :
                 if self.graph.strand == '+' and d < a : continue
                 if self.graph.strand == '-' and d > a : continue
 
-                newId = self.nodegen.next()
+                newId = next(self.nodegen)
                 node  = self.graph.addNode(newId, a, d)
                 # If the node already exists (new node id not needed) skip it
                 if node.id == newId : result.append(node)

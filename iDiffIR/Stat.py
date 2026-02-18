@@ -24,9 +24,10 @@ from scipy.stats import t,gmean, hmean, sem, ttest_1samp
 from scipy.stats import norm as sNorm
 #from scipy.stats import variance as coeffVar
 from scipy.cluster.vq import kmeans,vq
-from multi_test import bh,qvalues,bonferroni
+from iDiffIR.multi_test import bh,qvalues,bonferroni
 from itertools import chain
-import numpy, os, sys, multi_test
+import numpy, os, sys
+import iDiffIR.multi_test as multi_test
 sys.setrecursionlimit(10000)
 from multiprocessing import Pool, freeze_support, Queue, Process
 from iDiffIR.BamfileIO import *
@@ -47,22 +48,22 @@ def removePositionalBias( geneRecords, f1Dict, f2Dict, numClusts, verbose=True )
 
     bMap = {0:'3', 1:'5', 2:'C', 3:'T', 4:'U'}
     sys.stderr.write('\tAdjusting read depths for positional bias...\n')
-    f1Reps = len(f1Dict[f1Dict.keys()[0]])
-    f2Reps = len(f2Dict[f2Dict.keys()[0]])
-    f1Codes    = [ list() for _ in xrange( f1Reps ) ]
-    f2Codes    = [ list() for _ in xrange( f2Reps ) ]
+    f1Reps = len(f1Dict[next(iter(f1Dict.keys()))])
+    f2Reps = len(f2Dict[next(iter(f2Dict.keys()))])
+    f1Codes    = [ list() for _ in range( f1Reps ) ]
+    f2Codes    = [ list() for _ in range( f2Reps ) ]
     f1Cnt      = {}
     f2Cnt      = {}
-    f1GeneCodes    = [ list() for _ in xrange( f1Reps ) ]
-    f2GeneCodes    = [ list() for _ in xrange( f2Reps ) ]
+    f1GeneCodes    = [ list() for _ in range( f1Reps ) ]
+    f2GeneCodes    = [ list() for _ in range( f2Reps ) ]
 
-    f1Weights  = [ list() for _ in xrange( f1Reps ) ]
-    f2Weights  = [ list() for _ in xrange( f2Reps ) ]
+    f1Weights  = [ list() for _ in range( f1Reps ) ]
+    f2Weights  = [ list() for _ in range( f2Reps ) ]
 
     soffset = 0
     eoffset = 1
 
-    for i in xrange( f1Reps ):
+    for i in range( f1Reps ):
         allBins = []
         tested  = []
         if verbose:
@@ -70,26 +71,26 @@ def removePositionalBias( geneRecords, f1Dict, f2Dict, numClusts, verbose=True )
         for gene in geneRecords:
             expR = []
             for s,e in gene.exons:
-                expR.extend( 
+                expR.extend(
                     f1Dict[gene.gid][i][(s+soffset):(e+eoffset)].tolist())
 
             tot = float(sum( expR))
             mu = float(numpy.mean(expR))
             # no expression
-            if tot == 0: 
+            if tot == 0:
                 tested.append(False)
             else:
                 tested.append(True)
                 bins = numpy.array_split(expR, 10)
                 allBins.append(numpy.array([ (sum(x)+mu)/tot for x in bins ]))
         allBins = numpy.array(allBins)
-        codes, distortion = kmeans(allBins, 
-                                   k_or_guess=numClusts, 
+        codes, distortion = kmeans(allBins,
+                                   k_or_guess=numClusts,
                                    thresh=10**(-100))
 
         f1Codes[i] = codes
         rlabels, dist = vq( allBins, codes)
-        for c in xrange( numClusts ):
+        for c in range( numClusts ):
             f1Cnt[c] = rlabels.tolist().count(c)
 
         wts = [ [ max(X)/xi for xi in X ] for X in codes ]
@@ -109,7 +110,7 @@ def removePositionalBias( geneRecords, f1Dict, f2Dict, numClusts, verbose=True )
 
         f1Weights[i] = gWts
 
-    for i in xrange( f2Reps ):
+    for i in range( f2Reps ):
         allBins = []
         tested  = []
         if verbose:
@@ -117,26 +118,26 @@ def removePositionalBias( geneRecords, f1Dict, f2Dict, numClusts, verbose=True )
         for gene in geneRecords:
             expR = []
             for s,e in gene.exons:
-                expR.extend( 
+                expR.extend(
                     f2Dict[gene.gid][i][(s+soffset):(e+eoffset)].tolist())
-            
+
             tot = float(sum( expR))
             mu = float(numpy.mean(expR))
             # no expression
-            if tot == 0: 
+            if tot == 0:
                 tested.append(False)
             else:
                 tested.append(True)
                 bins = numpy.array_split(expR, 10)
                 allBins.append(numpy.array([ (sum(x)+mu)/tot for x in bins ]))
         allBins = numpy.array(allBins)
-        codes, distortion = kmeans(allBins, 
-                                   k_or_guess=numClusts, 
+        codes, distortion = kmeans(allBins,
+                                   k_or_guess=numClusts,
                                    thresh=10**(-100))
 
         f2Codes[i] = codes
         rlabels, dist = vq( allBins, codes)
-        for c in xrange( numClusts ):
+        for c in range( numClusts ):
             f2Cnt[c] = rlabels.tolist().count(c)
 
         wts = [ [ max(X)/xi for xi in X ] for X in codes ]
@@ -161,26 +162,26 @@ def removePositionalBias( geneRecords, f1Dict, f2Dict, numClusts, verbose=True )
         tot = sum( [e-s for s,e in gene.exons])
         fracs = [ (e-s)/float(tot) for s,e in gene.exons]
         gene.f1ExonWts = [ ]
-        for i in xrange( f1Reps ):
+        for i in range( f1Reps ):
 
             wts = [ ]
             offset = 0
             for idx in range(len(gene.exons)):
-                s,e = (int(numpy.floor(offset*10)), 
+                s,e = (int(numpy.floor(offset*10)),
                        int(numpy.ceil( (offset+fracs[idx])*10)))
                 wts.append( numpy.mean(gene.f1BiasWts[i][s:e]) )
                 offset += fracs[idx]
             wts = [ xi/min(wts) for xi in wts]
             gene.f1ExonWts.append(wts)
-            
+
         gene.f2BiasWts = [ f2Weights[idx][gidx] for idx in range(f2Reps) ]
         gene.f2ExonWts = [ ]
 
-        for i in xrange( f2Reps ):
+        for i in range( f2Reps ):
             wts = [ ]
             offset = 0
             for idx in range(len(gene.exons)):
-                s,e = (int(numpy.floor(offset*10)), 
+                s,e = (int(numpy.floor(offset*10)),
                        int(numpy.ceil( (offset+fracs[idx])*10)))
                 wts.append( numpy.mean(gene.f2BiasWts[i][s:e]) )
                 offset += fracs[idx]
@@ -197,32 +198,32 @@ def computeNormFactors( geneRecords, f1Dict, f2Dict, verbose=False ):
     """
     if verbose:
         sys.stderr.write('\tComputing library size factors...\n')
-    f1Reps = len(f1Dict[f1Dict.keys()[0]])
-    f2Reps = len(f2Dict[f2Dict.keys()[0]])
-    f1ExonExp   = [ list() for _ in xrange( f1Reps ) ]
-    f2ExonExp   = [ list() for _ in xrange( f2Reps ) ]
-    f1IntronExp = [ list() for _ in xrange( f1Reps ) ]
-    f2IntronExp = [ list() for _ in xrange( f2Reps ) ]
+    f1Reps = len(f1Dict[next(iter(f1Dict.keys()))])
+    f2Reps = len(f2Dict[next(iter(f2Dict.keys()))])
+    f1ExonExp   = [ list() for _ in range( f1Reps ) ]
+    f2ExonExp   = [ list() for _ in range( f2Reps ) ]
+    f1IntronExp = [ list() for _ in range( f1Reps ) ]
+    f2IntronExp = [ list() for _ in range( f2Reps ) ]
 
     for gene in geneRecords:
         soffset = 0
         eoffset = 1
-        for i in xrange( f1Reps ):
-            f1ExonExp[i].extend( [ numpy.mean( 
+        for i in range( f1Reps ):
+            f1ExonExp[i].extend( [ numpy.mean(
                         f1Dict[gene.gid][i][(s+soffset):(e+eoffset)]) for s,e in gene.exons] )
 
-            f1IntronExp[i].extend( [ numpy.mean( 
+            f1IntronExp[i].extend( [ numpy.mean(
                         f1Dict[gene.gid][i][(s+soffset):(e+eoffset)]) for s,e in gene.introns ] )
 
-        for i in xrange( f2Reps ):
-            f2ExonExp[i].extend( [ numpy.mean( 
+        for i in range( f2Reps ):
+            f2ExonExp[i].extend( [ numpy.mean(
                         f2Dict[gene.gid][i][(s+soffset):(e+eoffset)]) for s,e in gene.exons] )
-            f2IntronExp[i].extend( [ numpy.mean( 
+            f2IntronExp[i].extend( [ numpy.mean(
                         f2Dict[gene.gid][i][(s+soffset):(e+eoffset)]) for s,e in gene.introns ] )
 
-    k = int(numpy.log2(max([numpy.mean( 
+    k = int(numpy.log2(max([numpy.mean(
                         [ x for x in b if x > 0 ]) for b in f1ExonExp+f2ExonExp])))
-    
+
     f1ExonExp   = [ sum(x) for x in f1ExonExp ]
     f2ExonExp   = [ sum(x) for x in f2ExonExp ]
     f1IntronExp = [ sum(x) for x in f1IntronExp ]
@@ -247,32 +248,32 @@ def computeNormFactorsAdj( geneRecords, f1Dict, f2Dict, verbose=False ):
     """
     if verbose:
         sys.stderr.write('\tComputing library size factors...\n')
-    f1Reps = len(f1Dict[f1Dict.keys()[0]])
-    f2Reps = len(f2Dict[f2Dict.keys()[0]])
-    f1ExonExp   = [ list() for _ in xrange( f1Reps ) ]
-    f2ExonExp   = [ list() for _ in xrange( f2Reps ) ]
-    f1IntronExp = [ list() for _ in xrange( f1Reps ) ]
-    f2IntronExp = [ list() for _ in xrange( f2Reps ) ]
+    f1Reps = len(f1Dict[next(iter(f1Dict.keys()))])
+    f2Reps = len(f2Dict[next(iter(f2Dict.keys()))])
+    f1ExonExp   = [ list() for _ in range( f1Reps ) ]
+    f2ExonExp   = [ list() for _ in range( f2Reps ) ]
+    f1IntronExp = [ list() for _ in range( f1Reps ) ]
+    f2IntronExp = [ list() for _ in range( f2Reps ) ]
 
     for gene in geneRecords:
         soffset = 0
         eoffset = 1
-        for i in xrange( f1Reps ):
-            f1ExonExp[i].extend( [ numpy.mean( 
+        for i in range( f1Reps ):
+            f1ExonExp[i].extend( [ numpy.mean(
                         f1Dict[gene.gid][i][(gene.exons[e][0]+soffset):(gene.exons[e][1]+eoffset)]*gene.f1ExonWts[i][e]) for e in range(len(gene.exons)) ] )
 
-            f1IntronExp[i].extend( [ numpy.mean( 
+            f1IntronExp[i].extend( [ numpy.mean(
                         f1Dict[gene.gid][i][(gene.introns[idx][0]+soffset):(gene.introns[idx][1]+eoffset)]*(gene.f1ExonWts[i][idx]+gene.f1ExonWts[i][idx+1])/2.0) for idx in range(len(gene.introns)) ] )
 
-        for i in xrange( f2Reps ):
-            f2ExonExp[i].extend( [ numpy.mean( 
+        for i in range( f2Reps ):
+            f2ExonExp[i].extend( [ numpy.mean(
                         f2Dict[gene.gid][i][(gene.exons[e][0]+soffset):(gene.exons[e][1]+eoffset)]*gene.f2ExonWts[i][e]) for e in range(len(gene.exons)) ] )
-            f2IntronExp[i].extend( [ numpy.mean( 
+            f2IntronExp[i].extend( [ numpy.mean(
                         f2Dict[gene.gid][i][(gene.introns[idx][0]+soffset):(gene.introns[idx][1]+eoffset)]*(gene.f2ExonWts[i][idx]+gene.f2ExonWts[i][idx+1])/2.0) for idx in range(len(gene.introns)) ] )
 
-    k = int(numpy.log2(max([numpy.mean( 
+    k = int(numpy.log2(max([numpy.mean(
                         [ x for x in b if x > 0 ]) for b in f1ExonExp+f2ExonExp])))
-    
+
     f1ExonExp   = [ sum(x) for x in f1ExonExp ]
     f2ExonExp   = [ sum(x) for x in f2ExonExp ]
     f1IntronExp = [ sum(x) for x in f1IntronExp ]
@@ -293,13 +294,13 @@ def procGeneStatsIR( tasks, test_status):
     """Wrapper to compute IR statistics for a gene
     """
     for gene, nspace, f1LNorm, f2LNorm in iter(tasks.get, 'STOP'):
-        f1Depths, f2Depths, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene, 
-                                                                       nspace.factor1bamfiles, 
-                                                                       nspace.factor2bamfiles 
+        f1Depths, f2Depths, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene,
+                                                                       nspace.factor1bamfiles,
+                                                                       nspace.factor2bamfiles
                                                                    )
         allJcts = set.intersection( *map(set, [x.keys() for x in f1Juncs]) + map(set, [x.keys() for x in f2Juncs]) )
         aVals = range(nspace.krange[0], nspace.krange[1]+1)
-        # nothing to test 
+        # nothing to test
 
         # .. todo:: change to search for undetected splice juntions
         #           if requested
@@ -312,7 +313,7 @@ def procGeneStatsIR( tasks, test_status):
             test_status.put((gene.gid, False))
             continue
 
-        # create stats arrays for each 
+        # create stats arrays for each
         # IR event
         nIRs = len(gene.introns)
         IRFC = [ ]
@@ -326,16 +327,16 @@ def procGeneStatsIR( tasks, test_status):
         IRRrat1 = [ ]
         IRRrat2 = [ ]
 
-        serr, f1Norm,f2Norm, f1exp, f2exp, f1expr, f2expr, fc = computeSE( gene, f1Depths, 
-                                                                           f2Depths, f1LNorm, 
+        serr, f1Norm,f2Norm, f1exp, f2exp, f1expr, f2expr, fc = computeSE( gene, f1Depths,
+                                                                           f2Depths, f1LNorm,
                                                                            f2LNorm)
         if max(f1Norm, f2Norm) > nspace.dexpThresh:
             test_status.put((gene.gid, False))
             continue
-            
+
         f1Depths += 1
         f2Depths += 1
-        
+
         gene.serr = serr
         gene.f1Norm = f1Norm
         gene.f2Norm = f2Norm
@@ -364,24 +365,24 @@ def procGeneStatsIR( tasks, test_status):
 
             if False:#biasAdj:
                 f1Int = numpy.array([f1ExpV[i][(s+1):(e)] * f1IntronNorm[i] * ((gene.f1ExonWts[i][k] + gene.f1ExonWts[i][k+1]) / 2.0)\
-                                         for i in xrange(len(f1IntronNorm))]).mean(0)
+                                         for i in range(len(f1IntronNorm))]).mean(0)
                 f2Int = numpy.array([f2ExpV[i][(s+1):(e)] * f2LNorm[i] * ((gene.f2ExonWts[i][k] + gene.f2ExonWts[i][k+1]) / 2.0)\
-                                         for i in xrange(len(f2LNorm))]).mean(0)
+                                         for i in range(len(f2LNorm))]).mean(0)
 
             else:
                 f1Int = numpy.array([f1Depths[i][(s+1):(e)] * f1LNorm[i]\
-                                     for i in xrange(len(f1LNorm))]).mean(0)
+                                     for i in range(len(f1LNorm))]).mean(0)
                 f2Int = numpy.array([f2Depths[i][(s+1):(e)] * f2LNorm[i]\
-                                     for i in xrange(len(f2LNorm))]).mean(0)
+                                     for i in range(len(f2LNorm))]).mean(0)
 
                 f1IntR = numpy.array([(f1Depths[i][(s+1):(e)]-1) * f1LNorm[i]\
-                                      for i in xrange(len(f1LNorm))]).mean(0)
+                                      for i in range(len(f1LNorm))]).mean(0)
                 f2IntR = numpy.array([(f2Depths[i][(s+1):(e)]-1) * f2LNorm[i]\
-                                      for i in xrange(len(f2LNorm))]).mean(0)
+                                      for i in range(len(f2LNorm))]).mean(0)
                 f1Intexp = numpy.array([(f1Depths[i][(s+1):(e)]-1).mean() \
-                                      for i in xrange(len(f1LNorm))])
+                                      for i in range(len(f1LNorm))])
                 f2Intexp = numpy.array([(f2Depths[i][(s+1):(e)]-1).mean() \
-                                      for i in xrange(len(f2LNorm))])
+                                      for i in range(len(f2LNorm))])
 
                 IRArat1.append(numpy.mean(f1Intexp/f1expr))
                 IRArat2.append(numpy.mean(f2Intexp/f2expr))
@@ -391,10 +392,10 @@ def procGeneStatsIR( tasks, test_status):
 
                 # get expressed junctions encompassing intron
                 irJcts = filter( lambda sj: sj[0] <= s+1 and sj[1] >= e-1, allJcts)
-                irJcts1 = numpy.array([ sum( [f1Juncs[i].get(sj, 0) for sj in irJcts] ) for i in xrange(len(f1LNorm))  ])
-                irJcts2 = numpy.array([ sum( [f2Juncs[i].get(sj, 0) for sj in irJcts] ) for i in xrange(len(f2LNorm))  ])
-                irJcts1A = numpy.array([max(f1Intexp[i], irJcts1[i])+EPS for i in xrange(len(irJcts1))])
-                irJcts2A = numpy.array([max(f2Intexp[i], irJcts2[i])+EPS for i in xrange(len(irJcts2))])
+                irJcts1 = numpy.array([ sum( [f1Juncs[i].get(sj, 0) for sj in irJcts] ) for i in range(len(f1LNorm))  ])
+                irJcts2 = numpy.array([ sum( [f2Juncs[i].get(sj, 0) for sj in irJcts] ) for i in range(len(f2LNorm))  ])
+                irJcts1A = numpy.array([max(f1Intexp[i], irJcts1[i])+EPS for i in range(len(irJcts1))])
+                irJcts2A = numpy.array([max(f2Intexp[i], irJcts2[i])+EPS for i in range(len(irJcts2))])
                 ratR1 = numpy.mean(f1Intexp/irJcts1A)
                 ratR2 = numpy.mean(f2Intexp/irJcts2A)
 
@@ -403,26 +404,26 @@ def procGeneStatsIR( tasks, test_status):
 
             if False:#biasAdj:
                 f1ExonL = numpy.array([f1ExpV[i][ls:le]*f1LNorm[i]*gene.f1ExonWts[i][k] \
-                                           for i in xrange(len(f1LNorm))]).mean(0)
+                                           for i in range(len(f1LNorm))]).mean(0)
                 f1ExonR = numpy.array([f1ExpV[i][rs:re]*f1LNorm[i]*gene.f1ExonWts[i][k+1] \
-                                           for i in xrange(len(f1LNorm))]).mean(0)
+                                           for i in range(len(f1LNorm))]).mean(0)
                 f2ExonL = numpy.array([f2ExpV[i][ls:le]*f2LNorm[i]*gene.f2ExonWts[i][k] \
-                                           for i in xrange(len(f2LNorm))]).mean(0)
+                                           for i in range(len(f2LNorm))]).mean(0)
                 f2ExonR = numpy.array([f2ExpV[i][rs:re]*f2LNorm[i]*gene.f2ExonWts[i][k+1] \
-                                           for i in xrange(len(f2LNorm))]).mean(0)
+                                           for i in range(len(f2LNorm))]).mean(0)
             else:
                 f1ExonL = numpy.array([(f1Depths[i][ls:le]-1)*f1LNorm[i] \
-                                           for i in xrange(len(f1LNorm))]).mean(0)
+                                           for i in range(len(f1LNorm))]).mean(0)
                 f1ExonR = numpy.array([(f1Depths[i][rs:re]-1)*f1LNorm[i] \
-                                           for i in xrange(len(f1LNorm))]).mean(0)
+                                           for i in range(len(f1LNorm))]).mean(0)
                 f2ExonL = numpy.array([(f2Depths[i][ls:le]-1)*f2LNorm[i] \
-                                           for i in xrange(len(f2LNorm))]).mean(0)
+                                           for i in range(len(f2LNorm))]).mean(0)
                 f2ExonR = numpy.array([(f2Depths[i][rs:re]-1)*f2LNorm[i] \
-                                           for i in xrange(len(f2LNorm))]).mean(0)
+                                           for i in range(len(f2LNorm))]).mean(0)
 
             #intserrs.append(serr)
-            f1Intm = numpy.mean(f1Int) 
-            f2Intm = numpy.mean(f2Int) 
+            f1Intm = numpy.mean(f1Int)
+            f2Intm = numpy.mean(f2Int)
 
             f1IntmR = numpy.mean(f1IntR)
             f2IntmR = numpy.mean(f2IntR)
@@ -456,7 +457,7 @@ def procGeneStatsIR( tasks, test_status):
 #                tested = False
             if max(f1Coverage, f2Coverage) < nspace.coverage:
                 tested = False
-            # check if gene is DE and if sufficient read 
+            # check if gene is DE and if sufficient read
             # depth exists in the lower-expressed condition
             if tested:
                 if gene.f1Norm < gene.f2Norm:
@@ -497,13 +498,13 @@ def procGeneStatsIR( tasks, test_status):
 
 
                 IRFC.append( [(numer[i] - denom[i]) / (cosL + cosR) \
-                                   for i in xrange(len(numer))])
+                                   for i in range(len(numer))])
 
                 IRstat.append( [ (((numer[i] - denom[i]) * numpy.log2(e-s+1)) / (cosL + cosR))#/gene.serr \
-                                  for i in xrange(len(numer))])
+                                  for i in range(len(numer))])
 
 
-               
+
         if IRTested.count(True) > 0:
             test_status.put((gene.gid, True, IRexp, IRfc, IRTested, IRstat, IRArat1, IRArat2, IRRrat1, IRRrat2))
         else:
@@ -532,15 +533,15 @@ def get_weight( start, stop, gene, wts):
     return numpy.mean(retn)
 
 def testIR(geneRecords, aVals, nspace):
-    """Hypothesis testing using Z-scores of 
+    """Hypothesis testing using Z-scores of
     modified $\log FC$ statisitc
     """
     #compute Z-score distribution parameters
-    for aidx in xrange(len(aVals)):
+    for aidx in range(len(aVals)):
         X = list(chain.from_iterable([ numpy.array([geneRecords[i].IRstat[t][aidx]\
-                                                    for t in xrange(len(geneRecords[i].IRstat)) \
+                                                    for t in range(len(geneRecords[i].IRstat)) \
                                                     if geneRecords[i].IRTested[t] and geneRecords[i].IRGTested]) \
-                                       for i in xrange(len(geneRecords)) if geneRecords[i].IRGTested]) )
+                                       for i in range(len(geneRecords)) if geneRecords[i].IRGTested]) )
         mu = numpy.mean(X)
         #mu = numpy.median(X)
 
@@ -548,10 +549,10 @@ def testIR(geneRecords, aVals, nspace):
 
         pvals = [ ]
         N = len(geneRecords)
-        # Assign z-scores and pvalues 
+        # Assign z-scores and pvalues
         for gene in geneRecords:
             if not gene.IRGTested: continue
-            for i in xrange( len( gene.IRTested)):
+            for i in range( len( gene.IRTested)):
                 if gene.IRTested[i]:
                     z = zscore(gene.IRstat[i][aidx], mu, sigma)
                     gene.IRZ[i].append( z )
@@ -573,7 +574,7 @@ def testIR(geneRecords, aVals, nspace):
             if not gene.IRGTested: continue
             ci = 0
             tested = gene.IRTested.count(True)
-            for idx in xrange(len(gene.introns)):
+            for idx in range(len(gene.introns)):
                 if gene.IRTested[idx]:
                     gene.IRQvals[idx].append(qvals[i+ci])
                     ci += 1
@@ -588,7 +589,7 @@ def computeIRStatistics(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
     Parameters
     ----------
     geneRecords : list
-                  List of iDiffIR.IntronModel.IntronModel objects to 
+                  List of iDiffIR.IntronModel.IntronModel objects to
                   process.
     nspace : argparse.ArgumentParser
             Command line arguments for **idiffir.py**
@@ -596,10 +597,10 @@ def computeIRStatistics(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
                   Set of valid chromosomes to test. All depth files
                   contain them.
     f1Norm : list
-             List of effective library size norm scaling values for 
+             List of effective library size norm scaling values for
              factor 1
     f2Norm : list
-             List of effective library size norm scaling values for 
+             List of effective library size norm scaling values for
              factor 2
 
     """
@@ -618,18 +619,18 @@ def computeIRStatistics(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
         status_queue = Queue()
         nTasks = 0
         for gene in geneRecords:
-            if gene.chrom in validChroms: 
+            if gene.chrom in validChroms:
                 task_queue.put( (gene, nspace, f1LNorm, f2LNorm) )
                 nTasks += 1
 
-        for _ in xrange(nspace.procs):
+        for _ in range(nspace.procs):
             task_queue.put('STOP')
 
-        for _ in xrange(nspace.procs):
+        for _ in range(nspace.procs):
             Process(target=procGeneStatsIR,
-                    args=(task_queue, status_queue)).start() 
+                    args=(task_queue, status_queue)).start()
 
-        for _ in xrange(nTasks):
+        for _ in range(nTasks):
             result = status_queue.get()
             if len(result) > 2:
                 geneStatus[result[0]] = result[2:]
@@ -651,26 +652,26 @@ def computeIRStatistics(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
     indicator.finish()
     testIR(geneRecords, aVals, nspace)
 
-                 
+
 def procGeneStatsSE( tasks, test_status):
     """Compute exon skipping statistics for gene
 
     Compute exon skipping statistics for all SEs in gene
-    by calculating the adjusted :math:`\log`-fold change 
+    by calculating the adjusted :math:`\log`-fold change
     statistic.  This function can be run in parallel or
-    serial.  
+    serial.
 
     See Also
     --------
     computeSEStatistics : Wrapper function
     getReadDepths : Get read depths from bamfiles
-    
+
     Parameters
     ----------
-    gene : iDiffIR.IntronModel.IntronModel 
+    gene : iDiffIR.IntronModel.IntronModel
            Gene to compute SE statistics
     nspace : argparse.ArgumentParser
-             Command line arguments from **idiffir.py** 
+             Command line arguments from **idiffir.py**
     f1LNorm, f2LNorm : list
                        Contains library size normalization
                        scalars of type float
@@ -682,25 +683,25 @@ def procGeneStatsSE( tasks, test_status):
 
     """
     for gene, nspace, f1LNorm, f2LNorm in iter(tasks.get, 'STOP'):
-        f1Depths, f2Depths, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene, 
-                                                                       nspace.factor1bamfiles, 
-                                                                       nspace.factor2bamfiles 
+        f1Depths, f2Depths, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene,
+                                                                       nspace.factor1bamfiles,
+                                                                       nspace.factor2bamfiles
                                                                    )
         SEnodes = gene.flavorDict['SE']
         aVals = range(nspace.krange[0], nspace.krange[1]+1)
-        # nothing to test 
+        # nothing to test
         # .. todo:: change to search for undetected splice juntions
         #           if requested
-        if not SEnodes: 
+        if not SEnodes:
             test_status.put((gene.gid, False))
             continue
-        # filter genes with no expression 
+        # filter genes with no expression
         if numpy.sum( numpy.array(f1Depths).mean(0) ) == 0 or \
                 numpy.sum( numpy.array(f2Depths).mean(0) ) == 0:
             test_status.put((gene.gid, False))
             continue
 
-        # create stats arrays for each 
+        # create stats arrays for each
         # SE event
         nSEs = len(SEnodes)
         SEFC = [ ]
@@ -711,8 +712,8 @@ def procGeneStatsSE( tasks, test_status):
         SETested = [ ]
         f1Depths += 1
         f2Depths += 1
-        serr, f1Norm,f2Norm, f1exp, f2exp, f1expr, f2expr, fc = computeSE( gene, f1Depths, 
-                                                                           f2Depths, f1LNorm, 
+        serr, f1Norm,f2Norm, f1exp, f2exp, f1expr, f2expr, fc = computeSE( gene, f1Depths,
+                                                                           f2Depths, f1LNorm,
                                                                            f2LNorm)
         gene.serr = serr
         gene.f1Norm = f1Norm
@@ -734,37 +735,37 @@ def procGeneStatsSE( tasks, test_status):
                 continue
             if False:#biasAdj:
                 f1SE = numpy.array([f1ExpV[i][(s):(e)] * f1LNorm[i] * get_weight(s,e,gene,f1ExonWts[i])\
-                                        for i in xrange(len(f1LNorm))]).mean(0)
+                                        for i in range(len(f1LNorm))]).mean(0)
                 f2SE = numpy.array([f2ExpV[i][(s):(e)] * f2LNorm[i] * get_weight(s,e,gene,f2ExonWts[i])\
-                                        for i in xrange(len(f2LNorm))]).mean(0)
+                                        for i in range(len(f2LNorm))]).mean(0)
             else:
                 f1SE = numpy.array([f1Depths[i][s:e] * f1LNorm[i]\
-                                        for i in xrange(len(f1LNorm))]).mean(0)
+                                        for i in range(len(f1LNorm))]).mean(0)
                 f2SE = numpy.array([f2Depths[i][s:e] * f2LNorm[i]\
-                                        for i in xrange(len(f2LNorm))]).mean(0)
+                                        for i in range(len(f2LNorm))]).mean(0)
 
                 f1SER = numpy.array([(f1Depths[i][s:e]-1) * f1LNorm[i]\
-                                        for i in xrange(len(f1LNorm))]).mean(0)
+                                        for i in range(len(f1LNorm))]).mean(0)
                 f2SER = numpy.array([(f2Depths[i][s:e]-1) * f2LNorm[i]\
-                                        for i in xrange(len(f2LNorm))]).mean(0)
+                                        for i in range(len(f2LNorm))]).mean(0)
             if False:#biasAdj:
                 f1ExonL = numpy.array([f1ExpV[i][ls:le]*f1LNorm[i]*get_weight( ls, le, f1ExonWts[i]) \
-                                           for i in xrange(len(f1LNorm))]).mean(0)
+                                           for i in range(len(f1LNorm))]).mean(0)
                 f1ExonR = numpy.array([f1ExpV[i][rs:re]*f1LNorm[i]*get_weight( rs, re, f1ExonWts[i]) \
-                                           for i in xrange(len(f1LNorm))]).mean(0)
+                                           for i in range(len(f1LNorm))]).mean(0)
                 f2ExonL = numpy.array([f2ExpV[i][ls:le]*f2LNorm[i]*get_weight( ls, le, f2ExonWts[i]) \
-                                           for i in xrange(len(f2LNorm))]).mean(0)
+                                           for i in range(len(f2LNorm))]).mean(0)
                 f2ExonR = numpy.array([f2ExpV[i][rs:re]*f2LNorm[i]*get_weight( rs, re, f2ExonWts[i]) \
-                                           for i in xrange(len(f2LNorm))]).mean(0)
+                                           for i in range(len(f2LNorm))]).mean(0)
             else:
                 f1ExonL = numpy.array([f1Depths[i][ls:le]*f1LNorm[i] \
-                                           for i in xrange(len(f1LNorm))]).mean(0)
+                                           for i in range(len(f1LNorm))]).mean(0)
                 f1ExonR = numpy.array([f1Depths[i][rs:re]*f1LNorm[i] \
-                                           for i in xrange(len(f1LNorm))]).mean(0)
+                                           for i in range(len(f1LNorm))]).mean(0)
                 f2ExonL = numpy.array([f2Depths[i][ls:le]*f2LNorm[i] \
-                                           for i in xrange(len(f2LNorm))]).mean(0)
+                                           for i in range(len(f2LNorm))]).mean(0)
                 f2ExonR = numpy.array([f2Depths[i][rs:re]*f2LNorm[i] \
-                                           for i in xrange(len(f2LNorm))]).mean(0)
+                                           for i in range(len(f2LNorm))]).mean(0)
 
             tested = True
             if len(f1SE) == 0 :
@@ -795,7 +796,7 @@ def procGeneStatsSE( tasks, test_status):
                 if f1Coverage < nspace.coverage and f2Coverage < nspace.coverage:
                     tested = False
 
-            # check if gene is DE and if sufficient read 
+            # check if gene is DE and if sufficient read
             # depth exists in the lower-expressed condition
             if tested:
                 if gene.f1Norm < gene.f2Norm:
@@ -813,7 +814,7 @@ def procGeneStatsSE( tasks, test_status):
                         numpy.sum(f1RSS > 1 ) / float(len(f1RSS)) < 1:
                         tested = False
 
-                    if f2SEm > f1SEm * f1Norm and f1SEm == 0 and (f1exon+EPS)* min(1.0, f2SEm / (f2exon+EPS) ) < 1.0/len(f2SE):            
+                    if f2SEm > f1SEm * f1Norm and f1SEm == 0 and (f1exon+EPS)* min(1.0, f2SEm / (f2exon+EPS) ) < 1.0/len(f2SE):
                         tested = False
 
             if not tested:
@@ -837,10 +838,10 @@ def procGeneStatsSE( tasks, test_status):
                                                           f2Norm+EPS)))
 
                 SEFC.append( [(numer[i] - denom[i]) \
-                                   for i in xrange(len(numer))])
+                                   for i in range(len(numer))])
 
                 SEstat.append( [ ( numer[i] - denom[i] ) / gene.serr \
-                                      for i in xrange(len(numer))])
+                                      for i in range(len(numer))])
 
         if SETested.count(True) > 0:
             test_status.put((gene.gid, True, SEexp, SEfc, SETested, SEstat))
@@ -848,23 +849,23 @@ def procGeneStatsSE( tasks, test_status):
             test_status.put((gene.gid, False))
 
 def testSE(geneRecords, aVals, nspace):
-    """Hypothesis testing using Z-scores of 
+    """Hypothesis testing using Z-scores of
     modified $\log FC$ statisitc
     """
     #compute Z-score distribution parameters
-    for aidx in xrange(len(aVals)):
+    for aidx in range(len(aVals)):
         X = list(chain.from_iterable([ numpy.array([geneRecords[i].SEstat[t][aidx]\
-                                                    for t in xrange(len(geneRecords[i].SEstat)) \
+                                                    for t in range(len(geneRecords[i].SEstat)) \
                                                     if geneRecords[i].SETested[t] and geneRecords[i].SEGTested]) \
-                                       for i in xrange(len(geneRecords)) if geneRecords[i].SEGTested]) )
+                                       for i in range(len(geneRecords)) if geneRecords[i].SEGTested]) )
         mu = numpy.mean(X)
         sigma = numpy.std(X)
         pvals = [ ]
         N = len(geneRecords)
-        # Assign z-scores and pvalues 
+        # Assign z-scores and pvalues
         for gene in geneRecords:
             if not gene.SEGTested: continue
-            for i in xrange( len( gene.SETested)):
+            for i in range( len( gene.SETested)):
                 if gene.SETested[i]:
                     z = zscore(gene.SEstat[i][aidx], mu, sigma)
                     gene.SEZ[i].append( z )
@@ -886,7 +887,7 @@ def testSE(geneRecords, aVals, nspace):
             if not gene.SEGTested: continue
             ci = 0
             tested = gene.SETested.count(True)
-            for idx in xrange(len(gene.flavorDict['SE'])):
+            for idx in range(len(gene.flavorDict['SE'])):
                 if gene.SETested[idx]:
                     gene.SEQvals[idx].append(qvals[i+ci])
                     ci += 1
@@ -900,7 +901,7 @@ def computeSEStatistics(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
     Parameters
     ----------
     geneRecords : list
-                  List of iDiffIR.IntronModel.IntronModel objects to 
+                  List of iDiffIR.IntronModel.IntronModel objects to
                   process.
     nspace : argparse.ArgumentParser
             Command line arguments for **idiffir.py**
@@ -908,10 +909,10 @@ def computeSEStatistics(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
                   Set of valid chromosomes to test. All depth files
                   contain them.
     f1Norm : list
-             List of effective library size norm scaling values for 
+             List of effective library size norm scaling values for
              factor 1
     f2Norm : list
-             List of effective library size norm scaling values for 
+             List of effective library size norm scaling values for
              factor 2
 
     Returns
@@ -941,14 +942,14 @@ def computeSEStatistics(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
                 nTasks += 1
             else:
                 gene.SEGTested = False
-        for _ in xrange(nspace.procs):
-            Process(target=procGeneStatsSE, 
+        for _ in range(nspace.procs):
+            Process(target=procGeneStatsSE,
                     args=(task_queue, status_queue)).start()
 
-        for _ in xrange(nspace.procs):
+        for _ in range(nspace.procs):
             task_queue.put('STOP')
 
-        for _ in xrange(nTasks):
+        for _ in range(nTasks):
             result = status_queue.get()
             if len(result) > 2:
                 geneStatus[result[0]] = result[2:]
@@ -963,12 +964,12 @@ def computeSEStatistics(geneRecords, nspace, validChroms, f1LNorm, f2LNorm):
 
             else:
                 gene.SEGTested = False
-                
+
     else:
         # serial call
         for gene in geneRecords:
             # skip genes not in bamfiles
-            if gene.chrom not in validChroms: 
+            if gene.chrom not in validChroms:
                 gene.SEGTested = False
                 continue
 
@@ -994,27 +995,27 @@ def avg_two_variances(n1, n2, s1, s2, mu1, mu2):
             n1*s2**2 - n1*s1**2 + n1*n2*s2**2 + n1*n2*s1**2  + n1*n2*(mu1-mu2)**2
     denom = (n1+n2-1)*(n1+n2)
     return numer / denom
-    
+
 def computeSE_sensitive( gene, f1EV, f2EV, f1LNorm, f2LNorm):
     """
     Compute gene-wise standard error estimate
     """
     f1ExonExp = [ [f1EV[i][s:(e+1)]*f1LNorm[i] + EPS \
-                   for s,e in gene.exonsI] for i in xrange(len( f1EV))]
+                   for s,e in gene.exonsI] for i in range(len( f1EV))]
     # collapse over replicates
     F1C = numpy.array([ [(f1EV[i][s:(e+1)]*f1LNorm[i]).mean()+EPS \
-                                    for s,e in gene.exonsI] for i in xrange(len( f1EV))]).mean(0)
-               
+                                    for s,e in gene.exonsI] for i in range(len( f1EV))]).mean(0)
+
     f2ExonExp = [ [f2EV[i][s:(e+1)]*f2LNorm[i] + EPS \
-                   for s,e in gene.exonsI] for i in xrange(len( f2EV))]
+                   for s,e in gene.exonsI] for i in range(len( f2EV))]
 
     # collapse over replicates
     F2C = numpy.array([ [(f2EV[i][s:(e+1)]*f2LNorm[i]).mean()+EPS \
-                                    for s,e in gene.exonsI] for i in xrange(len( f2EV))]).mean(0)
+                                    for s,e in gene.exonsI] for i in range(len( f2EV))]).mean(0)
 
     vars1 = numpy.array( [ geoStd( x ) for x in chain.from_iterable( f1ExonExp) ] )
     vars2 = numpy.array( [ geoStd( x ) for x in chain.from_iterable( f2ExonExp) ] )
- 
+
     mu1 = numpy.array( [ gmean( x ) for x in chain.from_iterable( f1ExonExp) ] ).mean()
     mu2 = numpy.array( [ gmean( x ) for x in chain.from_iterable( f2ExonExp) ] ).mean()
 
@@ -1022,7 +1023,7 @@ def computeSE_sensitive( gene, f1EV, f2EV, f1LNorm, f2LNorm):
     fc = numpy.log2(F1C.mean() / F2C.mean())
     f1Exp = F1C.mean()
     f2Exp = F2C.mean()
-    
+
     f1Norm = up / F1C.sum()
     f2Norm = up / F2C.sum()
 
@@ -1037,36 +1038,36 @@ def computeSE( gene, f1EV, f2EV, f1LNorm, f2LNorm):
     Compute gene-wise standard error estimate
     """
     f1ExonExp = [ [(f1EV[i][s:(e+1)]*f1LNorm[i]).mean()+EPS \
-                       for s,e in gene.exonsI] for i in xrange(len( f1EV))]
+                       for s,e in gene.exonsI] for i in range(len( f1EV))]
     f1RepExps = [ numpy.mean(x) for x in f1ExonExp ]
     mexp = max( f1RepExps )
     f1RepExps = [ mexp/x for x in f1RepExps ]
     # collapse over replicates
     F1C = numpy.array([ [(f1EV[i][s:(e+1)]*f1LNorm[i]).mean() \
-                         for s,e in gene.exonsI] for i in xrange(len( f1EV))]).mean(0)+EPS
+                         for s,e in gene.exonsI] for i in range(len( f1EV))]).mean(0)+EPS
 
     F1Cr = numpy.array([ numpy.array([numpy.median(f1EV[i][s:(e+1)]) \
-                          for s,e in gene.exonsI]).mean() for i in xrange(len( f1EV))]) + EPS
+                          for s,e in gene.exonsI]).mean() for i in range(len( f1EV))]) + EPS
 
     f2ExonExp = [ [(f2EV[i][s:(e+1)]*f2LNorm[i]).mean()+EPS \
-                       for s,e in gene.exonsI] for i in xrange(len( f2EV))]
+                       for s,e in gene.exonsI] for i in range(len( f2EV))]
     f2RepExps = [ numpy.mean(x) for x in f2ExonExp ]
     mexp = max( f2RepExps )
     f2RepExps = [ mexp/x for x in f2RepExps ]
 
     # collapse over replicates
     F2C = numpy.array([ [(f2EV[i][s:(e+1)]*f2LNorm[i]).mean() \
-                         for s,e in gene.exonsI] for i in xrange(len( f2EV))]).mean(0)+EPS
+                         for s,e in gene.exonsI] for i in range(len( f2EV))]).mean(0)+EPS
     F2Cr = numpy.array([ numpy.array([numpy.median(f2EV[i][s:(e+1)]) \
-                          for s,e in gene.exonsI]).mean() for i in xrange(len( f2EV))]) + EPS
+                          for s,e in gene.exonsI]).mean() for i in range(len( f2EV))]) + EPS
 
-    F1 = numpy.array(list(chain.from_iterable( [f1ExonExp[i]*f1RepExps[i] for i in xrange(len(f1ExonExp))]))) + EPS
-    F2 = numpy.array(list(chain.from_iterable( [f2ExonExp[i]*f2RepExps[i] for i in xrange(len(f2ExonExp))]))) + EPS
+    F1 = numpy.array(list(chain.from_iterable( [f1ExonExp[i]*f1RepExps[i] for i in range(len(f1ExonExp))]))) + EPS
+    F2 = numpy.array(list(chain.from_iterable( [f2ExonExp[i]*f2RepExps[i] for i in range(len(f2ExonExp))]))) + EPS
     up = max(F1C.sum(), F2C.sum())
     fc = numpy.log2(F1C.mean() / F2C.mean())
     f1Exp = F1C.mean()
     f2Exp = F2C.mean()
-    
+
     f1Norm = up / F1C.sum()
     f2Norm = up / F2C.sum()
     geomean1 = gmean(F1)
@@ -1086,24 +1087,24 @@ def computeSE_old( gene, f1EV, f2EV, f1LNorm, f2LNorm):
     Compute gene-wise standard error estimate
     """
     f1ExonExp = [ [(f1EV[i][s:(e+1)]*f1LNorm[i]).mean() \
-                       for s,e in gene.exonsI] for i in xrange(len( f1EV))]
+                       for s,e in gene.exonsI] for i in range(len( f1EV))]
     # collapse over replicates
     F1C = numpy.array([ [(f1EV[i][s:(e+1)]*f1LNorm[i]).mean() \
-                                    for s,e in gene.exonsI] for i in xrange(len( f1EV))]).mean(0)+EPS
-               
+                                    for s,e in gene.exonsI] for i in range(len( f1EV))]).mean(0)+EPS
+
     f2ExonExp = [ [(f2EV[i][s:(e+1)]*f2LNorm[i]).mean() \
-                       for s,e in gene.exonsI] for i in xrange(len( f2EV))]
+                       for s,e in gene.exonsI] for i in range(len( f2EV))]
     # collapse over replicates
     F2C = numpy.array([ [(f2EV[i][s:(e+1)]*f2LNorm[i]).mean() \
-                                    for s,e in gene.exonsI] for i in xrange(len( f2EV))]).mean(0)+EPS
+                                    for s,e in gene.exonsI] for i in range(len( f2EV))]).mean(0)+EPS
 
-    F1 = numpy.array(list(chain.from_iterable( [f1ExonExp[i] for i in xrange(len(f1ExonExp))]))) + EPS
-    F2 = numpy.array(list(chain.from_iterable( [f2ExonExp[i] for i in xrange(len(f2ExonExp))]))) + EPS
+    F1 = numpy.array(list(chain.from_iterable( [f1ExonExp[i] for i in range(len(f1ExonExp))]))) + EPS
+    F2 = numpy.array(list(chain.from_iterable( [f2ExonExp[i] for i in range(len(f2ExonExp))]))) + EPS
     up = max(F1C.sum(), F2C.sum())
     fc = numpy.log2(F1C.mean() / F2C.mean())
     f1Exp = F1C.mean()
     f2Exp = F2C.mean()
-    
+
     f1Norm = up / F1C.sum()
     f2Norm = up / F2C.sum()
     geomean1 = gmean(F1)

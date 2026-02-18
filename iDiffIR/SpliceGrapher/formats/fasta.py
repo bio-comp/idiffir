@@ -1,17 +1,17 @@
 # Copyright (C) 2003, 2004 by BiRC -- Bioinformatics Research Center
 #                                     University of Aarhus, Denmark
 #                                     Contact: Thomas Mailund <mailund@birc.dk>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -24,7 +24,7 @@ Copyright (C) 2003, 2004 by BiRC -- Bioinformatics Research Center
                                     Contact: Thomas Mailund <mailund@birc.dk>
 with changes by Asa Ben-Hur and Mark Rogers
 """
-from SpliceGrapher.shared.utils import ezopen
+from iDiffIR.SpliceGrapher.shared.utils import ezopen
 import os
 
 class MalformedInput :
@@ -78,7 +78,7 @@ def _fasta_itr_from_name(fname):
 
 def _fasta_itr(src):
     """Provide an iteration through the fasta records in file `src'.
-    
+
     Here `src' can be either a file object or the name of a file.
     """
     if type(src) == str :
@@ -109,8 +109,11 @@ class fasta_itr (object) :
     def __iter__(self) :
         return self
 
-    def next(self) :
-        return self.__itr.next()
+    def __next__(self) :
+        return next(self.__itr)
+
+    # Python 2 compatibility alias
+    next = __next__
 
     def __getitem__(self,name) :
         return fasta_get_by_name(iter(self),name)
@@ -135,7 +138,7 @@ class fasta_slice (object) :
         elif type(first) == type('') :
             self.__current = None
         else :
-            raise ValueError, 'bad first'
+            raise ValueError('bad first')
 
         self.__foundFirst = False
         if self.__first == 0 or self.__first == '' :
@@ -144,7 +147,7 @@ class fasta_slice (object) :
     def __iter__(self) :
         return self
 
-    def next(self) :
+    def __next__(self) :
         """
         Implementation of the iterator interface.
         """
@@ -161,9 +164,9 @@ class fasta_slice (object) :
                         break
                     self.__current = rec.header
             if not self.__foundFirst :
-                raise ValueError, 'did not find first record'
+                raise ValueError('did not find first record')
             return rec
-        rec = self.__itr.next()
+        rec = next(self.__itr)
 
         if self.__last is not None :
             if type(self.__first) == int :
@@ -175,6 +178,9 @@ class fasta_slice (object) :
                     raise StopIteration
                 self.__current = rec.header
         return rec
+
+    # Python 2 compatibility alias
+    next = __next__
 
     def __getitem__(self, name):
         return fasta_get_by_name(iter(self),name)

@@ -1,25 +1,25 @@
 #! /usr/bin/env python
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
-from SpliceGrapher.shared.utils import *
-from SpliceGrapher.formats.gtf  import *
+from iDiffIR.SpliceGrapher.shared.utils import *
+from iDiffIR.SpliceGrapher.formats.gtf  import *
 from optparse                   import OptionParser
-from sys import maxint as MAXINT
+from sys import maxsize as MAXINT
 import os,sys,gzip
 
 USAGE = """%prog GTF-file [options]
@@ -39,9 +39,9 @@ parser.add_option('--show-types', dest='showtypes', default=False, help='Outputs
 opts, args = parser.parse_args(sys.argv[1:])
 
 if opts.showtypes :
-    print "Known ENSEMBL source types:"
+    print("Known ENSEMBL source types:")
     for t in ALL_ENSEMBL_SOURCES :
-        print "  ", t
+        print("  ", t)
     sys.exit(0)
 
 if len(args) != 1 :
@@ -73,7 +73,7 @@ for line in ezopen(args[0]) :
         except KeyError :
             skipped[rec.source()] = 1
             if opts.verbose : sys.stderr.write('skipping %s records\n' % rec.source())
-        continue 
+        continue
 
     chrom = rec.seqname()
     chromDict.setdefault(chrom, GTF_Chromosome(chrom))
@@ -88,11 +88,11 @@ indicator.finish()
 # Sort records by chromosome before writing them to GFF3 file
 keys = sorted(chromDict.keys())
 if opts.verbose :
-    print "Stored information for %d chromosomes:" % len(keys)
+    print("Stored information for %d chromosomes:" % len(keys))
     if skipped :
-        print "  skipped the following record types:"
+        print("  skipped the following record types:")
         for k in sorted(skipped.keys()) :
-            print "   %s (%s records)" % (k, commaFormat(skipped[k]))
+            print("   %s (%s records)" % (k, commaFormat(skipped[k])))
 
 for k in keys :
     # Search chromosome for invalid genes
@@ -102,11 +102,11 @@ for k in keys :
             invalid = True
             break
 
-    if opts.verbose : 
+    if opts.verbose :
         if invalid :
-            print "  chromosome %s: %12d genes (%d invalid **)" % (k, len(chromDict[k]), invalid)
+            print("  chromosome %s: %12d genes (%d invalid **)" % (k, len(chromDict[k]), invalid))
         else :
-            print "  chromosome %s: %12d genes" % (k, len(chromDict[k]))
+            print("  chromosome %s: %12d genes" % (k, len(chromDict[k])))
 
     # Write out entire chromosome
     chromDict[k].writeGFF3(outStream)

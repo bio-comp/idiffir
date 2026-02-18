@@ -1,23 +1,23 @@
 #! /usr/bin/env python
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
-from SpliceGrapher.shared.utils import *
-from SpliceGrapher.formats.sam  import *
+from iDiffIR.SpliceGrapher.shared.utils import *
+from iDiffIR.SpliceGrapher.formats.sam  import *
 from optparse                   import OptionParser
 import os,sys,math,functools,re
 
@@ -82,7 +82,7 @@ for line in ezopen(samInput) :
     except IndexError :
         raise ValueError('** Illegal SAM record at line %d in %s\noffending line:\n%s' % (indicator.ctr, samInput, line))
 
-    #  2. good cigar string 
+    #  2. good cigar string
     cigar = parts[5]
     if not validCigar(seq, cigar) :
         badCigar[cigar] = badCigar.setdefault(cigar,0) + 1
@@ -143,7 +143,7 @@ for key in reads :
     if achr != bchr :
         #if opts.verbose : sys.stderr.write('%s chromosome mismatch: %s != %s\n' % (key, achr, bchr))
         badMatch += 1
-        continue 
+        continue
 
     # Reject matching strands (16='-', 0='+')
     if aflag&16 == bflag&16 :

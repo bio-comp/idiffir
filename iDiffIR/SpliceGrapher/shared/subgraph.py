@@ -1,23 +1,23 @@
 #! /usr/bin/env python
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
-from SpliceGrapher.shared.utils import *
-from SpliceGrapher.SpliceGraph  import *
+from iDiffIR.SpliceGrapher.shared.utils import *
+from iDiffIR.SpliceGrapher.SpliceGraph  import *
 import sys
 
 ALT_SITE_EVENTS = set([ALT5_ABBREV, ALT3_ABBREV])
@@ -70,7 +70,7 @@ def getExonFeatures(nodes, **args) :
     # First find positions that overlap exons
     overlaps = {}
     for n in nodes :
-        for i in xrange(n.minpos, n.maxpos+1) :
+        for i in range(n.minpos, n.maxpos+1) :
             overlaps.setdefault(i,[])
             overlaps[i].append(n)
 
@@ -116,7 +116,7 @@ def getIsoformJctSet(isoform, nodeList) :
     isoformNodes.sort(reverse=(strand=='-'))
 
     result = set([])
-    for i in xrange(1,len(isoformNodes)) :
+    for i in range(1,len(isoformNodes)) :
         result.add(simpleJunction(isoformNodes[i-1], isoformNodes[i]))
     return result
 
@@ -177,7 +177,7 @@ def getSupportedNodeDict(nodes, edgeSet, clusters, **args) :
                 sys.stderr.write('    %s supported by read depth %.1f from %d-%d\n' % (nodeString, featureDepth, f.minpos, f.maxpos))
 
     return result
-    
+
 def makeSupportedGraph(graph, clusters, junctions, **args) :
     """Uses depth and junction information from a SAM file to find those
     splice forms in a graph that are represented by RNA-Seq data.  Returns a graph
@@ -239,7 +239,7 @@ def makeSupportedGraph(graph, clusters, junctions, **args) :
     isoformJct = set([])
     for iso in isoforms :
         isoformJct |= getIsoformJctSet(iso, nodes)
-        
+
     #------------------------
     # Create the new subgraph
     result = SpliceGraph(graph.getName(), graph.chromosome, graph.strand)

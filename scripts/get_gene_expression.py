@@ -25,7 +25,7 @@ from iDiffIR.SpliceGrapher.formats.fasta import *
 from argparse import ArgumentParser, ArgumentTypeError
 import os, sys, numpy
 from iDiffIR.SpliceGrapher.shared.utils      import *
-from iDiffiR.SpliceGrapher.formats.loader import loadGeneModels
+from iDiffIR.SpliceGrapher.formats.loader import loadGeneModels
 
 
 
@@ -42,11 +42,11 @@ def parseArgs():
 
     """
     parser = ArgumentParser(description='Identify differentially expressed introns.')
-    parser.add_argument('-v', '--verbose',dest='verbose', action='store_true', 
+    parser.add_argument('-v', '--verbose',dest='verbose', action='store_true',
                         default=False, help="verbose output [default is quiet running]")
-    parser.add_argument('-p', '--procs', dest='procs', action='store', default=1, 
+    parser.add_argument('-p', '--procs', dest='procs', action='store', default=1,
                         type=int, help='Number of processing cores to use, [default = 1]')
-    parser.add_argument('-o', '--outfile', dest='outfile', action='store', default='expression.txt', 
+    parser.add_argument('-o', '--outfile', dest='outfile', action='store', default='expression.txt',
                         type=str, help='output file name')
 
     parser.add_argument('genemodel', type=str,
@@ -55,7 +55,7 @@ def parseArgs():
                         help="colon-separated list of bamfiles: PATH-TO-REPLICATE_1[:PATH-TO-REPLICATE_2,...]")
     parser.add_argument('factor2bamfiles', type=fileList,
                         help="colon-separated list of bamfiles: PATH-TO-REPLICATE_1[:PATH-TO-REPLICATE_2,...]")
-    
+
 
     args = parser.parse_args()
     if not validateArgs( args ):
@@ -79,9 +79,9 @@ def _validateBamfiles(bamfileList):
     for f in bamfileList:
         if not os.path.exists(f):
             sys.stderr.write('**bamfile %s not found\n' % f )
-            countFilesOK = False
+            bamfilesOK = False
     return bamfilesOK
-    
+
 def validateArgs( nspace ):
     """Verify program arguments
 
@@ -91,9 +91,9 @@ def validateArgs( nspace ):
     Parameters
     ----------
     nspace : argparse.Namespace object containing **idiffir.py** arguments
-    
+
     .. todo:: add rest of argument checks
- 
+
     Returns
     -------
     b : bool
@@ -101,7 +101,7 @@ def validateArgs( nspace ):
 
     """
     geneModelOK  = True
-        
+
     # bamfiles
     cfOK1 = _validateBamfiles(nspace.factor1bamfiles)
     cfOK2 = _validateBamfiles(nspace.factor2bamfiles)
@@ -112,7 +112,7 @@ def validateArgs( nspace ):
         sys.stderr.write('**Genene model file %s not found\n' % nspace.genemodel )
         geneModelOK = False
 
-    
+
     return countFilesOK and geneModelOK
 
 def writeStatus( status ):
@@ -135,16 +135,16 @@ def loadData( nspace, geneModel ):
             genes     = geneModel.getGeneRecords(chrm)
             genes.sort()
 
-            for i in xrange(len(factorfiles)):
-                fname = os.path.join(factorfiles[i], 
-                                     '%s.cnt.gz' % chrm) 
+            for i in range(len(factorfiles)):
+                fname = os.path.join(factorfiles[i],
+                                     '%s.cnt.gz' % chrm)
                 if not os.path.exists(fname):
                     sys.stderr.write('Depths file %s not found\n' % fname )
                     continue
                 itr = fasta_itr( fname )
                 if nspace.verbose:
                     sys.stderr.write("Reading depths from %s\n" % ( fname ) )
-                rec = itr.next() 
+                rec = next(itr)
                 key = rec.header
                 depths = numpy.array( rec.sequence.strip().split(), int )
                 counter = 0
@@ -168,7 +168,7 @@ def loadData( nspace, geneModel ):
         sys.stderr.write("|Reading factor 2 gene depths|\n")
         sys.stderr.write( '-' * 30 + '\n' )
     load( nspace.factor2files, f2Dict)
-    return f1Dict, f2Dict 
+    return f1Dict, f2Dict
 
 def main():
     nspace = parseArgs()
@@ -176,7 +176,7 @@ def main():
     geneModel = loadGeneModels( nspace.genemodel, verbose=nspace.verbose )
     writeStatus('Making reduced models')
     geneRecords = makeModels( geneModel, None,
-                              verbose=nspace.verbose, 
+                              verbose=nspace.verbose,
                               graphDirs=None,
                               exonic=False,
                               procs=nspace.procs )
@@ -185,29 +185,29 @@ def main():
     ofile = open(nspace.outfile, 'w')
     ofile.write('geneID\tf1Exp_gene\tf2Exp_gene\tf1Exp_IR\tf2Exp_IR\n')
     for gene in geneRecords:
-        f1EV, f2EV, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene, 
-                                                               nspace.factor1bamfiles, 
-                                                               nspace.factor2bamfiles 
+        f1EV, f2EV, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene,
+                                                               nspace.factor1bamfiles,
+                                                               nspace.factor2bamfiles
                                                            )
         F1C = numpy.array([ [(f1EV[i][s:(e+1)]).mean() \
-                             for s,e in gene.exonsI] for i in xrange(len( f1EV))]).mean(0)
+                             for s,e in gene.exonsI] for i in range(len( f1EV))]).mean(0)
         F2C = numpy.array([ [(f2EV[i][s:(e+1)]).mean() \
-                             for s,e in gene.exonsI] for i in xrange(len( f2EV))]).mean(0)
+                             for s,e in gene.exonsI] for i in range(len( f2EV))]).mean(0)
         f1depth = numpy.mean(F1C)
         f2depth = numpy.mean(F2C)
         F1I = numpy.array([ [(f1EV[i][s:(e+1)]).mean() \
-                             for s,e in gene.introns] for i in xrange(len( f1EV))]).mean(0)
+                             for s,e in gene.introns] for i in range(len( f1EV))]).mean(0)
         ires1 = [ ]
         ires2 = [ ]
         for i,r in enumerate(gene.introns):
             s,e = r
             if gene.retained[i]:
                 ires1.append( numpy.array([(f1EV[i][s:(e)]).mean() \
-                                          for i in xrange(len( f1EV))]).mean(0) )
+                                          for i in range(len( f1EV))]).mean(0) )
                 ires2.append( numpy.array([(f2EV[i][s:(e)]).mean() \
-                                          for i in xrange(len( f2EV))]).mean(0) )
-            
-            
+                                          for i in range(len( f2EV))]).mean(0) )
+
+
         if len(ires1) > 0:
             ofile.write('%s\t%f\t%f\t%f\t%f\n' % ( gene.gid, f1depth, f2depth, numpy.mean(ires1), numpy.mean(ires2)))
         else:

@@ -32,7 +32,7 @@ from iDiffIR.IntronModel import *
 
 def fileList( raw ):
     """Converts a **:**-separated string of file paths into a list
-    
+
     Parameters
     ----------
     raw : string containing paths separated by a **:**
@@ -41,25 +41,25 @@ def fileList( raw ):
     -------
     p : list
         List of file paths
-        
+
     """
     return [ r.strip() for r in raw.strip().split(':')]
 
 def parseArgs():
     parser = ArgumentParser(description='Plot highlighted regions between two factors.')
-    parser.add_argument('-v', '--verbose',dest='verbose', action='store_true', 
+    parser.add_argument('-v', '--verbose',dest='verbose', action='store_true',
                         default=False, help="verbose output [default is quiet running]")
 
     parser.add_argument('-l', '--factorlabel', dest="factorlabels",action='store', nargs=2,
-                        type=str, default=['factor1','factor2'], 
+                        type=str, default=['factor1','factor2'],
                         help="factor labels, example:  -f Mutant Wildtype", metavar='FACTORLABEL')
-    parser.add_argument('-o', '--output-dir',dest='outdir', action='store', 
+    parser.add_argument('-o', '--output-dir',dest='outdir', action='store',
                         default='iDiffIR_plots', help="output file directory name")
-    parser.add_argument('-s', '--shrink_introns', dest='shrink_introns', action='store_true', 
+    parser.add_argument('-s', '--shrink_introns', dest='shrink_introns', action='store_true',
                         default=False, help='shrink introns for depth plots [default is no shrinking]')
-    parser.add_argument('-g', '--graph-dirs', dest='graphDirs', type=fileList, 
+    parser.add_argument('-g', '--graph-dirs', dest='graphDirs', type=fileList,
                         help='colon-separated list of directories to recursively search for SpliceGrapher predictions')
-    parser.add_argument('-p', '--procs', dest='procs', action='store', default=1, 
+    parser.add_argument('-p', '--procs', dest='procs', action='store', default=1,
                         type=int, help='Number of processing cores to use, [default = 1]')
 
     parser.add_argument('genemodel', type=str,
@@ -94,9 +94,9 @@ def _validateBamfiles(bamfileList):
     for f in bamfileList:
         if not os.path.exists(f):
             sys.stderr.write('**bamfile %s not found\n' % f )
-            countFilesOK = False
+            bamfilesOK = False
     return bamfilesOK
-    
+
 def validateArgs( nspace ):
     """Verify program arguments
 
@@ -106,9 +106,9 @@ def validateArgs( nspace ):
     Parameters
     ----------
     nspace : argparse.Namespace object containing **idiffir.py** arguments
-    
+
     .. todo:: add rest of argument checks
- 
+
     Returns
     -------
     b : bool
@@ -116,7 +116,7 @@ def validateArgs( nspace ):
 
     """
     geneModelOK  = True
-        
+
     # bamfiles
     cfOK1 = _validateBamfiles(nspace.factor1bamfiles)
     cfOK2 = _validateBamfiles(nspace.factor2bamfiles)
@@ -127,7 +127,7 @@ def validateArgs( nspace ):
         sys.stderr.write('**Genene model file %s not found\n' % nspace.genemodel )
         geneModelOK = False
 
-    
+
     return countFilesOK and geneModelOK
 
 def makeOutputDir(nspace):
@@ -156,7 +156,7 @@ def makeOutputDir(nspace):
         # build figuresLog subdirectory
         if not os.path.exists(os.path.join(nspace.outdir, 'figuresLog')) and not nspace.noplot:
             os.makedirs(os.path.join(nspace.outdir, 'figuresLog'))
-        
+
         # HTML output not implemented yet
         # # build HTML directory
         # if not os.path.exists(os.path.join(nspace.outdir, 'HTML')):
@@ -174,7 +174,7 @@ def makeOutputDir(nspace):
 
 def writeStatus( status, verbose=False ):
     """Print status message
-    
+
     Pretty-print status message to stdout
 
     Parameters
@@ -194,7 +194,7 @@ def writeStatus( status, verbose=False ):
 
 def writeStatus( status, verbose=False ):
     """Print status message
-    
+
     Pretty-print status message to stdout
 
     Parameters
@@ -226,14 +226,14 @@ def main():
     writeStatus('Loading models', nspace.verbose)
     geneModel = loadGeneModels( nspace.genemodel, verbose=nspace.verbose )
     writeStatus('Making reduced models', nspace.verbose)
-    geneRecords = makeModels( geneModel, None, verbose=nspace.verbose, 
+    geneRecords = makeModels( geneModel, None, verbose=nspace.verbose,
                               graphDirs=nspace.graphDirs,
                               graphDirsOnly=False,
                               exonic=False, procs=nspace.procs )
     f1labs = [ '%s Rep %d' % (nspace.factorlabels[0], i+1) \
-               for i in xrange( len(nspace.factor1bamfiles))]
+               for i in range( len(nspace.factor1bamfiles))]
     f2labs = [ '%s Rep %d' % (nspace.factorlabels[1], i+1) \
-               for i in xrange( len(nspace.factor2bamfiles))]
+               for i in range( len(nspace.factor2bamfiles))]
     labs = f1labs + f2labs
     # get genes to be plotted and regions to highlight
     geneDict = {}

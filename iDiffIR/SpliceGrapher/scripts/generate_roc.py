@@ -1,17 +1,17 @@
 #! /usr/bin/env python
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -19,11 +19,11 @@
 """
 Script that generates an ROC curve for a splice site dimer classifier.
 """
-from SpliceGrapher.shared.config            import *
-from SpliceGrapher.shared.utils             import *
-from SpliceGrapher.shared.streams           import *
-from SpliceGrapher.predict.ClassifierConfig import *
-from SpliceGrapher.predict.SiteClassifier   import *
+from iDiffIR.SpliceGrapher.shared.config            import *
+from iDiffIR.SpliceGrapher.shared.utils             import *
+from iDiffIR.SpliceGrapher.shared.streams           import *
+from iDiffIR.SpliceGrapher.predict.ClassifierConfig import *
+from iDiffIR.SpliceGrapher.predict.SiteClassifier   import *
 
 from optparse import OptionParser
 import sys, os.path, random, numpy
@@ -59,7 +59,7 @@ def roc(Y, givenY, decisionFunc, n = None, targetClass = 1, normalize = True) :
 	  - `targetClass` - the "positive" class
       - `normalize` whether to normalize the roc curve (default: True)
         when this is set to False, TP/FP counts are output rather than TP/FP rates
-            
+
     """
     # the number of false positives to take into account
     # note that n can be either an integer or a fraction
@@ -74,7 +74,7 @@ def roc(Y, givenY, decisionFunc, n = None, targetClass = 1, normalize = True) :
     tp = [0.0]
     fp = [0.0]
     I = numpy.argsort(-f)
-    
+
     rdf = [f[I[0]]]
     for patternIdx in I :
         if givenY[patternIdx] == targetClass :
@@ -88,11 +88,11 @@ def roc(Y, givenY, decisionFunc, n = None, targetClass = 1, normalize = True) :
             break
 
     numTP = numpy.sum(numpy.equal(givenY, targetClass))
-    
-    if normalize : 
-        for i in xrange(len(tp)):
+
+    if normalize :
+        for i in range(len(tp)):
             if tp[-1] > 0 : tp[i] /= float(numTP)
-        for i in xrange(len(fp)) :
+        for i in range(len(fp)) :
             if fp[-1] > 0 : fp[i] /= float(fp[-1])
 
         area = numpy.sum(tp) / len(tp)
@@ -113,7 +113,7 @@ def plotROC(res, fileName = None, **args) :
       - `fileName` - optional argument - if given, the roc curve is saved
         in the given file name.  The format is determined by the extension.
         Supported extensions: .eps, .png, .svg
-    
+
     :Keywords:
       - `rocN` - what type of ROC curve to plot (roc50, roc10 etc.) default is
                  full ROC curve
@@ -142,13 +142,13 @@ def plotROC(res, fileName = None, **args) :
         givenY  = res[1]
         rocTP, rocFP, rocArea, rocDF = roc(None, givenY, feature, rocN, targetClass, rocNormalize)
     else :
-        rocTP, rocFP, rocArea, rocDF = roc(res.Y, res.givenY, res.decisionFunc, rocN, targetClass, rocNormalize)    
+        rocTP, rocFP, rocArea, rocDF = roc(res.Y, res.givenY, res.decisionFunc, rocN, targetClass, rocNormalize)
 
     stride = int(max(1, float(len(rocTP)) / float(numPoints)))
     if stride > 1 :
-        rocTP = [rocTP[i] for i in xrange(0,len(rocTP), stride)]
-        rocFP = [rocFP[i] for i in xrange(0,len(rocFP), stride)]        
-        rocDF = [rocDF[i] for i in xrange(0,len(rocDF), stride)]        
+        rocTP = [rocTP[i] for i in range(0,len(rocTP), stride)]
+        rocFP = [rocFP[i] for i in range(0,len(rocFP), stride)]
+        rocDF = [rocDF[i] for i in range(0,len(rocDF), stride)]
 
     import matplotlib
     if fileName is not None :
@@ -187,7 +187,7 @@ def plotROC(res, fileName = None, **args) :
     # Use first TP value that exceeds each key point
     if keyPoints :
         for val in keyPoints :
-            higher = [i for i in xrange(len(rocTP)) if rocTP[i] >= val]
+            higher = [i for i in range(len(rocTP)) if rocTP[i] >= val]
             if higher :
                 i     = higher[0]
                 lines = pylab.plot([0,rocFP[i],rocFP[i]], [rocTP[i],rocTP[i],0] , '--', linewidth = 1)
@@ -198,7 +198,7 @@ def plotROC(res, fileName = None, **args) :
 
     if zeroDF :
         # Add a marker where DF value is 0
-        smallDFidx = [i for i in xrange(len(rocTP)) if rocDF[i] <= 0]
+        smallDFidx = [i for i in range(len(rocTP)) if rocDF[i] <= 0]
         if smallDFidx :
             i     = smallDFidx[0]
             lines = pylab.plot([0,rocFP[i],rocFP[i]], [rocTP[i],rocTP[i],0] , '-k', linewidth = 1)

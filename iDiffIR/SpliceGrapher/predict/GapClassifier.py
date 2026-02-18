@@ -1,25 +1,25 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
-from SpliceGrapher.shared.utils import ezopen, bsearch, getAttribute
-from SpliceGrapher.predict.PredictedSites import ACCEPTOR, DONOR
+from iDiffIR.SpliceGrapher.shared.utils import ezopen, bsearch, getAttribute
+from iDiffIR.SpliceGrapher.predict.PredictedSites import ACCEPTOR, DONOR
 from PyML import *
 from PyML.classifiers.svm import loadSVM
-from sys import maxint as MAXINT
+from sys import maxsize as MAXINT
 import sys,os
 
 #==================
@@ -96,9 +96,9 @@ class Gap(object) :
         self.after  = cluster2
         if self.minpos > self.maxpos : raise ValueError('Received minpos %d > maxpos %d' % (minpos, maxpos))
 
-    def contains(self, o) : return self.minpos < o.minpos and o.maxpos < self.maxpos 
-    def overlaps(self, o) : return self.minpos < o.maxpos and o.minpos < self.maxpos 
-    def __len__(self)     : return self.maxpos-self.minpos+1 
+    def contains(self, o) : return self.minpos < o.minpos and o.maxpos < self.maxpos
+    def overlaps(self, o) : return self.minpos < o.maxpos and o.minpos < self.maxpos
+    def __len__(self)     : return self.maxpos-self.minpos+1
     def __str__(self)     : return 'gap %d-%d (%d)' % (self.minpos, self.maxpos, len(self))
 
 class GapFeatures(object) :
@@ -228,7 +228,7 @@ def gapStatistics(gap, sitePredictor, nonunique, chrom, strand) :
 def gapStatisticsString(gap, sitePredictor, nonunique, chrom, strand) :
     """Returns a comma-delmited string of values associate with a gap."""
     values       = gapStatistics(gap, sitePredictor, nonunique, chrom, strand)
-    formats      = ['%f' for i in xrange(len(values))]
+    formats      = ['%f' for i in range(len(values))]
     formatString = ','.join(formats)
     return formatString % tuple(values)
 
@@ -299,7 +299,7 @@ def gapStatisticsToFeatures(gap, sitePredictor, nonunique, chrom, strand, **args
             amin += 1
 
     if nonunique :
-        for pos in xrange(gap.minpos, gap.maxpos) :
+        for pos in range(gap.minpos, gap.maxpos) :
             if nonunique[pos] : nuCount += 1
 
     # Determine the minimum possible intron size that might contain a gap:

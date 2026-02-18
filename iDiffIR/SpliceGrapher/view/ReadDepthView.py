@@ -1,16 +1,16 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -18,7 +18,7 @@
 """
 Module that adds a read depth plot to a matplotlib figure.
 """
-from SpliceGrapher.shared.utils import *
+from iDiffIR.SpliceGrapher.shared.utils import *
 
 # Default threshold for triggering Y-axis log scale
 DEFAULT_LOGY_THRESHOLD = 100.0
@@ -113,7 +113,7 @@ class ReadDepthView(object) :
         #--------------------------
         if xLabels :
             bbox = dict(facecolor='lightgrey',edgecolor='lightgrey')
-            for i in xrange(1,len(Y)-1) :
+            for i in range(1,len(Y)-1) :
                 if Y[i] > 0 and Y[i-1] == 0 :
                     self.axis.text(X[i], maxY, '%d'%X[i], size='xx-small', ha='center', va='center', bbox=bbox)
                 elif Y[i] == 0 and Y[i-1] > 0 :

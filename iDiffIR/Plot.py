@@ -1,16 +1,16 @@
 # Copyright (C) 2013 by Colorado State University
 # Contact: Michael Hamilton <hamiltom@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -22,13 +22,13 @@ from iDiffIR.SpliceGrapher.shared.utils       import *
 from iDiffIR.SpliceGrapher.plot.PlotterConfig import *
 from iDiffIR.SpliceGrapher.view.ViewerUtils   import *
 from iDiffIR.SpliceGrapher.plot.PlotUtils import *
-from sys import maxint as MAXINT
+from sys import maxsize as MAXINT
 from itertools import chain
 import os,sys
 sys.setrecursionlimit(10000)
 from multiprocessing import Pool, freeze_support, Queue, Process
-import warnings  
-import numpy, ConfigParser
+import warnings
+import numpy, configparser as ConfigParser
 from iDiffIR.BamfileIO import *
 
 #warnings.filterwarnings('ignore')
@@ -47,21 +47,21 @@ def plotGBCs(f1Codes, f2Codes, f1Cnt, f2Cnt, rmi, odir=os.getcwd() ):
     L = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']
     numClusts = len(f1Codes[0])
     f2map = {}#{0:0,1:1,2:2,3:3,4:4 }
-    for i in xrange(numClusts):
+    for i in range(numClusts):
         mC = None
         mV = 0
-        for j in xrange(numClusts):
+        for j in range(numClusts):
             cos = numpy.dot( f1Codes[0][i], f2Codes[0][j]) / ( numpy.linalg.norm( f1Codes[0][i] ) *  numpy.linalg.norm( f2Codes[0][j]))
             if cos > mV:
                 mC = j
                 mV = cos
-                
+
         f2map[i] = mC
-    
+
     plt.cla()
     plt.figure()
     plt.hold(True)
-    for i in xrange(numClusts):
+    for i in range(numClusts):
         plt.plot(f1Codes[0][i], '--', marker='.', lw=2, label=L[i])
     plt.legend(ncol=5, loc='upper center')
     plt.xlabel('Bins')
@@ -72,7 +72,7 @@ def plotGBCs(f1Codes, f2Codes, f1Cnt, f2Cnt, rmi, odir=os.getcwd() ):
     plt.cla()
     plt.figure()
     plt.hold(True)
-    for i in xrange(numClusts):
+    for i in range(numClusts):
         plt.plot(f2Codes[0][f2map[i]], '--', marker='.', lw=2,label=L[i])
     plt.legend(ncol=5, loc='upper center')
     plt.xlabel('Bins')
@@ -85,17 +85,17 @@ def plotGBCs(f1Codes, f2Codes, f1Cnt, f2Cnt, rmi, odir=os.getcwd() ):
         fout.write( 'f1: %s\n' % ( ','.join( [ '%s:%d' % (L[key], f1Cnt[key]) for key in f1Cnt])))
         fout.write( 'f2: %s\n' % ( ','.join( [ '%s:%d' % (L[f2map[key]], f2Cnt[f2map[key]]) for key in f2Cnt])))
         fout.write( "%f\n" % rmi )
-                   
+
 def writeAll( geneRecords, aVals, odir=os.getcwd() ):
     """
-    Write a file of all intron values 
+    Write a file of all intron values
     """
     # iterate across all genes
     with open( os.path.join(odir, 'allIntrons.txt'), 'w' ) as fout:
-        fout.write('\t'.join(['geneID', 'lowExonCoords', 
+        fout.write('\t'.join(['geneID', 'lowExonCoords',
                                'intronCoords', 'highExonCoords',
-                               'pValue', 'adjPValue', 
-                               'logFoldChange','intronExp', 'statistic', 
+                               'pValue', 'adjPValue',
+                               'logFoldChange','intronExp', 'statistic',
                                'bestA','known','IRAratio_1', 'IRAratio_2', 'IRRratio_1', 'IRRratio_2','IRR_ratio_diff']) + '\n')
         for gene in geneRecords:
             # iterate across all exons
@@ -103,27 +103,27 @@ def writeAll( geneRecords, aVals, odir=os.getcwd() ):
             for i,intron in enumerate(gene.introns):
                 if not gene.IRTested[i]: continue
                 fout.write('%s\t%s\t%s\t%s\t%f\t%f\t%f\t%f\t%f\t%d\t%s\t%f\t%f\t%f\t%f\t%f\n' % \
-                           ( gene.gid, str(gene.exonsR[i]), str(gene.intronsR[i]), str(gene.exonsR[i+1]), 
-                             min(1, min(gene.IRPvals[i])),min( 1, min(gene.IRQvals[i])), gene.IRfc[i], 
-                             gene.IRexp[i], gene.IRstat[i][numpy.argmin(gene.IRPvals[i])], 
+                           ( gene.gid, str(gene.exonsR[i]), str(gene.intronsR[i]), str(gene.exonsR[i+1]),
+                             min(1, min(gene.IRPvals[i])),min( 1, min(gene.IRQvals[i])), gene.IRfc[i],
+                             gene.IRexp[i], gene.IRstat[i][numpy.argmin(gene.IRPvals[i])],
                              aVals[numpy.argmin(gene.IRPvals[i])], str(gene.retained[i]),
                              gene.IRArat1[i],
                              gene.IRArat2[i],
                              gene.IRRrat1[i],
                              gene.IRRrat2[i],
-                             gene.IRRrat1[i] - gene.IRRrat2[i])) 
-                
+                             gene.IRRrat1[i] - gene.IRRrat2[i]))
+
 def writeAllSE( geneRecords, aVals, odir=os.getcwd() ):
     """
-    Write a file of all intron values 
+    Write a file of all intron values
     """
     # iterate across all genes
     with open( os.path.join(odir, 'allSEs.txt'), 'w' ) as fout:
 
-        fout.write('\t'.join(['geneID', 'lowExonCoords', 
+        fout.write('\t'.join(['geneID', 'lowExonCoords',
                                'SECoords', 'highExonCoords',
-                               'pValue', 'adjPValue', 
-                               'logFoldChange','SEExp', 'statistic', 
+                               'pValue', 'adjPValue',
+                               'logFoldChange','SEExp', 'statistic',
                                'bestA']) + '\n')
         for gene in geneRecords:
             if not gene.SEGTested: continue
@@ -131,20 +131,20 @@ def writeAllSE( geneRecords, aVals, odir=os.getcwd() ):
             for i,event in enumerate(gene.flavorDict['SE']):
                 if not gene.SETested[i]: continue
                 fout.write('%s\t%s\t%s\t%s\t%f\t%f\t%f\t%f\t%f\t%d\n' % \
-                           ( gene.gid, str(event[0]), str(event[1]), 
+                           ( gene.gid, str(event[0]), str(event[1]),
                              str(event[2]), min(1, min(gene.SEPvals[i])),
-                             min( 1, min(gene.SEQvals[i])), gene.SEfc[i], 
-                             gene.SEexp[i], 
-                             gene.SEstat[i][numpy.argmin(gene.SEPvals[i])], 
-                             aVals[numpy.argmin(gene.SEPvals[i])])) 
-    
+                             min( 1, min(gene.SEQvals[i])), gene.SEfc[i],
+                             gene.SEexp[i],
+                             gene.SEstat[i][numpy.argmin(gene.SEPvals[i])],
+                             aVals[numpy.argmin(gene.SEPvals[i])]))
+
 def writeLists( summaryDict, odir=os.getcwd() ):
     """
     Write gene and intron lists to file
     """
     # genes all
     with open( os.path.join(odir, 'allDIRGenes.txt'), 'w' ) as fout:
-        allDIRGenes = sorted(set.union( *[summaryDict['known']['upgenes'], summaryDict['known']['downgenes'], 
+        allDIRGenes = sorted(set.union( *[summaryDict['known']['upgenes'], summaryDict['known']['downgenes'],
                                    summaryDict['novel']['upgenes'], summaryDict['novel']['downgenes']]))
         for gid in allDIRGenes:
             fout.write('%s\n' % gid)
@@ -158,10 +158,10 @@ def writeLists( summaryDict, odir=os.getcwd() ):
         downDIRGenes = sorted(set.union( *[summaryDict['known']['downgenes'], summaryDict['novel']['downgenes'] ]))
         for gid in downDIRGenes:
             fout.write('%s\n' % gid)
- 
+
     # IRs all
     with open( os.path.join(odir, 'allDIRs.txt'), 'w' ) as fout:
-        allDIRs = sorted(set.union( *[summaryDict['known']['upirs'], summaryDict['known']['downirs'], 
+        allDIRs = sorted(set.union( *[summaryDict['known']['upirs'], summaryDict['known']['downirs'],
                                    summaryDict['novel']['upirs'], summaryDict['novel']['downirs']]))
         for gid in allDIRs:
             fout.write('%s\n' % gid)
@@ -175,13 +175,13 @@ def writeLists( summaryDict, odir=os.getcwd() ):
         downDIRs = sorted(set.union( *[summaryDict['known']['downirs'], summaryDict['novel']['downirs'] ]))
         for gid in downDIRs:
             fout.write('%s\n' % gid)
- 
+
 def writeGeneExpression( genes, odir ):
     # genes expression
     with open( os.path.join(odir, 'geneExp.txt'), 'w' ) as fout:
         for gene in genes:
             fout.write( '%s\t%f\t%f\t%f\n' % (gene.gid, gene.f1exp, gene.f2exp, gene.fc))
-        
+
 def fullTexTable( summaryTable, odir=os.getcwd() ):
     handle = open( os.path.join(odir, 'dirTable.tex'), 'w' )
     ks = sorted(summaryTable.keys())[:-2]
@@ -229,7 +229,7 @@ def fullTexTable( summaryTable, odir=os.getcwd() ):
                                     len(summaryTable[key]['novel']['upgenes']) ))
     k = [summaryTable[key]['known']['upgenes'] for key in ks]
     n = [summaryTable[key]['novel']['upgenes'] for key in ks]
-                           
+
     handle.write( '& %d/%d' % (len( set.union(*k)), len( set.union(*n))) )
     handle.write('\\\\')
     handle.write('\n')
@@ -265,7 +265,7 @@ def fullTexTableSE( summaryTable, odir=os.getcwd() ):
     for key in ks:
         if type(key) != int: continue
         handle.write( " & %d" % (len(summaryTable[key]['upirs'])))
-                            
+
     k = [summaryTable[key]['upirs'] for key in ks if type(key) == int]
 
     handle.write( '& %d' % (len( set.union(*k))))
@@ -297,13 +297,13 @@ def fullTexTableSE( summaryTable, odir=os.getcwd() ):
     handle.write('\n')
 
 
-    
+
 def summary(geneRecords, aVals, level=0.05):
     summaryTable = {}
-    for aidx in xrange(len(aVals)):
+    for aidx in range(len(aVals)):
         novel = {'upirs':set(), 'downirs':set(),
                  'upgenes':set(), 'downgenes':set()}
-        known = {'upirs':set(), 'downirs':set(), 
+        known = {'upirs':set(), 'downirs':set(),
                  'upgenes':set(), 'downgenes':set()}
         for gene in geneRecords:
             minGene = 1
@@ -318,7 +318,7 @@ def summary(geneRecords, aVals, level=0.05):
                     intID = '%s_%s' % ( gene.gid, i)
                     if gene.IRfc[i] > 0:
                         # known
-                        if gene.retained[i]: 
+                        if gene.retained[i]:
                             known['upirs'].add(intID)
                             known['upgenes'].add(gene.gid)
                         # novel
@@ -328,10 +328,10 @@ def summary(geneRecords, aVals, level=0.05):
                     # downregulated
                     else:
                         # known
-                        if gene.retained[i]: 
+                        if gene.retained[i]:
                             known['downirs'].add(intID)
                             known['downgenes'].add(gene.gid)
-                                
+
                         # novel
                         else:
                             novel['downirs'].add(intID)
@@ -354,8 +354,8 @@ def summary(geneRecords, aVals, level=0.05):
 
 def summarySE(geneRecords, aVals, level=0.05):
     summaryTable = {}
-    for aidx in xrange(len(aVals)):
-        known = {'upirs':set(), 'downirs':set(), 
+    for aidx in range(len(aVals)):
+        known = {'upirs':set(), 'downirs':set(),
                  'upgenes':set(), 'downgenes':set()}
         for gene in geneRecords:
             minGene = 1
@@ -392,20 +392,20 @@ def plotResults(geneRecords, labels, nspace, geneModel, useLog=True, odir=os.get
          if not gene.IRGTested: continue
          plotme = False
          highlights = []
-         for i in xrange(len(gene.introns)):
+         for i in range(len(gene.introns)):
              s,e = gene.introns[i]
              if min(gene.IRQvals[i]) < 0.05:
                  highlights.append( (s,e) )
                  plotme = True
          if plotme:
-             f1Depths, f2Depths, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene, 
-                                                                            nspace.factor1bamfiles, 
-                                                                            nspace.factor2bamfiles 
+             f1Depths, f2Depths, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene,
+                                                                            nspace.factor1bamfiles,
+                                                                            nspace.factor2bamfiles
                                                                         )
              depths = f1Depths.tolist() + f2Depths.tolist()
              plotDepth( gene, depths, labels,
-                        highlights,  
-                        os.path.join(odir,gene.gid+'.pdf'), useLog, 
+                        highlights,
+                        os.path.join(odir,gene.gid+'.pdf'), useLog,
                         geneModel, nspace.shrink_introns )
 
 def plotList(geneRecords, geneDict, labels, nspace, geneModel, useLog=True, odir=os.getcwd()):
@@ -416,36 +416,36 @@ def plotList(geneRecords, geneDict, labels, nspace, geneModel, useLog=True, odir
              highlights.append((s-gene.minpos, e-gene.minpos))
 
          if True:
-             f1Depths, f2Depths, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene, 
-                                                                            nspace.factor1bamfiles, 
-                                                                            nspace.factor2bamfiles 
+             f1Depths, f2Depths, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene,
+                                                                            nspace.factor1bamfiles,
+                                                                            nspace.factor2bamfiles
                                                                         )
              depths = f1Depths.tolist() + f2Depths.tolist()
              plotDepth( gene, depths, labels,
-                        highlights,  
-                        os.path.join(odir,gene.gid+'.pdf'), useLog, 
+                        highlights,
+                        os.path.join(odir,gene.gid+'.pdf'), useLog,
                         geneModel, nspace.shrink_introns )
-             
+
 def plotResultsSE(geneRecords, labels, nspace, geneModel, useLog=True, odir=os.getcwd()):
      for gene in geneRecords:
          if not gene.SEGTested: continue
          plotme = False
          highlights = []
-         for i in xrange(len(gene.flavorDict['SE'])):
-             s,e = gene.flavorDict['SE'][i][1] 
+         for i in range(len(gene.flavorDict['SE'])):
+             s,e = gene.flavorDict['SE'][i][1]
              if min(gene.SEQvals[i]) < nspace.fdrlevel:
                  highlights.append( (s,e-1) )
                  plotme = True
-                     
+
          if plotme:
-             f1Depths, f2Depths, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene, 
-                                                                            nspace.factor1bamfiles, 
-                                                                            nspace.factor2bamfiles 
+             f1Depths, f2Depths, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene,
+                                                                            nspace.factor1bamfiles,
+                                                                            nspace.factor2bamfiles
                                                                         )
              depths = f1Depths.tolist() + f2Depths.tolist()
              plotDepth( gene, depths, labels,
-                        highlights,  
-                        os.path.join(odir,gene.gid+'.pdf'), useLog, 
+                        highlights,
+                        os.path.join(odir,gene.gid+'.pdf'), useLog,
                         geneModel, nspace.shrink_introns, hcolor="#00EE00" )
 
 
@@ -471,7 +471,7 @@ def plotDepth_old( geneM, depths, depthIDs, highlights, outname, de, geneModel, 
     maxY = max( [ max(x) for x in depths])
 
     plt.figure(frameon=False)
-    X = range( minPos, maxPos+1)    
+    X = range( minPos, maxPos+1)
     titlePadding = getTitlePadding(16)
     topLine      = 0.99-titlePadding
     c = len(depths)
@@ -479,9 +479,9 @@ def plotDepth_old( geneM, depths, depthIDs, highlights, outname, de, geneModel, 
 
     height         = topLine * (1.0/(1+c) - titlePadding)
     patchDict = {}
-    # Plot gene model 
+    # Plot gene model
     curAxes        = axes([AXIS_LEFT, topLine-height, AXIS_WIDTH, height])
-    topLine        = topLine - height - titlePadding 
+    topLine        = topLine - height - titlePadding
 
     # plot annotated graph
     graph = makeSpliceGraph(geneM.gene)
@@ -491,12 +491,12 @@ def plotDepth_old( geneM, depths, depthIDs, highlights, outname, de, geneModel, 
     xlim = curAxes.get_xlim()
     xticks = setXticks(int(min(xlim)), int(max(xlim)))
     if shrink_introns:
-        ranges = getGraphRanges(geneModelToSpliceGraph(gene), 
+        ranges = getGraphRanges(geneModelToSpliceGraph(gene),
                                 scaleFactor=plotConfig.shrink_factor)
-        introns = [(adjustPosition(x[0]+gene.minpos,ranges)-gene.minpos+1, 
+        introns = [(adjustPosition(x[0]+gene.minpos,ranges)-gene.minpos+1,
                     adjustPosition(x[1]+gene.minpos,ranges)-gene.minpos+1)\
                         for x in geneM.introns]
-        highlights = [ ( adjustPosition(x[0]+gene.minpos,ranges)-gene.minpos+1, 
+        highlights = [ ( adjustPosition(x[0]+gene.minpos,ranges)-gene.minpos+1,
                     adjustPosition(x[1]+gene.minpos,ranges)-gene.minpos+1)\
                         for x in highlights]
         for r in ranges:
@@ -508,12 +508,12 @@ def plotDepth_old( geneM, depths, depthIDs, highlights, outname, de, geneModel, 
 
     if geneM.predicted:
         curAxes        = axes([AXIS_LEFT, topLine-height, AXIS_WIDTH, height])
-        topLine        = topLine - height - titlePadding         
+        topLine        = topLine - height - titlePadding
         GeneView(gene, curAxes).plot()
         SpliceGraphView(graph, curAxes, xLimits=(minPos, maxPos),unresolved=True ).plot()
 
     #plot depths
-    for i in xrange( len(depths) ):
+    for i in range( len(depths) ):
         curAxes        = axes([AXIS_LEFT, topLine-height, AXIS_WIDTH, height])
         GeneView(gene, curAxes).plot()
         curAxes.set_ylim((0,maxY))
@@ -527,23 +527,23 @@ def plotDepth_old( geneM, depths, depthIDs, highlights, outname, de, geneModel, 
         for intron in introns:
             fcol = '0.65'
             s,e = intron
-            curAxes.fill_between( X[s:e],  0, depth[s:e], 
+            curAxes.fill_between( X[s:e],  0, depth[s:e],
                                   facecolor=fcol, edgecolor=fcol,alpha=1)
         for region in highlights:
             s,e = region
-            curAxes.fill_between( X[s:e],  0, depth[s:e], 
+            curAxes.fill_between( X[s:e],  0, depth[s:e],
                                   facecolor=hcolor, edgecolor=hcolor,alpha=1)
         for s,e in geneM.exonsI:
-            curAxes.fill_between( X[s:e+1],  0, depth[s:e+1], 
+            curAxes.fill_between( X[s:e+1],  0, depth[s:e+1],
                                   facecolor='0.45', edgecolor='0.45',alpha=1)
-            
+
         curAxes.set_xticks(xticks)
         curAxes.set_xticklabels([])
         topLine        = topLine - height - titlePadding
         curAxes.set_xlim(xlim)
-        
+
         curAxes.set_title(depthIDs[i])
-    #plotLegend(patchDict)                    
+    #plotLegend(patchDict)
     curAxes.set_xticklabels(xticks)
     sys.stderr.write( 'plotting '+ outname)
     savefig(outname, dpi=400)
@@ -558,7 +558,7 @@ def plotDepth( geneM, depths, depthIDs, highlights, outname, de, geneModel, shri
     gene = geneM.gene
     minPos = geneM.minpos
     maxPos = geneM.maxpos
-    X = range( minPos, maxPos+1)    
+    X = range( minPos, maxPos+1)
 
     strand = gene.strand
     maxY = max( [ max(x) for x in depths])
@@ -566,14 +566,14 @@ def plotDepth( geneM, depths, depthIDs, highlights, outname, de, geneModel, shri
     # Main setup
     cf = ConfigParser.ConfigParser()
     cf.add_section( 'SinglePlotConfig' )
-    cf.set( 'SinglePlotConfig', 'legend', 'True' ) 
+    cf.set( 'SinglePlotConfig', 'legend', 'True' )
     cf.set( 'SinglePlotConfig', 'output_file', outname)
     cf.set( 'SinglePlotConfig', 'height', '8.0' )
     cf.set( 'SinglePlotConfig', 'width', '16.0' )
     cf.set( 'SinglePlotConfig', 'fontsize', '16' )
     cf.set( 'SinglePlotConfig', 'shrink_introns', str(shrink_introns) )
 
-    
+
     cf.add_section('GeneModel')
     cf.set('GeneModel', 'plot_type','gene')
     cf.set('GeneModel', 'hide', 'False')
@@ -592,8 +592,8 @@ def plotDepth( geneM, depths, depthIDs, highlights, outname, de, geneModel, shri
 
     displayList[0].source_file = 'none.gtf'
     plt.figure(frameon=False)
-    
-    geneSpecs = loadGeneData(displayList, 
+
+    geneSpecs = loadGeneData(displayList,
                              plotConfig, models={'none.gtf':geneModel},
                              verbose=verbose)
 
@@ -608,11 +608,11 @@ def plotDepth( geneM, depths, depthIDs, highlights, outname, de, geneModel, shri
     c = 2 if geneM.predicted else 1
     height         = topLine * (1.0/(len(depths)+c) - titlePadding)
     patchDict = {}
-    # Plot gene model 
+    # Plot gene model
     curAxes        = axes([AXIS_LEFT, topLine-height, AXIS_WIDTH, height])
-    topLine        = topLine - height - titlePadding 
-    patches,ignore = generatePlot(displayList[0], geneSpecs, curAxes, 
-                                  shrink=plotConfig.shrink_introns, 
+    topLine        = topLine - height - titlePadding
+    patches,ignore = generatePlot(displayList[0], geneSpecs, curAxes,
+                                  shrink=plotConfig.shrink_introns,
                                   xTickLabels=(False),
                                   verbose=True)
     patchDict.update(patches)
@@ -621,11 +621,11 @@ def plotDepth( geneM, depths, depthIDs, highlights, outname, de, geneModel, shri
     xticks = setXticks(int(min(xlim)), int(max(xlim)))
 
     curAxes.set_xticklabels([])
-    
+
     # plot prediction
     if geneM.predicted:
         curAxes        = axes([AXIS_LEFT, topLine-height, AXIS_WIDTH, height])
-        topLine        = topLine - height - titlePadding         
+        topLine        = topLine - height - titlePadding
         GeneView(geneSpecs.gene, curAxes).plot()
         patches,extra = plotSpliceGraph(geneM.origGraph, curAxes,
                                         geneName=geneM.gid,
@@ -644,12 +644,12 @@ def plotDepth( geneM, depths, depthIDs, highlights, outname, de, geneModel, shri
     curAxes.set_xticklabels([])
 
     if shrink_introns:
-        ranges = getGraphRanges(geneModelToSpliceGraph(gene), 
+        ranges = getGraphRanges(geneModelToSpliceGraph(gene),
                                 scaleFactor=plotConfig.shrink_factor)
-        introns = [(adjustPosition(x[0]+gene.minpos,ranges)-gene.minpos+1, 
+        introns = [(adjustPosition(x[0]+gene.minpos,ranges)-gene.minpos+1,
                     adjustPosition(x[1]+gene.minpos,ranges)-gene.minpos+1)\
                         for x in geneM.introns]
-        highlights = [ ( adjustPosition(x[0]+gene.minpos,ranges)-gene.minpos+1, 
+        highlights = [ ( adjustPosition(x[0]+gene.minpos,ranges)-gene.minpos+1,
                     adjustPosition(x[1]+gene.minpos,ranges)-gene.minpos+1)\
                         for x in highlights]
         for r in ranges:
@@ -660,7 +660,7 @@ def plotDepth( geneM, depths, depthIDs, highlights, outname, de, geneModel, shri
         exons = geneM.exons
 
     #plot depths
-    for i in xrange( len(depths) ):
+    for i in range( len(depths) ):
         curAxes        = axes([AXIS_LEFT, topLine-height, AXIS_WIDTH, height])
         GeneView(geneSpecs.gene, curAxes).plot()
         curAxes.set_ylim((0,maxY))
@@ -670,7 +670,7 @@ def plotDepth( geneM, depths, depthIDs, highlights, outname, de, geneModel, shri
         depth = adjustDepths(depths[i], ranges) if shrink_introns else depths[i]
 
 #        for s,e in exons:
-#        curAxes.fill_between( X[s:e+1],  0, depth[s:e+1], 
+#        curAxes.fill_between( X[s:e+1],  0, depth[s:e+1],
 #                                  facecolor='grey', alpha=0.5)
         curAxes.fill_between( X,  0, depth,
                               facecolor='grey', edgecolor='grey',
@@ -678,23 +678,23 @@ def plotDepth( geneM, depths, depthIDs, highlights, outname, de, geneModel, shri
         for intron in introns:
             fcol = '0.65'
             s,e = intron
-            curAxes.fill_between( X[s:e],  0, depth[s:e], 
+            curAxes.fill_between( X[s:e],  0, depth[s:e],
                                   facecolor=fcol, edgecolor=fcol,alpha=1)
         for region in highlights:
             s,e = region
-            curAxes.fill_between( X[s:e],  0, depth[s:e], 
+            curAxes.fill_between( X[s:e],  0, depth[s:e],
                                   facecolor=hcolor, edgecolor=hcolor,alpha=1)
         for s,e in geneM.exonsI:
-            curAxes.fill_between( X[s:e+1],  0, depth[s:e+1], 
+            curAxes.fill_between( X[s:e+1],  0, depth[s:e+1],
                                   facecolor='0.45', edgecolor='0.45',alpha=1)
-            
+
         curAxes.set_xticks(xticks)
         curAxes.set_xticklabels([])
         topLine        = topLine - height - titlePadding
         curAxes.set_xlim(xlim)
-        
+
         curAxes.set_title(depthIDs[i])
-    #plotLegend(patchDict)                    
+    #plotLegend(patchDict)
     curAxes.set_xticklabels(xticks)
     savefig(outname, dpi=400)
     plt.close()
@@ -718,7 +718,7 @@ def plotReducedGraph(geneM, odir=os.getcwd(), ext='png', **args):
     # Main setup
     cf = ConfigParser.ConfigParser()
     cf.add_section( 'SinglePlotConfig' )
-    cf.set( 'SinglePlotConfig', 'legend', 'True' ) 
+    cf.set( 'SinglePlotConfig', 'legend', 'True' )
     cf.set( 'SinglePlotConfig', 'output_file', '')
     cf.set( 'SinglePlotConfig', 'height', '8.0' )
     cf.set( 'SinglePlotConfig', 'width', '16.0' )
@@ -742,7 +742,7 @@ def plotReducedGraph(geneM, odir=os.getcwd(), ext='png', **args):
 #    cf.set('ReducedGraph', 'gene_name', gid)
 #    cf.set('ReducedGraph', 'source_file', 'none2.gtf')
 #    cf.set('ReducedGraph', 'title_string', 'Reduced Graph')
-    
+
     config = SinglePlotConfig()
     config.config = cf
     config.validate()
@@ -754,9 +754,9 @@ def plotReducedGraph(geneM, odir=os.getcwd(), ext='png', **args):
     displayList[0].source_file = 'none.gtf'
 
     plt.figure(frameon=False)
-    
 
-    geneSpecs = loadGeneData(displayList, 
+
+    geneSpecs = loadGeneData(displayList,
                              plotConfig, models={'none.gtf':geneModel, 'none2.gtf':reduced_graph},
                              verbose=verbose)
 
@@ -772,10 +772,10 @@ def plotReducedGraph(geneM, odir=os.getcwd(), ext='png', **args):
     patchDict = {}
     # Plot gene model
     curAxes        = axes([AXIS_LEFT, topLine-height, AXIS_WIDTH, height])
-    topLine        = topLine - height - titlePadding 
+    topLine        = topLine - height - titlePadding
     geneSpecs.gene=geneM.ogene
-    patches,ignore = generatePlot(displayList[0], geneSpecs, curAxes, 
-                                  shrink=plotConfig.shrink_introns, 
+    patches,ignore = generatePlot(displayList[0], geneSpecs, curAxes,
+                                  shrink=plotConfig.shrink_introns,
                                   xTickLabels=(False),
                                   verbose=True)
     patchDict.update(patches)
@@ -799,7 +799,7 @@ def plotReducedGraph(geneM, odir=os.getcwd(), ext='png', **args):
                                     xLabels=displayList[0].x_labels
                                     )
     patchDict.update(patches)
-    plotLegend(patchDict)                    
+    plotLegend(patchDict)
     curAxes.set_yticks([])
     curAxes.set_xlim(xlim)
     #xticks = setXticks(int(min(xlim)), int(max(xlim)))
@@ -814,12 +814,12 @@ def plotReducedGraph(geneM, odir=os.getcwd(), ext='png', **args):
 def plotStatistic(geneRecords, nbins=20, odir=os.getcwd(), ext='pdf'):
     X = list(chain.from_iterable([ numpy.array(geneRecords[i].intFC)/ \
                                        geneRecords[i].serr  \
-                                       for i in xrange(len(geneRecords))]) )
+                                       for i in range(len(geneRecords))]) )
     fig = plt.figure()
     plot = fig.add_subplot(111)
     plot.tick_params(axis='both', which='major', labelsize=16)
     plot.tick_params(axis='both', which='minor', labelsize=16)
-    
+
     plt.hist( X, bins=nbins )
     plt.savefig(os.path.join(odir,'figures','stat.%s') % (ext) )
     plt.close()
@@ -874,43 +874,43 @@ def plotMVAold(geneRecords, odir=os.getcwd(), ext='pdf'):
     plot.tick_params(axis='both', which='major', labelsize=12)
     plot.tick_params(axis='both', which='minor', labelsize=12)
 
-    pvals = list(chain.from_iterable([numpy.array([ geneRecords[i].intPvals[t] for t in xrange(
+    pvals = list(chain.from_iterable([numpy.array([ geneRecords[i].intPvals[t] for t in range(
                             len(geneRecords[i].intPvals)) \
                                                         if geneRecords[i].intTested[t]])\
-                                          for i in xrange(len(geneRecords))])) 
+                                          for i in range(len(geneRecords))]))
 
     N = len(pvals)
-    M = list(chain.from_iterable([numpy.array([ geneRecords[i].intFCr[t] for t in xrange(
+    M = list(chain.from_iterable([numpy.array([ geneRecords[i].intFCr[t] for t in range(
                             len(geneRecords[i].intPvals)) \
                                                         if geneRecords[i].intTested[t]])\
-                                          for i in xrange(len(geneRecords))])) 
-    
-    A = list(chain.from_iterable([numpy.array([ geneRecords[i].intExp[t] for t in xrange(
+                                          for i in range(len(geneRecords))]))
+
+    A = list(chain.from_iterable([numpy.array([ geneRecords[i].intExp[t] for t in range(
                             len(geneRecords[i].intPvals)) \
                                                         if geneRecords[i].intTested[t]])\
-                                          for i in xrange(len(geneRecords))])) 
+                                          for i in range(len(geneRecords))]))
 
     #plot background points
-    CA = [A[i] for i in xrange(0,N) if pvals[i] >= 0.05 and abs(M[i]) < 1]    
-    CM = [M[i] for i in xrange(0,N) if pvals[i] >= 0.05 and abs(M[i]) < 1]
+    CA = [A[i] for i in range(0,N) if pvals[i] >= 0.05 and abs(M[i]) < 1]
+    CM = [M[i] for i in range(0,N) if pvals[i] >= 0.05 and abs(M[i]) < 1]
     plt.plot( CA, CM, color='0.65', marker='.', linestyle='')
 
-    CA = [A[i] for i in xrange(0,N) if pvals[i] >= 0.05 and abs(M[i]) >= 1]    
-    CM = [M[i] for i in xrange(0,N) if pvals[i] >= 0.05 and abs(M[i]) >= 1]
+    CA = [A[i] for i in range(0,N) if pvals[i] >= 0.05 and abs(M[i]) >= 1]
+    CM = [M[i] for i in range(0,N) if pvals[i] >= 0.05 and abs(M[i]) >= 1]
     plt.plot( CA, CM, color='0.65', marker='.', linestyle='')
 
 
     #plot pvalue 0.05  points
-    CA = [A[i] for i in xrange(N) if pvals[i] < 0.05 and pvals[i] >= 0.001]
-    CM = [M[i] for i in xrange(N) if pvals[i] < 0.05 and pvals[i] >= 0.001]
+    CA = [A[i] for i in range(N) if pvals[i] < 0.05 and pvals[i] >= 0.001]
+    CM = [M[i] for i in range(N) if pvals[i] < 0.05 and pvals[i] >= 0.001]
     plt.plot( CA, CM, 'k.', label='0.05')
 
     #plot pvalue 0.05  points
-    CA = [A[i] for i in xrange(N) if pvals[i] < 0.001 ]
-    CM = [M[i] for i in xrange(N) if pvals[i] < 0.001 ]
+    CA = [A[i] for i in range(N) if pvals[i] < 0.001 ]
+    CM = [M[i] for i in range(N) if pvals[i] < 0.001 ]
 
     plt.plot( CA, CM, 'r.', label='0.05')
-    
+
     plt.xlabel( r'$\frac{1}{2}(\log_2 \hat{f}_1 + \log_2 \hat{f}_2)$', size=18)
     plt.ylabel( r'$\log_{2}\hat{f}_1 - \log_2\hat{f}_2$', size=18)
     plt.grid()
@@ -931,7 +931,7 @@ def plotMVA(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
     plot = fig.add_subplot(111)
     plot.tick_params(axis='both', which='major', labelsize=12)
     plot.tick_params(axis='both', which='minor', labelsize=12)
- 
+
     #plot background surface
     nsigfcs = []
     nsigexps = []
@@ -946,14 +946,14 @@ def plotMVA(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
     H, xedges, yedges = np.histogram2d(nsigfcs, nsigexps, bins=(20, 10))
     ydiff=0#abs(yedges[0]-yedges[1])
     xdiff=0#abs(xedges[0]-xedges[1])
-    
+
     extent = [min(nsigexps)+ydiff, max(nsigexps)+ydiff, -max(nsigfcs), -min(nsigfcs)]
-    
-    plt.imshow(H, extent=extent, interpolation='gaussian', origin='upper', cmap=get_cmap('binary'), alpha=0.5, 
+
+    plt.imshow(H, extent=extent, interpolation='gaussian', origin='upper', cmap=get_cmap('binary'), alpha=0.5,
                rasterized=0, vmax=np.max(H)/25.0, aspect='equal')
     plt.autoscale(False)
     plt.axhline(0, ls='--', lw=1, color='r')
-    for aidx in xrange(len(aVals)):
+    for aidx in range(len(aVals)):
         M = []
         A = []
         for gene in geneRecords:
@@ -962,11 +962,11 @@ def plotMVA(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
                 if gene.IRTested[i] and numpy.argmin(qvals) == aidx and numpy.min(qvals) < 0.05:
                     M.append( gene.IRfc[i])
                     A.append( gene.IRexp[i])
-        
-        
+
+
         plt.plot( A, M, color=colors[aidx], marker='.', linestyle='', label=r'$a = 2^{%s}$' % aVals[aidx] )
-    
-    
+
+
     plt.xlabel( r'$\frac{1}{2}(\log_2 \hat{f}_1 + \log_2 \hat{f}_2)$', size=18)
     plt.ylabel( r'$\log_{2}\hat{f}_1 - \log_2\hat{f}_2$', size=18)
 
@@ -993,27 +993,27 @@ def plotMVASE(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
     colors = ['blue', 'green',  'brown','cyan', 'orange', 'olive', 'pink', 'yellow', 'black',
               'SpringGreen', 'Coral']
 
-    pvals = list(chain.from_iterable([numpy.array([ geneRecords[i].SEPvals[t] for t in xrange(
+    pvals = list(chain.from_iterable([numpy.array([ geneRecords[i].SEPvals[t] for t in range(
                             len(geneRecords[i].SEPvals)) \
                                                         if geneRecords[i].SETested[t]])\
-                                          for i in xrange(len(geneRecords)) if geneRecords[i].SEGTested])) 
+                                          for i in range(len(geneRecords)) if geneRecords[i].SEGTested]))
 
     N = len(pvals)
-    M = list(chain.from_iterable([numpy.array([ geneRecords[i].SEfc[t] for t in xrange(
+    M = list(chain.from_iterable([numpy.array([ geneRecords[i].SEfc[t] for t in range(
                             len(geneRecords[i].SEPvals)) \
                                                         if geneRecords[i].SETested[t]])\
-                                          for i in xrange(len(geneRecords)) if geneRecords[i].SEGTested])) 
-    
-    A = list(chain.from_iterable([numpy.array([ geneRecords[i].SEexp[t] for t in xrange(
+                                          for i in range(len(geneRecords)) if geneRecords[i].SEGTested]))
+
+    A = list(chain.from_iterable([numpy.array([ geneRecords[i].SEexp[t] for t in range(
                             len(geneRecords[i].SEPvals)) \
                                                         if geneRecords[i].SETested[t]])\
-                                          for i in xrange(len(geneRecords)) if geneRecords[i].SEGTested])) 
+                                          for i in range(len(geneRecords)) if geneRecords[i].SEGTested]))
 
     #plot background points
     plt.plot( A, M, color='0.65', marker='.', linestyle='')
 
     # plot significat SEs
-    for aidx in xrange(len(aVals)):
+    for aidx in range(len(aVals)):
         M = []
         A = []
         for gene in geneRecords:
@@ -1022,13 +1022,13 @@ def plotMVASE(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
                 if gene.SETested[i] and numpy.argmin(qvals) == aidx and numpy.min(qvals) < 0.05:
                     M.append( gene.SEfc[i])
                     A.append( gene.SEexp[i])
-        
-        
+
+
         plt.plot( A, M, color=colors[aidx], marker='.', linestyle='', label=r'$a = 2^{%s}$' % aVals[aidx] )
-    
 
 
-    
+
+
     plt.xlabel( r'$\frac{1}{2}(\log_2 \hat{f}_1 + \log_2 \hat{f}_2)$', size=18)
     plt.ylabel( r'$\log_{2}\hat{f}_1 - \log_2\hat{f}_2$', size=18)
     plt.grid()
@@ -1055,7 +1055,7 @@ def plotMVASE_smear(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
     plot = fig.add_subplot(111)
     plot.tick_params(axis='both', which='major', labelsize=12)
     plot.tick_params(axis='both', which='minor', labelsize=12)
- 
+
     #plot background surface
     nsigfcs = []
     nsigexps = []
@@ -1069,13 +1069,13 @@ def plotMVASE_smear(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
     H, xedges, yedges = np.histogram2d(nsigfcs, nsigexps, bins=(30, 30))
     ydiff=0#abs(yedges[0]-yedges[1])
     xdiff=0#abs(xedges[0]-xedges[1])
-    
+
     extent = [min(nsigexps), max(nsigexps), -max(nsigfcs), -min(nsigfcs)]
-    
+
     plt.imshow(H, extent=extent, interpolation='gaussian', origin='upper', cmap=get_cmap('binary'), alpha=1, rasterized=0, vmax=np.max(H)/25.0, aspect=1)
     plt.autoscale(False)
     plt.axhline(0, ls='--', lw=1, color='r')
-    for aidx in xrange(len(aVals)):
+    for aidx in range(len(aVals)):
         M = []
         A = []
         for gene in geneRecords:
@@ -1083,11 +1083,11 @@ def plotMVASE_smear(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
                 if gene.SETested[i] and numpy.argmin(qvals) == aidx and numpy.min(qvals) < 0.05:
                     M.append( gene.SEfc[i])
                     A.append( gene.SEexp[i])
-        
-        
+
+
         plt.plot( A, M, color=colors[aidx], marker='.', linestyle='', label=r'$a = 2^{%s}$' % aVals[aidx] )
-    
-    
+
+
     plt.xlabel( r'$\frac{1}{2}(\log_2 \hat{f}_1 + \log_2 \hat{f}_2)$', size=18)
     plt.ylabel( r'$\log_{2}\hat{f}_1 - \log_2\hat{f}_2$', size=18)
     plt.legend(ncol=2)

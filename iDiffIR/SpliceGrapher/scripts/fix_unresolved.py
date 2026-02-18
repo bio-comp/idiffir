@@ -1,25 +1,25 @@
 #! /usr/bin/env python
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
-from SpliceGrapher.shared.utils import *
-from SpliceGrapher.formats.sam  import *
-from SpliceGrapher.formats.FastaLoader  import *
-from SpliceGrapher.SpliceGraph  import *
+from iDiffIR.SpliceGrapher.shared.utils import *
+from iDiffIR.SpliceGrapher.formats.sam  import *
+from iDiffIR.SpliceGrapher.formats.FastaLoader  import *
+from iDiffIR.SpliceGrapher.SpliceGraph  import *
 from optparse                   import OptionParser
 import os,sys
 
@@ -91,7 +91,7 @@ def loadPutativeSamRecords(path, verbose=False) :
         indicator.update()
         if line.startswith('@') : continue
 
-        # 0                                     1   2               3 
+        # 0                                     1   2               3
         # HWUSI-EAS1760_0012:8:120:5891:20838#0	99	AT5G14550_35	1162	...
         transId = line.split('\t')[2]
         result.setdefault(transId,[])
@@ -207,13 +207,13 @@ for line in ezopen(graphList) :
         if opts.coverage :
             coverage = set()
             for pid in readPair :
-                pairMin = sys.maxint
+                pairMin = sys.maxsize
                 pairMax = 0
                 for r in readPair[pid] :
                     last    = r.pos() + len(r.query()) - 1
                     pairMin = min(pairMin, r.pos())
                     pairMax = max(pairMax, last)
-                coverage.update(xrange(pairMin,pairMax+1))
+                coverage.update(range(pairMin,pairMax+1))
 
             # Find unresolved nodes that overlap the range
             for n in transcriptPseudoNodes :
@@ -221,7 +221,7 @@ for line in ezopen(graphList) :
                     # No overlaps used for first/last node:
                     loOffset = 0 if n == transcriptPseudoNodes[0] else opts.min_overlap
                     hiOffset = 0 if n == transcriptPseudoNodes[-1] else opts.min_overlap+1
-                    missingCoverage = set(xrange(n.minpos-loOffset, n.maxpos+hiOffset)) - coverage
+                    missingCoverage = set(range(n.minpos-loOffset, n.maxpos+hiOffset)) - coverage
                     if missingCoverage : continue
                     resolvedNodeSet.add(n.node)
 
@@ -231,7 +231,7 @@ for line in ezopen(graphList) :
                 # Find all nodes associated with a read pair.  Note that read
                 # positions are relative to the start of a transcript.
                 # Track coverage across full pair:
-                pairMin = sys.maxint
+                pairMin = sys.maxsize
                 pairMax = 0
                 for r in readPair[pid] :
                     last    = r.pos() + len(r.query()) - 1

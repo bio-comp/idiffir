@@ -1,17 +1,17 @@
 #! /usr/bin/env python
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -19,15 +19,15 @@
 """
 Script for viewing 1 or more splice graphs.
 """
-from SpliceGrapher.shared.config             import *
-from SpliceGrapher.shared.adjust             import *
-from SpliceGrapher.SpliceGraph               import *
-from SpliceGrapher.shared.utils              import *
-from SpliceGrapher.shared.GeneModelConverter import *
+from iDiffIR.SpliceGrapher.shared.config             import *
+from iDiffIR.SpliceGrapher.shared.adjust             import *
+from iDiffIR.SpliceGrapher.SpliceGraph               import *
+from iDiffIR.SpliceGrapher.shared.utils              import *
+from iDiffIR.SpliceGrapher.shared.GeneModelConverter import *
 
 from pylab      import *
 from optparse   import OptionParser, OptionGroup
-from sys        import maxint as MAXINT
+from sys import maxsize as MAXINT
 import sys, os
 
 FILE_TAG    = 'file'
@@ -41,9 +41,9 @@ warnings.filterwarnings('ignore')
 #==========================================================================
 
 #==========================================================================
-from SpliceGrapher.view.ViewerUtils  import *
-from SpliceGrapher.view.GeneView     import GeneView
-from SpliceGrapher.formats.loader    import *
+from iDiffIR.SpliceGrapher.view.ViewerUtils  import *
+from iDiffIR.SpliceGrapher.view.GeneView     import GeneView
+from iDiffIR.SpliceGrapher.formats.loader    import *
 #==========================================================================
 
 EXT_TO_DISPLAY = {'.gff':PREDICTED_GRAPH}
@@ -68,7 +68,7 @@ Examples:
     %prog gene*.gff                     (display all graphs in the local directory that begin with 'gene')
     %prog AT1G01060 AT1G01260 AT1G01910 (plot several genes)
     %prog AT1G01060 gene_[123].gff      (mixture of gene model graphs and splice graph files)
-    
+
 For more than four graphs you may need to adjust the output height (-H)."""
 
 #==========================================================================
@@ -105,7 +105,7 @@ opts.adjust       = False
 opts.grid         = False
 opts.labels       = False
 opts.titles       = None
-opts.urmargin     = sys.maxint
+opts.urmargin     = sys.maxsize
 opts.shrinkfactor = MIN_INTRON_SIZE
 #----------------------------------
 
@@ -160,7 +160,7 @@ allMinpos  = MAXINT
 allMaxpos  = 0
 origMinpos = MAXINT
 origMaxpos = 0
-for i in xrange(len(args)) :
+for i in range(len(args)) :
     f = args[i]
     if graphType[f] == FILE_TAG :
         g = getFirstGraph(f)

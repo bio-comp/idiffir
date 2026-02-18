@@ -1,16 +1,16 @@
 # Copyright (C) 2013 by Colorado State University
 # Contact: Michael Hamilton <hamiltom@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -22,7 +22,7 @@ numpy.seterr(invalid='raise')
 from iDiffIR.SpliceGrapher.formats.GeneModel import *
 from iDiffIR.SpliceGrapher.SpliceGraph       import *
 from iDiffIR.SpliceGrapher.shared.GeneModelConverter import *
-from multiprocessing import Process, Queue, current_process, freeze_support                                                                           
+from multiprocessing import Process, Queue, current_process, freeze_support
 
 class IntronModel(object):
     """
@@ -52,10 +52,9 @@ class IntronModel(object):
         self.introns = [(s-self.minpos, e-self.minpos) for s,e in self.intronsR]
         self.exons = [(s-self.minpos, e-self.minpos) for s,e in self.exonsR]
         self.exonsI = [(s-self.minpos, e-self.minpos) for s,e in exonsI]
-    
+
     def __cmp__(self, other):
-        print other.gid
-        return cmp(self.gid, other.gid)
+        return (self.gid > other.gid) - (self.gid < other.gid)
 
     def __eq__(self, other):
         return self.gid == other.gid
@@ -80,7 +79,7 @@ class ExonModel(IntronModel):
 def getGraphs( dirList, verbose ):
     """Load predictions from SpliceGrapher
 
-    Recursively walks through given directory and 
+    Recursively walks through given directory and
     fetches **SpliceGrapher** predictions
 
     Parameters
@@ -118,7 +117,7 @@ def getGraphs( dirList, verbose ):
                 except Exception :
                     continue
     indicator.finish()
-    return spliceGraphs 
+    return spliceGraphs
 
 
 class DecoratedNode(object):
@@ -136,17 +135,17 @@ def getSELocs( node, offset ):
 
     """
     if node.strand == '+':
-        parents = sorted(list(set([( e.minpos-offset, e.maxpos-offset) for e in node.parents])), 
+        parents = sorted(list(set([( e.minpos-offset, e.maxpos-offset) for e in node.parents])),
                          key=lambda x: abs(x[0]-x[1]), reverse=True)
-        children = sorted(list(set([( e.minpos-offset, e.maxpos-offset) for e in node.children])), 
+        children = sorted(list(set([( e.minpos-offset, e.maxpos-offset) for e in node.children])),
                           key=lambda x: abs(x[0]-x[1]), reverse=True)
     else:
-        parents = sorted(list(set([( e.minpos-offset, e.maxpos-offset) for e in node.children])), 
+        parents = sorted(list(set([( e.minpos-offset, e.maxpos-offset) for e in node.children])),
                          key=lambda x: abs(x[0]-x[1]), reverse=True)
-        children = sorted(list(set([( e.minpos-offset, e.maxpos-offset) for e in node.parents])), 
+        children = sorted(list(set([( e.minpos-offset, e.maxpos-offset) for e in node.parents])),
                           key=lambda x: abs(x[0]-x[1]), reverse=True)
-        
-    return (parents[0],(node.minpos-offset,node.maxpos-offset), children[0]) 
+
+    return (parents[0],(node.minpos-offset,node.maxpos-offset), children[0])
 
 def decorateNodes( reducedGraph, graph ):
     """Decorate nodes with AS in reduced graph
@@ -186,7 +185,7 @@ def procCluster( geneCluster, graphs, exonic, onlyGraphs, clusterFileHandle ):
                  True if only using graphs for generating reduced models.  I.e. not using gene annotations.
     Returns
     -------
-    models : list 
+    models : list
              List of reduced gene models
 
     """
@@ -209,7 +208,7 @@ def procCluster( geneCluster, graphs, exonic, onlyGraphs, clusterFileHandle ):
         # do this if we're looking at exon skipping
         if exonic:
             flavorDict = decorateNodes( reducedGraph, graph)
-            model = ExonModel( gene, reducedGraph, newgene, graph, exonsI, 
+            model = ExonModel( gene, reducedGraph, newgene, graph, exonsI,
                                flavorDict, retained=irs, predicted=predicted)
         # looking at IR so do this instead
         else:
@@ -222,17 +221,17 @@ def procCluster( geneCluster, graphs, exonic, onlyGraphs, clusterFileHandle ):
         for otherGene in geneCluster:
             # eliminates same gene collision and sense genes
             # that are on the same strand, start, and end near
-            # eachother.  
+            # eachother.
             if len(geneCluster) == 1 or abs(otherGene.minpos - model.minpos) < 50 and \
                abs(otherGene.maxpos - model.maxpos) < 50 and \
                otherGene.strand==model.strand: continue
             if gene.id == otherGene.id: continue
-            overlap = (max(model.minpos, otherGene.minpos), 
+            overlap = (max(model.minpos, otherGene.minpos),
                        min( model.maxpos, otherGene.maxpos))
             if overlap[1] > overlap[0]:
                 overlapIntervals.add(overlap)
-                clusterFileHandle.write('\t%s:(%d,%d)' % (otherGene.id, 
-                                                          overlap[0], 
+                clusterFileHandle.write('\t%s:(%d,%d)' % (otherGene.id,
+                                                          overlap[0],
                                                           overlap[1] ) )
         clusterFileHandle.write('\n')
         model.overlap = overlapIntervals
@@ -262,7 +261,7 @@ def procCluster_parallel( tasks, output_queue):
 
     Returns
     -------
-    models : list 
+    models : list
              List of reduced gene models
 
     """
@@ -283,7 +282,7 @@ def procCluster_parallel( tasks, output_queue):
             # do this if we're looking at exon skipping
             if exonic:
                 flavorDict = decorateNodes( reducedGraph, graph)
-                model = ExonModel( gene, reducedGraph, newgene, graph, exonsI, 
+                model = ExonModel( gene, reducedGraph, newgene, graph, exonsI,
                                    flavorDict, retained=irs, predicted=predicted)
             # looking at IR so do this instead
             else:
@@ -295,12 +294,12 @@ def procCluster_parallel( tasks, output_queue):
             for otherGene in geneCluster:
                 # eliminates same gene collision and sense genes
                 # that are on the same strand, start, and end near
-                # eachother.  
+                # eachother.
                 if len(geneCluster) == 1 or abs(otherGene.minpos - model.minpos) < 50 and \
                    abs(otherGene.maxpos - model.maxpos) < 50 and \
                    otherGene.strand==model.strand: continue
                 assert gene.id != otherGene.id # previous filtering should prevent this
-                overlap = (max(model.minpos, otherGene.minpos), 
+                overlap = (max(model.minpos, otherGene.minpos),
                            min( model.maxpos, otherGene.maxpos))
                 if overlap[1] > overlap[0]:
                     overlapIntervals.add(overlap)
@@ -313,7 +312,7 @@ def procCluster_parallel( tasks, output_queue):
 def geneClusters( geneModel, graphs, exonic, onlyGraphs):
     """Cluster genes that overlap each other
 
-    Iterator to cluster and package genes that overlap each other in a 
+    Iterator to cluster and package genes that overlap each other in a
     chromosome.  :math:`O( n \log n )` time: sorting genes plus linear scan of
     genes.
 
@@ -322,7 +321,7 @@ def geneClusters( geneModel, graphs, exonic, onlyGraphs):
     geneModel : SpliceGrapher.formats.GeneModel.GeneModel
                 Gene model for given species
     graphs : dict
-             Mapping of geneID -> **SpliceGrapher** prediction 
+             Mapping of geneID -> **SpliceGrapher** prediction
     exonic : bool
              True if performing SE analysis
     clusterFileHandle : file
@@ -340,7 +339,7 @@ def geneClusters( geneModel, graphs, exonic, onlyGraphs):
 
     # process each chromosome separately
     for chrom in geneModel.getChromosomes():
-        genes = sorted(geneModel.getGeneRecords(chrom), 
+        genes = sorted(geneModel.getGeneRecords(chrom),
                        key=lambda gene: gene.minpos)
         # initialize first cluster
         geneCluster = [ genes[0] ]
@@ -361,7 +360,7 @@ def geneClusters( geneModel, graphs, exonic, onlyGraphs):
                 maxClust = gene.maxpos
             # otherwise it must overlap
             else:
-                assert gene.minpos >= minClust 
+                assert gene.minpos >= minClust
                 geneCluster.append(gene)
                 maxClust = max(gene.maxpos, maxClust)
 
@@ -373,10 +372,10 @@ def geneClusters( geneModel, graphs, exonic, onlyGraphs):
         yield geneCluster, clusterGraphs, exonic, onlyGraphs
 
 def makeModels( geneModel, outdir, verbose=False, graphDirs=None, graphDirsOnly=None, exonic=False, procs=1 ):
-    """Make reduced models for all genes in the geneModel.  
+    """Make reduced models for all genes in the geneModel.
 
-    Genes are processed in parallel using a thread pool 
-    with the given number of processors or in a loop if number of processors 
+    Genes are processed in parallel using a thread pool
+    with the given number of processors or in a loop if number of processors
     is 1.
 
     See Also
@@ -430,7 +429,7 @@ def makeModels( geneModel, outdir, verbose=False, graphDirs=None, graphDirsOnly=
                   List of reduced models
 
         """
-        for i in xrange(len(pModels)):             
+        for i in range(len(pModels)):
             indicator.update()
 
     # run parallel
@@ -443,23 +442,23 @@ def makeModels( geneModel, outdir, verbose=False, graphDirs=None, graphDirsOnly=
             task_queue.put( clusterTuple )
             nTasks += 1
 
-        for _ in xrange(procs):
+        for _ in range(procs):
             Process(target=procCluster,
                     args=(task_queue, status_queue)).start()
 
-        for _ in xrange(procs):
+        for _ in range(procs):
             task_queue.put('STOP')
 
-        for _ in xrange(nTasks):
+        for _ in range(nTasks):
             processedModels = status_queue.get()
             models.extend(processedModels)
             updateIndicator(processedModels)
 
     # run serial
     else:
-        for clusterTuple in geneClusters(geneModel, graphs, 
+        for clusterTuple in geneClusters(geneModel, graphs,
                                          exonic, onlyGraphs):
-            processedModels = procCluster(*clusterTuple, 
+            processedModels = procCluster(*clusterTuple,
                                           clusterFileHandle=clusterFileHandle)
             models.extend(processedModels)
             updateIndicator(processedModels)
@@ -468,7 +467,7 @@ def makeModels( geneModel, outdir, verbose=False, graphDirs=None, graphDirsOnly=
     indicator.finish()
     clusterFileHandle.close()
     return models
-    
+
 def makeReducedExonModel(gene, graph):
     """
     Finds exonic regions that are in common across all isoforms
@@ -496,7 +495,7 @@ def makeReducedExonModel(gene, graph):
                 edges.add( (minGene, s) )
         for s2,e2 in leaves:
             if e2 <  maxGene:
-                edges.add( (e2, maxGene) )                    
+                edges.add( (e2, maxGene) )
 
     else:
         for s,e in roots:
@@ -509,8 +508,8 @@ def makeReducedExonModel(gene, graph):
                 edges.add( (e, maxGene))
         for s2,e2 in leaves:
             if s2 > minGene:
-                edges.add( (minGene, s2) )                    
-            
+                edges.add( (minGene, s2) )
+
     edges = list(edges)
     edges.sort( key=lambda x: x[1] - x[0] + 1, reverse=True )
     exons =  set([ ])
@@ -543,7 +542,7 @@ def makeReducedExonModel(gene, graph):
     exons = sorted(list(exons))
 
     return exons
-                
+
 def makeReducedModel( gene, graph ):
     """
     Extracts the exons of the reduced model and annotates
@@ -573,7 +572,7 @@ def makeReducedModel( gene, graph ):
                 break
             # lacking splice junction support
             #|||||||||||||||-------------|||||||||||||||||
-            #              ||||||||||||||||||||----------- 
+            #              ||||||||||||||||||||-----------
             #                     or
             #|||||||||||||||--------------||||||||||||||||
             #------------||||||||||||||||||
@@ -609,7 +608,7 @@ def makeReducedGraph(gene, graph):
     newgene = Gene( gene.id+'_RM', gene.note, start, end, gene.chromosome,
                     gene.strand)
     isoName = newgene.id+'I'
-    iso  = Isoform( isoName, exonRanges[-1][1], 
+    iso  = Isoform( isoName, exonRanges[-1][1],
                     exonRanges[0][0], gene.chromosome, gene.strand)
     isoAttr   = {PARENT_FIELD:newgene.id, NAME_FIELD:isoName, ID_FIELD:isoName}
     for minpos, maxpos in exonRanges:
@@ -617,4 +616,3 @@ def makeReducedGraph(gene, graph):
 
     newgraph = geneModelToSpliceGraph(newgene)
     return newgraph, irs, newgene
-

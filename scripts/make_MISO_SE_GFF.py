@@ -49,7 +49,7 @@ if opts.graphPaths != None:
         for line in fin:
             fname = line.strip()
             if not os.path.exists(fname):
-                if opts.verbose: 
+                if opts.verbose:
                     sys.stderr.write('Missing splice graph file: %s\n' % fname)
                     continue
             indicator.update()
@@ -61,7 +61,7 @@ if opts.graphPaths != None:
                 spliceGraphs[geneName] = graph
             #for node in graph.unresolvedNodes():
             #    spliceGraphs[geneName].addNode( node.id, node.start, node.end)
-        
+
     indicator.finish()
     if opts.verbose : sys.stderr.write('Loaded %d aux. splice graphs\n' % (indicator.ctr))
 
@@ -72,9 +72,9 @@ def getEventLocs( node ):
     else:
         parents = list(set([( e.minpos, e.maxpos) for e in node.children]))
         children = list(set([( e.minpos, e.maxpos) for e in node.parents]))
-        
+
     return [ (parents[i],(node.minpos,node.maxpos), children[j])\
-                 for i in xrange(len(parents)) for j in xrange(len(children))]
+                 for i in range(len(parents)) for j in range(len(children))]
 for gene in genes :
     if gene.chromosome not in chrCounter :
         chrCounter[gene.chromosome] = 0
@@ -84,9 +84,9 @@ for gene in genes :
     # Create splice graph for gene:
     try :
         geneGraph = makeSpliceGraph(gene)#geneModelToSpliceGraph(g)
-    except ValueError, ve:
+    except ValueError as ve:
         sys.stderr.write("Unable to create graph for %s\n" % gene.name)
-        continue 
+        continue
 
     if geneGraph.name.upper() in spliceGraphs:
         geneGraph = geneGraph.union(spliceGraphs[ geneGraph.name.upper() ])
@@ -98,7 +98,7 @@ for gene in genes :
 
     seNodes = [node for node in geneGraph.resolvedNodes() if node.isSkippedExon()]
 
-            
+
     for nNum,node in enumerate(seNodes):
         uniqueEvents += 1
         nInt = 0
@@ -106,49 +106,49 @@ for gene in genes :
             exon5, exonS, exon3
             totalRecs += 1
             nInt+=1
-            eventID = '%s:%d-%d:%d:%d' % (gene.id, exonS[0], exonS[1], nNum+1, nInt)            
-            outStream.write('%s\tIR\tgene\t%d\t%d\t.\t%s\t.\tID=%s;Name=%s\n' % (gene.chromosome, 
-                                                                                 exon5[0], 
-                                                                                 exon3[1], 
-                                                                                 node.strand, 
+            eventID = '%s:%d-%d:%d:%d' % (gene.id, exonS[0], exonS[1], nNum+1, nInt)
+            outStream.write('%s\tIR\tgene\t%d\t%d\t.\t%s\t.\tID=%s;Name=%s\n' % (gene.chromosome,
+                                                                                 exon5[0],
+                                                                                 exon3[1],
+                                                                                 node.strand,
                                                                                  eventID, eventID))
 
             irID = '%s:%d-%d:%d:%d' % (gene.id, exonS[0], exonS[1], nNum+1, nInt)
             #make mRNA record for SE
             outStream.write('%s\tSE\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s:SE;Parent=%s\n' % \
-                                (gene.chromosome, exon5[0], exon3[1], node.strand, 
+                                (gene.chromosome, exon5[0], exon3[1], node.strand,
                                  irID, eventID))
             #make mRNA record for CS
             outStream.write('%s\tSE\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s:CS;Parent=%s\n' % \
-                                (gene.chromosome,  exon5[0], exon3[1], node.strand, 
-                                 irID, eventID))                
+                                (gene.chromosome,  exon5[0], exon3[1], node.strand,
+                                 irID, eventID))
             #make 5' exon record for SE
             outStream.write('%s\tSE\texon\t%d\t%d\t.\t%s\t.\tID=%s:se5Exon;Parent=%s:SE\n' % \
-                                (gene.chromosome, exon5[0], exon5[1], node.strand, 
+                                (gene.chromosome, exon5[0], exon5[1], node.strand,
                                  irID, irID))
             #make 3' exon record for SE
             outStream.write('%s\tSE\texon\t%d\t%d\t.\t%s\t.\tID=%s:se3Exon;Parent=%s:SE\n' % \
-                                (gene.chromosome, exon3[0], exon3[1], node.strand, 
+                                (gene.chromosome, exon3[0], exon3[1], node.strand,
                                  irID, irID))
 
             #make 5' exon record for CS
             outStream.write('%s\tSE\texon\t%d\t%d\t.\t%s\t.\tID=%s:se5Exon;Parent=%s:CS\n' % \
-                                (gene.chromosome, exon5[0], exon5[1], node.strand, 
+                                (gene.chromosome, exon5[0], exon5[1], node.strand,
                                  irID, irID))
             #make 3' exon record for CS
             outStream.write('%s\tSE\texon\t%d\t%d\t.\t%s\t.\tID=%s:se3Exon;Parent=%s:CS\n' % \
-                                (gene.chromosome, exon3[0], exon3[1], node.strand, 
+                                (gene.chromosome, exon3[0], exon3[1], node.strand,
                                  irID, irID))
             #make cassette exon record for CS
             outStream.write('%s\tSE\texon\t%d\t%d\t.\t%s\t.\tID=%s:cassExon;Parent=%s:CS\n' % \
-                                (gene.chromosome, exonS[0], exonS[1], node.strand, 
+                                (gene.chromosome, exonS[0], exonS[1], node.strand,
                                  irID, irID))
 
 
 
 
 
-        
+
 outStream.flush()
 outStream.close()
 if opts.verbose : indicator.finish()

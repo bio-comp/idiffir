@@ -1,21 +1,21 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
-from SpliceGrapher.shared.utils import getAttribute, commaFormat
+from iDiffIR.SpliceGrapher.shared.utils import getAttribute, commaFormat
 
 class PathError(Exception) :
     pass
@@ -84,9 +84,9 @@ def getAllPaths(G, **args) :
     # Memoization improves efficiency
     memo  = {}
     paths = []
-    if verbose : print "Traversing %d roots in %s:" % (len(roots), G.getName())
+    if verbose : print("Traversing %d roots in %s:" % (len(roots), G.getName()))
     for r in roots  :
-        if verbose : print "  ", str(r)
+        if verbose : print("  ", str(r))
         newpaths = getPaths(r, memo, **args)
         paths.extend(newpaths)
         if limit and len(paths) > limit :
@@ -121,7 +121,7 @@ def getLongestPath(G, verbose=False) :
             if p.isRoot() : roots.add(p)
     memo   = {}
     result = None
-    if verbose : print "getLongestPath traversing %d roots in %s:" % (len(roots), G.getName())
+    if verbose : print("getLongestPath traversing %d roots in %s:" % (len(roots), G.getName()))
     for r in roots  :
         path = getLongest(r, memo)
         if not result or (len(path) > len(result)) : result = path
@@ -130,10 +130,10 @@ def getLongestPath(G, verbose=False) :
 def getLongest(node, memo, verbose=False) :
     """Recursive method that returns the longest path from the given node."""
     if node in memo :
-        if verbose : print "getLongest returning memoized path for", str(node)
+        if verbose : print("getLongest returning memoized path for", str(node))
         return memo[node]
     elif node.isLeaf() :
-        if verbose : print "getLongest returning leaf node for", str(node)
+        if verbose : print("getLongest returning leaf node for", str(node))
         result = SpliceGraphPath(node)
     else :
         result = None
@@ -142,6 +142,6 @@ def getLongest(node, memo, verbose=False) :
             path.update(getLongest(c,memo,verbose=verbose))
             if not result or (len(path) > len(result)) : result = path
         if not result : result = SpliceGraphPath(node)
-        if verbose : print "getLongest returning path of length", len(result)
+        if verbose : print("getLongest returning path of length", len(result))
     memo[node] = result
     return result

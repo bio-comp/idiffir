@@ -1,17 +1,17 @@
 #! /usr/bin/env python
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -20,9 +20,9 @@
 Script that handles the process of predicting and updating
 splice graphs by realigning reads to a database of putative transcripts.
 """
-from SpliceGrapher.shared.config import *
-from SpliceGrapher.shared.utils  import *
-from SpliceGrapher.formats.fasta import *
+from iDiffIR.SpliceGrapher.shared.config import *
+from iDiffIR.SpliceGrapher.shared.utils  import *
+from iDiffIR.SpliceGrapher.formats.fasta import *
 
 from optparse import OptionParser
 import os,sys,subprocess,multiprocessing
@@ -36,7 +36,7 @@ TRANSCRIPT_SCRIPT = 'generate_putative_sequences.py'
 TRANSCRIPT_MAP    = 'putative_transcripts.map'
 BWA_SAM           = 'filtered_bwa.sam'
 
-# File extensions used to validate BWA alignments 
+# File extensions used to validate BWA alignments
 BWA_EXTS  = ['amb', 'ann', 'bwt', 'pac', 'sa']
 
 # Novel transcripts denoted [gene-id]_u[#]
@@ -80,7 +80,7 @@ Where:
                    created with predict_graphs.py
 
 Single-end read example:
-    %prog original_predictions -1 myreads.fq 
+    %prog original_predictions -1 myreads.fq
 
 Paired-end example:
     %prog original_predictions -1 myreads_1.fq -2 myreads_2.fq
@@ -194,7 +194,7 @@ for fastqFile in firstFiles + secondFiles :
 
 if secondFiles :
     bwaLog = open('bwa_pe.log','w')
-    for i in xrange(len(firstFiles)) :
+    for i in range(len(firstFiles)) :
         file1    = firstFiles[i]
         file2    = secondFiles[i]
         alnFile1 = getBWAAlnFileName(file1)
@@ -216,7 +216,7 @@ if secondFiles :
 
 else : # single-end reads
     bwaLog = open('bwa_se.log','w')
-    for i in xrange(len(firstFiles)) :
+    for i in range(len(firstFiles)) :
         file1    = firstFiles[i]
         alnFile1 = getBWAAlnFileName(file1)
         prefix   = 'single_%d' % (i+1)

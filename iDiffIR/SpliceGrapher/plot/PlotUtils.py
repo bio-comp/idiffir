@@ -1,35 +1,35 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
-from SpliceGrapher.formats.loader            import *
-from SpliceGrapher.shared.GeneModelConverter import *
-from SpliceGrapher.formats.xydata            import *
-from SpliceGrapher.formats.sam               import *
-from SpliceGrapher.SpliceGraph               import *
-from SpliceGrapher.shared.utils              import *
-from SpliceGrapher.shared.adjust             import *
-from SpliceGrapher.shared.ShortRead          import depthsToClusters
-from SpliceGrapher.SpliceGraph               import getFirstGraph
-from SpliceGrapher.view.ViewerUtils          import *
-from SpliceGrapher.view.ReadDepthView        import DEFAULT_LOGY_THRESHOLD
-from SpliceGrapher.view.GeneView             import GeneView
-from SpliceGrapher.plot.PlotterConfig        import *
+from iDiffIR.SpliceGrapher.formats.loader            import *
+from iDiffIR.SpliceGrapher.shared.GeneModelConverter import *
+from iDiffIR.SpliceGrapher.formats.xydata            import *
+from iDiffIR.SpliceGrapher.formats.sam               import *
+from iDiffIR.SpliceGrapher.SpliceGraph               import *
+from iDiffIR.SpliceGrapher.shared.utils              import *
+from iDiffIR.SpliceGrapher.shared.adjust             import *
+from iDiffIR.SpliceGrapher.shared.ShortRead          import depthsToClusters
+from iDiffIR.SpliceGrapher.SpliceGraph               import getFirstGraph
+from iDiffIR.SpliceGrapher.view.ViewerUtils          import *
+from iDiffIR.SpliceGrapher.view.ReadDepthView        import DEFAULT_LOGY_THRESHOLD
+from iDiffIR.SpliceGrapher.view.GeneView             import GeneView
+from iDiffIR.SpliceGrapher.plot.PlotterConfig        import *
 
-from sys import maxint as MAXINT
+from sys import maxsize as MAXINT
 import matplotlib, re, sys, math
 
 # Formatting directives for inserting values into title strings
@@ -39,7 +39,7 @@ PATH_DIRECTIVE  = '%path'
 
 # determined via trial and error:
 AXIS_LEFT      = 0.08
-AXIS_WIDTH     = 0.84 
+AXIS_WIDTH     = 0.84
 DISPLAY_HEIGHT = 0.99
 X_PAD_FRACTION = 0.01
 Y_PAD_FRACTION = 0.0029
@@ -188,12 +188,12 @@ def generatePlot(p, plotSpecs, plotAxes, **args) :
                            highlight=p.highlight,
                            title=title)
     elif p.plot_type == XY_PLOT :
-        from SpliceGrapher.view.XYGraphView import BAR_GRAPH, LINE_GRAPH
+        from iDiffIR.SpliceGrapher.view.XYGraphView import BAR_GRAPH, LINE_GRAPH
         style = LINE_GRAPH if p.line else BAR_GRAPH
         plotXYGraph(data[0], data[1], plotAxes, plotSpecs.minpos, plotSpecs.maxpos, plottype=style, title=title)
     else :
         raise ValueError('Unrecognized plot type for %s: %s\n' % (p.name, p.plot_type))
-    
+
     if plotSpecs.strand == '+' :
         plotAxes.set_xlim(plotSpecs.minpos-padding, plotSpecs.maxpos+padding)
     else :
@@ -231,7 +231,7 @@ def getCommonFiles(plots, **args) :
     """Returns a set of files common to all directories given for a set of plots."""
     verbose = getAttribute('verbose', False, **args)
     result  = set([])
-    for i in xrange(len(plots)) :
+    for i in range(len(plots)) :
         if verbose : sys.stderr.write('Looking for files in %s\n' % plots[i].source_file)
         if i == 0 :
             result = set(getFileList(plots[i], **args))
@@ -405,7 +405,7 @@ def loadGeneData(plots, plotConfig, maxSAM=0, **args) :
                 if p.plot_type in [SPLICEGRAPH_PLOT, ISOFORM_PLOT, GENE_MODEL_PLOT] :
                     adjMax = max(adjMax, dataDict[sourcePath][p.plot_type].maxpos)
                     adjMin = min(adjMin, dataDict[sourcePath][p.plot_type].minpos)
-                
+
             if p.plot_type == GENE_MODEL_PLOT :
                 bgndGene = dataDict[sourcePath][GENE_MODEL_PLOT]
 

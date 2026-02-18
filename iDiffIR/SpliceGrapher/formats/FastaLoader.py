@@ -1,16 +1,16 @@
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -19,9 +19,9 @@
 Module that provides facilities for loading FASTA sequences into a structure
 for easy retrieval.  Includes methods for formatting aligned sequences.
 """
-from SpliceGrapher.formats.fasta import fasta_itr
-from SpliceGrapher.shared        import dna
-from SpliceGrapher.shared.utils  import getAttribute
+from iDiffIR.SpliceGrapher.formats.fasta import fasta_itr
+from iDiffIR.SpliceGrapher.shared        import dna
+from iDiffIR.SpliceGrapher.shared.utils  import getAttribute
 
 import sys, os, warnings
 
@@ -34,7 +34,7 @@ class FastaLoader(object) :
     def __init__(self, fastaPath, **args) :
         """
         Loads a FASTA sequence file from the given path.
-        
+
         :Parameters:
            'sequenceID'  - specifies a single sequence ID to load in lieu of the whole file
            'sequenceIDs' - specifies a subset of sequence IDs to load
@@ -96,18 +96,18 @@ class FastaLoader(object) :
         i = 0
         while i < len(ref) :
             last = min(i+width, len(ref))
-            print "%10d: %s" % (i+offset, ref[i:last])
+            print("%10d: %s" % (i+offset, ref[i:last]))
             if showMatches :
                 midstr = "%12s" % ' '
-                for j in xrange(i,last) :
+                for j in range(i,last) :
                     if ref[j] == est[j] :
                         midstr += "|"
                     else  :
                         midstr += " "
-                print midstr
+                print(midstr)
 
-            print "%8d: %s" % (i+offset, est[i:last])
-            print ""
+            print("%8d: %s" % (i+offset, est[i:last]))
+            print("")
             i += width
 
     def headerToSequenceID(self, header) :
@@ -166,7 +166,7 @@ class FastaLoader(object) :
         """
         Writes a multi-line representation of the given sequence to stdout.
         """
-        print self.sequenceString(seq, offset=offset, width=width)
+        print(self.sequenceString(seq, offset=offset, width=width))
 
     def subsequence(self, sequenceID, start, end, reverse=False) :
         """

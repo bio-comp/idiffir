@@ -1,17 +1,17 @@
 #! /usr/bin/env python
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -20,9 +20,9 @@
 Script that demonstrates the entire process of generating splice-junction
 sequences prior to running alignments.
 """
-from SpliceGrapher.shared.config import *
-from SpliceGrapher.shared.utils  import *
-from SpliceGrapher.formats.fasta import *
+from iDiffIR.SpliceGrapher.shared.config import *
+from iDiffIR.SpliceGrapher.shared.utils  import *
+from iDiffIR.SpliceGrapher.formats.fasta import *
 from optparse                    import OptionParser
 import os,sys,subprocess
 
@@ -58,7 +58,7 @@ def generateTrainingData(dimer, opts, subsetSize, acceptor=False, logstream=None
     posFile = '%s_%s_training.fa' % (lcDimer, suffix)
 
     # 2 subsets, 2 lines per sequence:
-    expectedSize = 4*subsetSize 
+    expectedSize = 4*subsetSize
 
     if not fileExists(posFile, opts, alert=False) or fileLen(posFile) != expectedSize :
         rptOption = '' if os.path.exists(REPORT_FILE) else '-r %s' % REPORT_FILE

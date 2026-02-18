@@ -37,10 +37,10 @@ DIFF     = 8   #X
 def parseArgs():
     parser = ArgumentParser(description='Get chromosomal read depths and junctions')
 
-    parser.add_argument('-o', '--output-dir',dest='outdir', action='store', 
+    parser.add_argument('-o', '--output-dir',dest='outdir', action='store',
                         default='iDiffIR_counts', help="output file directory name")
 
-    parser.add_argument('-v', '--verbose',dest='verbose', action='store_true', 
+    parser.add_argument('-v', '--verbose',dest='verbose', action='store_true',
                         default=False, help="verbose output")
 
     parser.add_argument( 'bamfile_in', action='store', type=str, default=None,
@@ -53,7 +53,7 @@ def parseArgs():
     if not os.path.exists( args.outdir ):
         os.makedirs( args.outdir )
     return args
-    
+
 def processRead( read, depths, junctions):
     rpos = 0
     pos = read.pos
@@ -88,11 +88,11 @@ def writeDepths( depths, chromosome, out_dir, chrom_len, verbose ):
     with open( os.path.join(out_dir, '%s.cnt.gz' % (chromosome.lower())), 'wb') as fout:
         pipe = Popen('gzip', stdin=PIPE, stdout=fout)
         for d in depths:
-            pipe.stdin.write('%d ' % d ) 
+            pipe.stdin.write('%d ' % d )
             indicator.update()
         indicator.finish()
         pipe.communicate()
-        
+
 
 def main( ):
     args = parseArgs()
@@ -101,7 +101,7 @@ def main( ):
     tot_nonzero   = 0
     tot_positions = 0
     tot_junctions = 0
-    read = bamfile.next()
+    read = next(bamfile)
     chromosome = bamfile.getrname(read.tid)
     if args.verbose:
         sys.stderr.write('-'*70+'\n')
@@ -161,8 +161,8 @@ def main( ):
 
     if args.verbose:
         sys.stderr.write('Coverage: %s / %s (%0.2f%%) positions have non-zero depth\n' % \
-                         (commaFormat(nonzero), 
-                          commaFormat(lmap[chromosome]), 
+                         (commaFormat(nonzero),
+                          commaFormat(lmap[chromosome]),
                           float(nonzero)/lmap[chromosome] * 100))
         sys.stderr.write('Junctions: %s\n' % commaFormat(len(junctions)) )
         sys.stderr.write('+'*70+'\n')
@@ -175,7 +175,7 @@ def main( ):
         sys.stderr.write('*'*70 + '\n')
         sys.stderr.write('Total Coverage: %d / %d (%0.2f%%) positions have non-zero depth\n' % \
                          (tot_nonzero, tot_positions, float(tot_nonzero)/tot_positions* 100))
-        sys.stderr.write('Total Junctions: %d\n' % tot_junctions) 
+        sys.stderr.write('Total Junctions: %d\n' % tot_junctions)
         sys.stderr.write('*'*70 + '\n')
 
 

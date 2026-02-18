@@ -1,17 +1,17 @@
 #! /usr/bin/env python
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -19,16 +19,16 @@
 """
 Python script for classifying putative splice sites within a FASTA file.
 """
-from SpliceGrapher.shared.config            import *
-from SpliceGrapher.predict.SiteClassifier   import *
-from SpliceGrapher.shared.utils             import *
-from SpliceGrapher.shared.ShortRead         import *
-from SpliceGrapher.shared.streams           import *
-from SpliceGrapher.shared.dna               import *
-from SpliceGrapher.formats.FastaLoader      import FastaLoader
-from SpliceGrapher.formats.loader           import *
-from SpliceGrapher.predict.SpliceSite       import *
-from SpliceGrapher.predict.ClassifierConfig import *
+from iDiffIR.SpliceGrapher.shared.config            import *
+from iDiffIR.SpliceGrapher.predict.SiteClassifier   import *
+from iDiffIR.SpliceGrapher.shared.utils             import *
+from iDiffIR.SpliceGrapher.shared.ShortRead         import *
+from iDiffIR.SpliceGrapher.shared.streams           import *
+from iDiffIR.SpliceGrapher.shared.dna               import *
+from iDiffIR.SpliceGrapher.formats.FastaLoader      import FastaLoader
+from iDiffIR.SpliceGrapher.formats.loader           import *
+from iDiffIR.SpliceGrapher.predict.SpliceSite       import *
+from iDiffIR.SpliceGrapher.predict.ClassifierConfig import *
 
 from optparse import OptionParser
 import sys, os.path
@@ -92,7 +92,7 @@ def classifyGenes(classifiers, geneModel, seqDict, **args) :
     else :
         positionRange = [0, len(seq)]
 
-    for i in xrange(len(genes)) :
+    for i in range(len(genes)) :
         # Note that we may include a gene that starts before the given range or that
         # ends after the range.  By allowing overlaps we ensure that all genes will
         # be covered, even if some predictions might be duplicated.
@@ -145,7 +145,7 @@ def classifySequence(chrom, strand, classifiers, outStream, **args) :
     (Note: DNA sequence is obtained through the 'getSequence' method.)
     """
     minpos     = getAttribute('minpos', 0, **args)
-    maxpos     = getAttribute('maxpos', sys.maxint, **args)
+    maxpos     = getAttribute('maxpos', sys.maxsize, **args)
     knownDict  = getAttribute('knownDict', None, **args)
     clusters   = getAttribute('clusters', None, **args)
     verbose    = getAttribute('verbose', False, **args)
@@ -159,7 +159,7 @@ def classifySequence(chrom, strand, classifiers, outStream, **args) :
     hideStdout()
 
     k = 0 # k, for'kluster' index
-    for i in xrange(minpos, maxpos) :
+    for i in range(minpos, maxpos) :
         if clusters :
             # Use clusters to direct classification:
             while i > clusters[k].maxpos :
@@ -184,7 +184,7 @@ def classifySequence(chrom, strand, classifiers, outStream, **args) :
                     ssData = SequenceData([newSeq], mink=svm.config.mink(), maxk=svm.config.maxk(), maxShift=svm.config.maxShift())
 
                 if svm.config.normalize()       : ssData.attachKernel('cosine')
-            
+
                 (ssClass,score) = svm.classify(ssData,0)
 
                 if knownDict and (i in knownDict[siteType]) :
@@ -193,7 +193,7 @@ def classifySequence(chrom, strand, classifiers, outStream, **args) :
                     else :
                         falseNeg[cName] += 1
                     continue
-            
+
                 # Output the site and its score
                 if ssClass == 1 or outputAll :
                     siteCode = ACCEPTOR_CODE if svm.config.acceptor() else DONOR_CODE
@@ -252,7 +252,7 @@ writeStartupMessage()
 if opts.model : validateFile(opts.model)
 ## if opts.depths  : validateFile(opts.depths)
 
-posRange = [0,sys.maxint]
+posRange = [0,sys.maxsize]
 if opts.range :
     parts    = [int(x) for x in opts.range.split(',')]
     posRange = (min(parts), max(parts))

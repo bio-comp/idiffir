@@ -18,10 +18,10 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 prompt_art = """
-     _        _    _  ___   _  
- o  | \  o  _|_  _|_   |   |_) 
- |  |_/  |   |    |   _|_  | \ 
-                               
+     _        _    _  ___   _
+ o  | \  o  _|_  _|_   |   |_)
+ |  |_/  |   |    |   _|_  | \
+
 """
 
 """
@@ -45,7 +45,7 @@ from iDiffIR.SpliceGrapher.formats.loader import loadGeneModels
 
 def fileList( raw ):
     """Converts a **:**-separated string of file paths into a list
-    
+
     Parameters
     ----------
     raw : string containing paths separated by a **:**
@@ -54,7 +54,7 @@ def fileList( raw ):
     -------
     p : list
         List of file paths
-        
+
     """
     return [ r.strip() for r in raw.strip().split(':')]
 
@@ -67,39 +67,39 @@ def parseArgs():
 
     """
     parser = ArgumentParser(description='Identify differentially expressed introns.')
-    parser.add_argument('-v', '--verbose',dest='verbose', action='store_true', 
+    parser.add_argument('-v', '--verbose',dest='verbose', action='store_true',
                         default=False, help="verbose output [default is quiet running]")
-    parser.add_argument('-n', '--noplot', dest='noplot', action='store_true', 
+    parser.add_argument('-n', '--noplot', dest='noplot', action='store_true',
                         default=False, help="Do not plot figures [default is to make figures]")
 
     parser.add_argument('-l', '--factorlabel', dest="factorlabels",action='store', nargs=2,
-                        type=str, default=['factor1','factor2'], 
+                        type=str, default=['factor1','factor2'],
                         help="factor labels, example:  -f Mutant Wildtype", metavar='FACTORLABEL')
-    parser.add_argument('-o', '--output-dir',dest='outdir', action='store', 
+    parser.add_argument('-o', '--output-dir',dest='outdir', action='store',
                         default='iDiffIR_output', help="output file directory name")
-    parser.add_argument('-s', '--shrink_introns', dest='shrink_introns', action='store_true', 
+    parser.add_argument('-s', '--shrink_introns', dest='shrink_introns', action='store_true',
                         default=False, help='shrink introns for depth plots [default is no shrinking]')
-    parser.add_argument('-k', '--krange', dest='krange', action='store', 
+    parser.add_argument('-k', '--krange', dest='krange', action='store',
                         default=[2,6], type=int, help='kmin kmax; [default is to search for kmax]', nargs=2)
-    parser.add_argument('-c', '--coverage', dest='coverage', action='store', default=0.99, 
+    parser.add_argument('-c', '--coverage', dest='coverage', action='store', default=0.99,
                         type=float, help='coverage cutoff, default = 0.99')
-    parser.add_argument('-d', '--dexpThresh', dest='dexpThresh', action='store', default=10, 
+    parser.add_argument('-d', '--dexpThresh', dest='dexpThresh', action='store', default=10,
                         type=float, help='differential gene expression threshold, [default = 10]')
-    parser.add_argument('-p', '--procs', dest='procs', action='store', default=1, 
+    parser.add_argument('-p', '--procs', dest='procs', action='store', default=1,
                         type=int, help='Number of processing cores to use, [default = 1]')
 
-    parser.add_argument('-f', '--fdrlevel', dest='fdrlevel', action='store', default=0.05, 
+    parser.add_argument('-f', '--fdrlevel', dest='fdrlevel', action='store', default=0.05,
                         type=float, help='FDR test level, [default = 0.05]')
-    
-#    parser.add_argument('-n', '--numClusts', dest='numClusts', action='store', default=5, 
+
+#    parser.add_argument('-n', '--numClusts', dest='numClusts', action='store', default=5,
 #                        help='number of clusters for generating global bias curves (for addressing read depth bias')
-#    parser.add_argument('-d', '--diagnositcs', dest='plotDiagnostics', action='store_true', default=True, 
+#    parser.add_argument('-d', '--diagnositcs', dest='plotDiagnostics', action='store_true', default=True,
 #                        help='Plot diagnostic figures, default = True')
-#    parser.add_argument('-b', '--biasAdj', dest='biasAdj', action='store_true', 
+#    parser.add_argument('-b', '--biasAdj', dest='biasAdj', action='store_true',
 #                        default=False, help='Plot diagnostic figures, default = True')
-    parser.add_argument('-g', '--graph-dirs', dest='graphDirs', type=fileList, 
+    parser.add_argument('-g', '--graph-dirs', dest='graphDirs', type=fileList,
                         help='colon-separated list of directories to recursively search for SpliceGrapher predictions')
-    parser.add_argument('-G', '--graph-dirs-only', dest='graphDirsOnly', type=fileList, 
+    parser.add_argument('-G', '--graph-dirs-only', dest='graphDirsOnly', type=fileList,
                         help='colon-separated list of directories to recursively search for SpliceGrapher predictions. \
                         In this case only the predicted graphs are used. i.e. the gene models are only used in plots \
                         and not for building reduced gene models.  Useful for poorly annotated genomes.')
@@ -115,7 +115,7 @@ def parseArgs():
                         help="colon-separated list of bamfiles: PATH-TO-REPLICATE_1[:PATH-TO-REPLICATE_2,...]")
     parser.add_argument('factor2bamfiles', type=fileList,
                         help="colon-separated list of bamfiles: PATH-TO-REPLICATE_1[:PATH-TO-REPLICATE_2,...]")
-    
+
 
     args = parser.parse_args()
     if not validateArgs( args ):
@@ -139,9 +139,9 @@ def _validateBamfiles(bamfileList):
     for f in bamfileList:
         if not os.path.exists(f):
             sys.stderr.write('**bamfile %s not found\n' % f )
-            countFilesOK = False
+            bamfilesOK = False
     return bamfilesOK
-    
+
 def validateArgs( nspace ):
     """Verify program arguments
 
@@ -151,9 +151,9 @@ def validateArgs( nspace ):
     Parameters
     ----------
     nspace : argparse.Namespace object containing **idiffir.py** arguments
-    
+
     .. todo:: add rest of argument checks
- 
+
     Returns
     -------
     b : bool
@@ -162,7 +162,7 @@ def validateArgs( nspace ):
     """
     geneModelOK  = True
     cParamOK     = True
-        
+
     # bamfiles
     cfOK1 = _validateBamfiles(nspace.factor1bamfiles)
     cfOK2 = _validateBamfiles(nspace.factor2bamfiles)
@@ -178,7 +178,7 @@ def validateArgs( nspace ):
         sys.stderr.write( 'Feasible values of coverage filter `-c`, `--coverage`: 0 <= c <= 1\n')
         cParamOK = False
 
-    
+
     return countFilesOK and cParamOK and geneModelOK
 
 def makeOutputDir(nspace):
@@ -207,7 +207,7 @@ def makeOutputDir(nspace):
         # build figuresLog subdirectory
         if not os.path.exists(os.path.join(nspace.outdir, 'figuresLog')) and not nspace.noplot:
             os.makedirs(os.path.join(nspace.outdir, 'figuresLog'))
-        
+
         # HTML output not implemented yet
         # # build HTML directory
         # if not os.path.exists(os.path.join(nspace.outdir, 'HTML')):
@@ -225,7 +225,7 @@ def makeOutputDir(nspace):
 
 def writeStatus( status, verbose=False ):
     """Print status message
-    
+
     Pretty-print status message to stdout
 
     Parameters
@@ -253,9 +253,9 @@ def runIntron(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
     geneRecords : list of IntronModel.IntronModel objects
     geneModel   : SpliceGrapher.formats.GeneModel.GeneModel
                   Gene model object for the provided genome
-    nspace      : argparse.ArgumentParser 
+    nspace      : argparse.ArgumentParser
                   Command line arguments for **idiffir.py**
-    
+
     """
     # depricated bias adjustment
     #    if nspace.biasAdj:
@@ -271,7 +271,7 @@ def runIntron(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
     # create a summary dictionary of results
     summaryDict = summary( geneRecords, aVals, nspace.fdrlevel)
     # write full latex table
-    fullTexTable(summaryDict,os.path.join(nspace.outdir, 'lists')) 
+    fullTexTable(summaryDict,os.path.join(nspace.outdir, 'lists'))
     # write gene lists
     writeLists( summaryDict, os.path.join(nspace.outdir, 'lists'))
     # write all IR events
@@ -280,8 +280,8 @@ def runIntron(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
 
     # plot figures for significant events
     writeStatus('Plotting Depths', nspace.verbose)
-    f1labs = [ '%s Rep %d' % (nspace.factorlabels[0], i+1) for i in xrange( len(nspace.factor1bamfiles))]
-    f2labs = [ '%s Rep %d' % (nspace.factorlabels[1], i+1) for i in xrange( len(nspace.factor2bamfiles))]
+    f1labs = [ '%s Rep %d' % (nspace.factorlabels[0], i+1) for i in range( len(nspace.factor1bamfiles))]
+    f2labs = [ '%s Rep %d' % (nspace.factorlabels[1], i+1) for i in range( len(nspace.factor2bamfiles))]
 
     # finish up if we're not plotting
     if nspace.noplot: return
@@ -290,14 +290,14 @@ def runIntron(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
     plotPDist(geneRecords, os.path.join(nspace.outdir, 'figures'))
     plotMVA(geneRecords, aVals, os.path.join(nspace.outdir, 'figures'))
 
-    plotResults( geneRecords, f1labs+f2labs, 
+    plotResults( geneRecords, f1labs+f2labs,
                  nspace, geneModel, False,
                  os.path.join(nspace.outdir, 'figures'))
-    plotResults( geneRecords, f1labs+f2labs, 
+    plotResults( geneRecords, f1labs+f2labs,
                  nspace, geneModel, True,
                  os.path.join(nspace.outdir, 'figuresLog'))
 
-    
+
 def runExon(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
     """Run differential exon skipping analysis
 
@@ -309,7 +309,7 @@ def runExon(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
                   List of IntronModel.IntronModel objects
     geneModel   : SpliceGrapher.formats.GeneModel.GeneModel
                   Gene model object for the provided genome
-    nspace      : argparse.ArgumentParser 
+    nspace      : argparse.ArgumentParser
                   Command line arguments for **idiffir.py**
 
     """
@@ -317,22 +317,22 @@ def runExon(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
     writeStatus("Computing SE statistics", nspace.verbose)
     computeSEStatistics( geneRecords, nspace, validChroms, f1LNorm, f2LNorm )
     summaryDictSE = summarySE( geneRecords, aVals, nspace.fdrlevel)
-    fullTexTableSE(summaryDictSE,os.path.join(nspace.outdir, 'lists')) 
+    fullTexTableSE(summaryDictSE,os.path.join(nspace.outdir, 'lists'))
     #writeListsSE( summaryDict, os.path.join(nspace.outdir, 'lists'))
     writeAllSE( geneRecords, aVals, os.path.join(nspace.outdir, 'lists'))
     writeStatus("Plotting Depths", nspace.verbose)
     f1labs = [ '%s Rep %d' % (nspace.factorlabels[0], i+1) \
-               for i in xrange( len(nspace.factor1bamfiles))]
+               for i in range( len(nspace.factor1bamfiles))]
     f2labs = [ '%s Rep %d' % (nspace.factorlabels[1], i+1) \
-               for i in xrange( len(nspace.factor2bamfiles))]
+               for i in range( len(nspace.factor2bamfiles))]
 
     if nspace.noplot: return
     plotPDistSE(geneRecords, os.path.join(nspace.outdir, 'figures'))
     plotMVASE(geneRecords, aVals, os.path.join(nspace.outdir, 'figures'))
-    plotResultsSE( geneRecords, f1labs+f2labs, 
+    plotResultsSE( geneRecords, f1labs+f2labs,
                  nspace, geneModel, False,
                  os.path.join(nspace.outdir, 'figures'))
-    plotResultsSE( geneRecords, f1labs+f2labs, 
+    plotResultsSE( geneRecords, f1labs+f2labs,
                  nspace, geneModel, True,
                  os.path.join(nspace.outdir, 'figuresLog'))
 
@@ -360,7 +360,7 @@ def _dispatch(event):
         raise ValueError
 
 def getValidChromosomes(nspace):
-    """Find chromosomes that are covered in 
+    """Find chromosomes that are covered in
        each bamfile
 
     """
@@ -402,13 +402,13 @@ def main():
     nspace = parseArgs()
     validChroms = getValidChromosomes(nspace)
     f1LNorm, f2LNorm, = getNormFactors(nspace)
-    if not makeOutputDir(nspace): 
+    if not makeOutputDir(nspace):
         sys.exit('Could not create directory: %s' % nspace.outdir)
 
     writeStatus('Loading models', nspace.verbose)
     geneModel = loadGeneModels( nspace.genemodel, verbose=nspace.verbose )
     writeStatus('Making reduced models', nspace.verbose)
-    geneRecords = makeModels( geneModel, nspace.outdir, verbose=nspace.verbose, 
+    geneRecords = makeModels( geneModel, nspace.outdir, verbose=nspace.verbose,
                               graphDirs=nspace.graphDirs,
                               graphDirsOnly=nspace.graphDirsOnly,
                               exonic=nspace.event=='SE', procs=nspace.procs )
@@ -416,4 +416,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -1,18 +1,18 @@
 #! /usr/bin/env python
-# 
+#
 # Copyright (C) 2010 by Colorado State University
 # Contact: Mark Rogers <rogersma@cs.colostate.edu>
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
@@ -20,11 +20,11 @@
 """
 Script for converting a GFF gene model into a splice graph.
 """
-from SpliceGrapher.shared.config     import *
-from SpliceGrapher.shared.utils      import *
-from SpliceGrapher.shared.GeneModelConverter import *
-from SpliceGrapher.formats.loader    import *
-from SpliceGrapher.formats.GeneModel import GENE_TYPE, defaultGeneFilter, gene_type_filter
+from iDiffIR.SpliceGrapher.shared.config     import *
+from iDiffIR.SpliceGrapher.shared.utils      import *
+from iDiffIR.SpliceGrapher.shared.GeneModelConverter import *
+from iDiffIR.SpliceGrapher.formats.loader    import *
+from iDiffIR.SpliceGrapher.formats.GeneModel import GENE_TYPE, defaultGeneFilter, gene_type_filter
 
 from optparse    import OptionParser
 
