@@ -74,7 +74,7 @@ def getEventLocs( node ):
         children = list(set([( e.minpos, e.maxpos) for e in node.parents]))
         
     return [ (parents[i],(node.minpos,node.maxpos), children[j])\
-                 for i in xrange(len(parents)) for j in xrange(len(children))]
+                 for i in range(len(parents)) for j in range(len(children))]
 for gene in genes :
     if gene.chromosome not in chrCounter :
         chrCounter[gene.chromosome] = 0
@@ -84,7 +84,7 @@ for gene in genes :
     # Create splice graph for gene:
     try :
         geneGraph = makeSpliceGraph(gene)#geneModelToSpliceGraph(g)
-    except ValueError, ve:
+    except ValueError as ve:
         sys.stderr.write("Unable to create graph for %s\n" % gene.name)
         continue 
 

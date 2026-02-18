@@ -18,7 +18,7 @@
 """
 Module containing general utility methods.
 """
-import ConfigParser, gzip, locale, os, random, subprocess, sys, time, streams
+import configparser, gzip, locale, os, random, subprocess, sys, time, streams
 from glob import glob
 
 def asList(value, delim=',') :
@@ -78,13 +78,13 @@ def commaFormat(d) :
 def configMap(cfgFile):
     """Reads a configuration file and returns a dictionary of all sections, options and values."""
     result = {}
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser()
     # Activates case-sensitivity:
     config.optionxform = str
 
     try :
         config.read(cfgFile)
-    except ConfigParser.ParsingError :
+    except configparser.ParsingError :
         raise ValueError('Invalid configuration file %s' % cfgFile)
 
     for sect in config.sections() :
@@ -104,7 +104,7 @@ def dictString(valDict, delim=',') :
 def ezopen(fileName) :
     """Allows clients to open files without regard for whether they're gzipped."""
     if not (os.path.exists(fileName) and os.path.isfile(fileName)):
-        raise ValueError, 'file does not exist at %s' % fileName
+        raise ValueError('file does not exist at %s' % fileName)
     
     fileHandle  = gzip.GzipFile(fileName)
     gzippedFile = True
@@ -341,7 +341,7 @@ class RandomListIterator(object) :
     def __iter__(self) :
         return self
 
-    def next(self) :
+    def __next__(self) :
         """Iterator implementation that returns a random value, with
         replacement, from a list."""
         i = self.rand.randint(0,self.limit)

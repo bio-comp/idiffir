@@ -112,7 +112,7 @@ def validSpliceSite(chrom, strand, pos, classifiers, storedValues, **args) :
         ## storedValues[chrom][strand][pos] = NOMINAL_POSITIVE
         storedValues[chrom][strand][pos] = 0.0
 
-    for svm in classifiers.values() :
+    for svm in list(classifiers.values()) :
         # The intron/exon size both depend on which classifier is used;
         # unless there are more than 2 classifiers for a site type,
         # this approach is faster in the long run than getting the
@@ -281,7 +281,7 @@ for line in samIterator(samFile, isBam=bamFormat) :
 
     try :
         rec, matches = acceptSAMRecord(s, indicator.ctr)
-    except ValueError,ve :
+    except ValueError as ve :
         invalidCigar += 1
         continue
 
@@ -374,13 +374,13 @@ indicator.finish()
 if opts.report :
     if opts.verbose : sys.stderr.write('Writing classifier scores to %s\n' % opts.report)
     quintuples = []
-    for c in donSites.keys() :
-        for s in donSites[c].keys() :
-            for p in donSites[c][s].keys() :
+    for c in list(donSites.keys()) :
+        for s in list(donSites[c].keys()) :
+            for p in list(donSites[c][s].keys()) :
                 quintuples.append((c,s,p,'d',donSites[c][s][p]))
-    for c in accSites.keys() :
-        for s in accSites[c].keys() :
-            for p in accSites[c][s].keys() :
+    for c in list(accSites.keys()) :
+        for s in list(accSites[c].keys()) :
+            for p in list(accSites[c][s].keys()) :
                 quintuples.append((c,s,p,'a',accSites[c][s][p]))
     quintuples.sort(cmp=cmpQuintuple)
     rstream = open(opts.report,'w')

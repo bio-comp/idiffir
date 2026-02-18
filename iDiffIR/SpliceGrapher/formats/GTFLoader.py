@@ -171,7 +171,7 @@ class GTFLoader(object) :
             indicator.update()
             try :
                 rec   = GTF_Line(line.strip())
-            except ValueError, ve :
+            except ValueError as ve :
                 raise ValueError('line %d: invalid GTF record:\n%s%s' % (indicator.ctr, line, str(ve)))
 
             ftype = rec.parts[FEATURE_INDEX].lower()

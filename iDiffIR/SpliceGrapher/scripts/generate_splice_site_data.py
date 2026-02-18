@@ -31,18 +31,18 @@ from SpliceGrapher.SpliceGraph         import *
 
 from optparse import OptionParser, OptionGroup
 from glob     import glob
-from sys      import maxint as MAXINT
+from sys      import maxsize as MAXINT
 import os, random, sys, warnings
 
 def trainingFilter(g) :
     """Filter for accepting/rejecting training examples."""
-    for k in TRAIN_ACCEPT.keys() :
+    for k in list(TRAIN_ACCEPT.keys()) :
         if k not in g.attributes : return False
         target = TRAIN_REJECT[k].lower()
         value  = g.attributes[k].lower()
         if value.find(target) < 0 : return False
 
-    for k in TRAIN_REJECT.keys() :
+    for k in list(TRAIN_REJECT.keys()) :
         if k not in g.attributes : continue
         target = TRAIN_REJECT[k].lower()
         value  = g.attributes[k].lower()
@@ -104,13 +104,13 @@ def writeReport(options, jctDict) :
 
     # Second part of report: splice junction frequency
     totalJct = 0
-    for d in jctDict.keys() :
-        for a in jctDict[d].keys() :
+    for d in list(jctDict.keys()) :
+        for a in list(jctDict[d].keys()) :
             totalJct += jctDict[d][a]
 
     jctRecs = []
-    for d in jctDict.keys() :
-        for a in jctDict[d].keys() :
+    for d in list(jctDict.keys()) :
+        for a in list(jctDict[d].keys()) :
             pct = (100.0*jctDict[d][a])/totalJct
             jctRecs.append((d, a, jctDict[d][a], pct))
 
@@ -203,7 +203,7 @@ if opts.model :
     geneModel = loadGeneModels(opts.model, verbose=opts.verbose)
     genes     = geneModel.getAllGenes(trainingFilter)
     for g in genes :
-        if g.chromosome.lower() not in fastaDB.keys() :
+        if g.chromosome.lower() not in list(fastaDB.keys()) :
             if opts.verbose and g.chromosome.lower() not in badChrom :
                 sys.stderr.write('Ignoring gene %s: chromosome %s not in FASTA reference\n' % (g.id, g.chromosome))
                 badChrom.add(g.chromosome.lower())
@@ -230,12 +230,12 @@ if opts.splicegraphs :
         indicator.update()
         try :
             graph = getFirstGraph(f.strip())
-        except ValueError, ve :
+        except ValueError as ve :
             sys.stderr.write('Warning: %s\n' % ve)
             continue
         if graph.isEmpty() : continue
 
-        if graph.chromosome.lower() not in fastaDB.keys() :
+        if graph.chromosome.lower() not in list(fastaDB.keys()) :
             if opts.verbose and graph.chromosome.lower() not in badChrom :
                 sys.stderr.write('Ignoring gene %s: chromosome %s not in FASTA reference\n' % (graph.getName(), graph.chromosome))
                 badChrom.add(graph.chromosome.lower())
@@ -265,7 +265,7 @@ if opts.verbose : sys.stderr.write('Generating %s examples of %s sequences for %
 
 # Iterator is just the graph list for positive examples,
 # or a random iterator over negative examples
-graphIter = RandomListIterator(graphDict.keys()) if opts.negative else graphDict.keys()
+graphIter = RandomListIterator(list(graphDict.keys())) if opts.negative else list(graphDict.keys())
 
 seqCtr    = 0
 geneCount = 0
