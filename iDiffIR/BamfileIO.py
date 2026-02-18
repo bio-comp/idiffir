@@ -34,14 +34,14 @@ def processRead( read, depths, junctions, minIdx, maxIdx ):
                      The minimum and maximum genomic positions
                      for the read depth vector.  len(depths)
                      must equal maxIdx - minIdx
-    """ 
+    """
     # current genomic position in read
-    pos = read.pos 
+    pos = read.pos
     # iterate through alignment CIGAR fields
     for i,rec in enumerate(read.cigar):
         t,l = rec
         # contiguous match in reference,
-        # increment all mathed positions in 
+        # increment all mathed positions in
         # gene depths
         if t == MATCH:
             start = max(0, pos-minIdx)
@@ -66,7 +66,7 @@ def processRead( read, depths, junctions, minIdx, maxIdx ):
 
 def getDepthsFromBam( bamfile, chrom, start, end ):
     """Get read depths in bamfile for specific location
-    
+
     Get read depths from a single bamfile.  Helper function
     for fetching multiple replicates/conditions.
 
@@ -97,7 +97,7 @@ def getDepthsFromBam( bamfile, chrom, start, end ):
         chromMap[ref.lower()] = ref
         chromMap[ref] = ref
     if chrom not in chromMap:
-        sys.stderr.write('Chromosome %s not found in bamfile\n')
+        sys.stderr.write('Chromosome %s not found in bamfile\n' % chrom)
         return numpy.empty(0), {}
 
     depths = numpy.zeros( end-start+1, int)
@@ -110,25 +110,25 @@ def getDepthsFromBam( bamfile, chrom, start, end ):
 def getDepthsFromBamfiles( gene, f1files, f2files ):
     """Get read depths from bamfiles
 
-    Wrapper function for getting read depths from bamfiles 
+    Wrapper function for getting read depths from bamfiles
     from 2 exprerimental conditions.
 
     See Also
     --------
     getDepthsFromBam : Helper function
-    
+
     Parameters
     ----------
     gene : iDiffIR.IntronModel.IntronModel
            Gene for which to compute read depths
-    f1files, f2files : list 
-                       Lists of file paths to bamfiles for 
-                       factor\ :math:`_1`, 
+    f1files, f2files : list
+                       Lists of file paths to bamfiles for
+                       factor\ :math:`_1`,
                        factor\ :math:`_2`, respectively.
-    f2files : list 
-              List of file paths to bamfiles for 
+    f2files : list
+              List of file paths to bamfiles for
               factor\ :math:`_1`.
-    
+
     Returns
     -------
     factor1Depths, factor2Depths : numpy.ndarry
@@ -137,14 +137,14 @@ def getDepthsFromBamfiles( gene, f1files, f2files ):
                                    associate factor and :math:`N` is the length
                                    of the gene.
     factor1juncs, factor2juncs : dict
-                                 Splice junctions counts mapping, 
-                                 (minpos, maxpos) -> count           
-    
+                                 Splice junctions counts mapping,
+                                 (minpos, maxpos) -> count
+
     """
-    factor1djs = [getDepthsFromBam(bamfile, gene.chrom, 
+    factor1djs = [getDepthsFromBam(bamfile, gene.chrom,
                                    gene.minpos, gene.maxpos) \
                      for bamfile in f1files]
-    factor2djs = [getDepthsFromBam(bamfile, gene.chrom, 
+    factor2djs = [getDepthsFromBam(bamfile, gene.chrom,
                                    gene.minpos, gene.maxpos) \
                      for bamfile in f2files]
     factor1depths = numpy.array( [ t[0] for t in factor1djs])
@@ -156,4 +156,4 @@ def getDepthsFromBamfiles( gene, f1files, f2files ):
     return numpy.array(factor1depths), numpy.array(factor2depths), factor1juncs, factor2juncs
 
 
-    
+
