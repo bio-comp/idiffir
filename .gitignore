@@ -5,3 +5,6 @@ doc/_build
 release/
 iDiffIR_v*
 iDiffIR.egg-info/
+AGENTS.md
+a3Maps.txt
+a5Maps.txt
