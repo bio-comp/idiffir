@@ -32,10 +32,10 @@ from iDiffIR.SpliceGrapher.formats.fasta       import FastaRecord
 
 from iDiffIR.SpliceGrapher.formats.loader import loadGeneModels
 
-from optparse import OptionParser
+import argparse
 import os, sys, warnings, numpy, itertools, random, math
 
-USAGE="""%prog [options]
+USAGE="""%(prog)s [options]
 
 """
 
@@ -49,29 +49,29 @@ diffGenes = []
 
 
 def build_parser():
-    parser = OptionParser(usage=USAGE)
-    parser.add_option('-f', dest='fasta',    default=SG_FASTA_REF,  help='FASTA reference file [default: %default]')
-    parser.add_option('-m', dest='model',    default=SG_GENE_MODEL, help='Gene model GFF file [default: %default]')
-    parser.add_option('-n', dest='qname',    default='DISimulator', help='QNAME for read alignment records [default: %default]')
-    parser.add_option('-o', dest='outfile',  default=None,          help='Output file [default: %default]')
-    parser.add_option('-g', dest='diffGExp', default=0.25, type=float, help='Frequency of differential gene expression [default: %default]')
-    parser.add_option('-i', dest='diffIExp', default=0.10, type=float, help='Frequency of differential isoform expression [default: %default]')
-    parser.add_option('-D', dest='diffIso', default=2.0, type=float, help='Relative differential isoform expression')
-    parser.add_option('-l', dest='read_length', default=80, type=int, help='Length of simulated reads [default: %default]')
-    parser.add_option('-a', dest='minAnchor', default=8, type=int, help='Minimum anchor length for a spliced alignment [default: %default]')
-    parser.add_option('-t', dest='test', default=False, action='store_true', help='Run test [default: %default]')
-    parser.add_option('-v', dest='verbose',  default=False,         help='Verbose mode [default: %default]', action='store_true')
-    parser.add_option('-d', dest='depth', default=50, type=int, help='Depth of up-regulated and equal expression')
-    parser.add_option('-e', dest='expfile', default=None, type=str, help='path of expression file')
-    parser.add_option('-s', dest='summary_file', default='summary.txt', type=str, help='name of summary file')
-    parser.add_option('-r', dest='reps', default=1, type=int, help='number of replicates for each condition')
-    parser.add_option('-p', dest='procs', default=1, type=int, help='number of processors to use for sorting sam files')
+    parser = argparse.ArgumentParser(usage=USAGE)
+    parser.add_argument('-f', dest='fasta', default=SG_FASTA_REF, help='FASTA reference file [default: %(default)s]')
+    parser.add_argument('-m', dest='model', default=SG_GENE_MODEL, help='Gene model GFF file [default: %(default)s]')
+    parser.add_argument('-n', dest='qname', default='DISimulator', help='QNAME for read alignment records [default: %(default)s]')
+    parser.add_argument('-o', dest='outfile', default=None, help='Output file [default: %(default)s]')
+    parser.add_argument('-g', dest='diffGExp', default=0.25, type=float, help='Frequency of differential gene expression [default: %(default)s]')
+    parser.add_argument('-i', dest='diffIExp', default=0.10, type=float, help='Frequency of differential isoform expression [default: %(default)s]')
+    parser.add_argument('-D', dest='diffIso', default=2.0, type=float, help='Relative differential isoform expression')
+    parser.add_argument('-l', dest='read_length', default=80, type=int, help='Length of simulated reads [default: %(default)s]')
+    parser.add_argument('-a', dest='minAnchor', default=8, type=int, help='Minimum anchor length for a spliced alignment [default: %(default)s]')
+    parser.add_argument('-t', dest='test', default=False, action='store_true', help='Run test [default: %(default)s]')
+    parser.add_argument('-v', dest='verbose', default=False, help='Verbose mode [default: %(default)s]', action='store_true')
+    parser.add_argument('-d', dest='depth', default=50, type=int, help='Depth of up-regulated and equal expression')
+    parser.add_argument('-e', dest='expfile', default=None, type=str, help='path of expression file')
+    parser.add_argument('-s', dest='summary_file', default='summary.txt', type=str, help='name of summary file')
+    parser.add_argument('-r', dest='reps', default=1, type=int, help='number of replicates for each condition')
+    parser.add_argument('-p', dest='procs', default=1, type=int, help='number of processors to use for sorting sam files')
     return parser
 
 
 def parse_args(argv=None):
     parser = build_parser()
-    parsed_opts, args = parser.parse_args(argv)
+    parsed_opts = parser.parse_args(argv)
     errStrings = []
     if not parsed_opts.model:
         errStrings.append('** No GFF gene model specified.  Set SPLICEGRAPHER_GENE_MODEL or use the -m option.')
@@ -81,7 +81,7 @@ def parse_args(argv=None):
         parser.print_help()
         sys.stderr.write('\n%s\n' % '\n'.join(errStrings))
         raise SystemExit(1)
-    return parsed_opts, args
+    return parsed_opts, []
 
 
 def initialize_state(argv=None):

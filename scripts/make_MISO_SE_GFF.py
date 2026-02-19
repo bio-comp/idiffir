@@ -8,21 +8,21 @@ from iDiffIR.SpliceGrapher.SpliceGraph         import *
 from iDiffIR.SpliceGrapher.formats.loader import loadGeneModels
 
 from glob     import glob
-from optparse import OptionParser
+import argparse
 import os, sys, warnings
 
 def build_parser():
-    parser = OptionParser(usage='Generate GFF file for MISO of exon skipping events')
-    parser.add_option('-m', dest='model', default=SG_GENE_MODEL, help='Gene model GFF file [default: %default]')
-    parser.add_option('-o', dest='outfile', default=None, help='Output file [default: %default]')
-    parser.add_option('-v', dest='verbose', default=False, help='Verbose mode [default: %default]', action='store_true')
-    parser.add_option('-s', dest='graphPaths', default=None, help='File containing paths to splice graphs to augment gene models')
+    parser = argparse.ArgumentParser(description='Generate GFF file for MISO of exon skipping events')
+    parser.add_argument('-m', dest='model', default=SG_GENE_MODEL, help='Gene model GFF file [default: %(default)s]')
+    parser.add_argument('-o', dest='outfile', default=None, help='Output file [default: %(default)s]')
+    parser.add_argument('-v', dest='verbose', default=False, help='Verbose mode [default: %(default)s]', action='store_true')
+    parser.add_argument('-s', dest='graphPaths', default=None, help='File containing paths to splice graphs to augment gene models')
     return parser
 
 
 def parse_args(argv=None):
     parser = build_parser()
-    opts, args = parser.parse_args(argv)
+    opts = parser.parse_args(argv)
     errStrings = []
     if not opts.model:
         errStrings.append('** No GFF gene model specified.  Set SPLICEGRAPHER_GENE_MODEL or use the -m option.')
@@ -30,7 +30,7 @@ def parse_args(argv=None):
         parser.print_help()
         sys.stderr.write('\n%s\n' % '\n'.join(errStrings))
         raise SystemExit(1)
-    return opts, args
+    return opts, []
 
 def getEventLocs( node ):
     if node.strand == '+':
@@ -153,5 +153,4 @@ def main(argv=None):
 
 if __name__ == '__main__':
     raise SystemExit(main())
-
 
