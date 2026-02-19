@@ -33,7 +33,7 @@ from sys import maxsize as MAXINT
 import matplotlib, re, sys, math
 
 # Formatting directives for inserting values into title strings
-DIRECTIVE_MATCH = re.compile('%\w+\S')
+DIRECTIVE_MATCH = re.compile(r'%\w+\S')
 GENE_DIRECTIVE  = '%gene'
 PATH_DIRECTIVE  = '%path'
 

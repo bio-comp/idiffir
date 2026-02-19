@@ -123,16 +123,16 @@ def getDepthsFromBamfiles( gene, f1files, f2files ):
            Gene for which to compute read depths
     f1files, f2files : list
                        Lists of file paths to bamfiles for
-                       factor\ :math:`_1`,
-                       factor\ :math:`_2`, respectively.
+                       factor\\ :math:`_1`,
+                       factor\\ :math:`_2`, respectively.
     f2files : list
               List of file paths to bamfiles for
-              factor\ :math:`_1`.
+              factor\\ :math:`_1`.
 
     Returns
     -------
     factor1Depths, factor2Depths : numpy.ndarry
-                                   :math:`r \cross N` read depth vectors where
+                                   :math:`r \\cross N` read depth vectors where
                                    :math:`r` is the number of replicates for the
                                    associate factor and :math:`N` is the length
                                    of the gene.
@@ -154,6 +154,5 @@ def getDepthsFromBamfiles( gene, f1files, f2files ):
     factor2juncs = [ t[1] for t in factor2djs]
 
     return numpy.array(factor1depths), numpy.array(factor2depths), factor1juncs, factor2juncs
-
 
 

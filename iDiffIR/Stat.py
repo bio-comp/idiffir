@@ -534,7 +534,7 @@ def get_weight( start, stop, gene, wts):
 
 def testIR(geneRecords, aVals, nspace):
     """Hypothesis testing using Z-scores of
-    modified $\log FC$ statisitc
+    modified $\\log FC$ statisitc
     """
     #compute Z-score distribution parameters
     for aidx in range(len(aVals)):
@@ -657,7 +657,7 @@ def procGeneStatsSE( tasks, test_status):
     """Compute exon skipping statistics for gene
 
     Compute exon skipping statistics for all SEs in gene
-    by calculating the adjusted :math:`\log`-fold change
+    by calculating the adjusted :math:`\\log`-fold change
     statistic.  This function can be run in parallel or
     serial.
 
@@ -850,7 +850,7 @@ def procGeneStatsSE( tasks, test_status):
 
 def testSE(geneRecords, aVals, nspace):
     """Hypothesis testing using Z-scores of
-    modified $\log FC$ statisitc
+    modified $\\log FC$ statisitc
     """
     #compute Z-score distribution parameters
     for aidx in range(len(aVals)):

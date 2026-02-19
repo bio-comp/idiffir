@@ -49,3 +49,13 @@ Runtime dependencies are declared in `project.dependencies`, with optional group
 
 - `project.optional-dependencies.dev`
 - `project.optional-dependencies.test`
+
+## Release Notes
+
+### 0.3.2
+
+- Hardened legacy CLI scripts to avoid import-time argument parsing and side effects.
+- Added smoke coverage for all script `--help` entrypoints and no-side-effect checks.
+- Added strict compile gate (`-W error::SyntaxWarning`) in tests and CI.
+- Cleaned remaining invalid escape sequences that blocked strict compile checks.
+- Aligned runtime package version with `pyproject.toml`.

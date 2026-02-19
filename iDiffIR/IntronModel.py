@@ -313,7 +313,7 @@ def geneClusters( geneModel, graphs, exonic, onlyGraphs):
     """Cluster genes that overlap each other
 
     Iterator to cluster and package genes that overlap each other in a
-    chromosome.  :math:`O( n \log n )` time: sorting genes plus linear scan of
+    chromosome.  :math:`O( n \\log n )` time: sorting genes plus linear scan of
     genes.
 
     Parameters
