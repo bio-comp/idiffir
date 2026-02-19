@@ -23,7 +23,7 @@ from iDiffIR.SpliceGrapher.shared.adjust import MIN_INTRON_SIZE
 from configparser import ConfigParser
 import re, os
 
-ENV_MATCH = re.compile('\${\w\w*}')
+ENV_MATCH = re.compile(r'\${\w\w*}')
 
 OUTPUT_FORMATS = ['emf', 'eps', 'pdf', 'png', 'ps', 'raw', 'rgba', 'svg', 'svgz']
 

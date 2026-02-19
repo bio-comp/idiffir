@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "iDiffIR"
-version = "0.3.1"
+version = "0.3.2"
 description = "Identifying differential intron retention from RNA-seq"
 readme = "README"
 requires-python = ">=3.9"

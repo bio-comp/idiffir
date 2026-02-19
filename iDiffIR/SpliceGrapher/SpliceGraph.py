@@ -336,7 +336,7 @@ def detectSkippedExon(n, edges) :
 def commonAS(A,B) :
     """Returns a graph that contains just the nodes and AS
     events found in both A and B.  Uses the fact that
-    A^B = AUB - A\B - B\A"""
+    A^B = AUB - A\\B - B\\A"""
     combined      = A.union(B)
     [AminB,BminA] = diffAS(A,B)
     subgraph      = graphMinusAS(combined,AminB)
@@ -403,7 +403,7 @@ def graphMinusAS(A,B) :
 def graphSubtract(A,B, **args) :
     """Returns a graph that represents the nodes and edges in A minus those in B."""
     resolvedOnly = getAttribute('resolvedOnly', True, **args)
-    name    = '%s\%s' % (A.getName(), B.getName())
+    name    = '%s\\%s' % (A.getName(), B.getName())
     result  = SpliceGraph(name=name, chromosome=A.chromosome, strand=A.strand)
     # Use full graph position range
     result.minpos = A.minpos
