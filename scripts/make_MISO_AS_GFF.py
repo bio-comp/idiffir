@@ -9,10 +9,11 @@ from iDiffIR.SpliceGrapher.formats.loader import loadGeneModels
 
 from glob     import glob
 from optparse import OptionParser
+import os
+import sys
 
-a5f = open('a5Maps.txt', 'w')
-a3f = open('a3Maps.txt', 'w')
-def writeEvent( event, outstream, eventID ):
+
+def writeEvent(event, outstream, eventID, a5_map_stream, a3_map_stream):
     name = '%s:%d:%d:%s:%s:%s:%d:%s' % (event.geneID, event.minpos,
                                            event.maxpos, event.pathType,
                                            event.chrom, 
@@ -21,12 +22,12 @@ def writeEvent( event, outstream, eventID ):
         node1 = event.upPath[0]
         node2 = event.downPath[0]
         positions = sorted((node1.donorEnd(), node2.donorEnd()))
-        a5f.write('%s\t%d,%d\n' % (name, positions[0], positions[1]))
+        a5_map_stream.write('%s\t%d,%d\n' % (name, positions[0], positions[1]))
     else:
         node1 = event.upPath[-1]
         node2 = event.downPath[-1]
         positions = sorted((node1.acceptorEnd(), node2.acceptorEnd()))
-        a3f.write('%s\t%d,%d\n' % (name, positions[0], positions[1]))
+        a3_map_stream.write('%s\t%d,%d\n' % (name, positions[0], positions[1]))
 
 
     # write gene record
@@ -59,54 +60,6 @@ def writeEvent( event, outstream, eventID ):
         outstream.write('%s\t%s\texon\t%d\t%d\t.\t%s\t.\tID=%s;Parent=%s\n' % (
             event.chrom, event.AStype, node.minpos, node.maxpos,
             event.strand, '%s:downstream:exon_%d' % (name, i+1), '%s:downstream' %name))
-
-
-parser = OptionParser()
-
-parser.add_option('-m', dest='model',    default=SG_GENE_MODEL, help='Gene model GFF file [default: %default]')
-parser.add_option('-o', dest='outbase',  default='AS',          help='Output file base')
-parser.add_option('-v', dest='verbose',  default=False,         help='Verbose mode [default: %default]', action='store_true')
-
-parser.add_option( '-s', dest='graphPaths', default=None, help='File containing paths to splice graphs to augment gene models')
-opts, args = parser.parse_args(sys.argv[1:])
-
-errStrings = []
-if not opts.model : errStrings.append('** No GFF gene model specified.  Set SPLICEGRAPHER_GENE_MODEL or use the -m option.')
-if errStrings :
-    parser.print_help()
-    sys.stderr.write('\n%s\n' % '\n'.join(errStrings))
-    sys.exit(1)
-
-
-outStream_a5 = open(opts.outbase+'_a5.gff', 'w')
-outStream_a3 = open(opts.outbase+'_a3.gff', 'w')
-
-geneModel = loadGeneModels(opts.model, verbose=opts.verbose, alltypes=True)
-
-# Load splice graphs if given
-spliceGraphs = {}
-if opts.graphPaths != None:
-    if opts.verbose: sys.stderr.write('Loading aux. splice graphs\n')
-    indicator = ProgressIndicator(10000, description=' files', verbose=opts.verbose)
-    with open( opts.graphPaths, 'r' ) as fin:
-        for line in fin:
-            fname = line.strip()
-            if not os.path.exists(fname):
-                if opts.verbose: 
-                    sys.stderr.write('Missing splice graph file: %s\n' % fname)
-                    continue
-            indicator.update()
-            graph = getFirstGraph( fname )
-            geneName = graph.name.upper()
-            if geneName in spliceGraphs:
-                spliceGraphs[geneName] = spliceGraphs[geneName].union( graph )
-            else:
-                spliceGraphs[geneName] = graph
-            #for node in graph.unresolvedNodes():
-            #    spliceGraphs[geneName].addNode( node.id, node.start, node.end)
-        
-    indicator.finish()
-    if opts.verbose : sys.stderr.write('Loaded %d aux. splice graphs\n' % (indicator.ctr))
 
 
 def upstream_a5( node1, node2 ):
@@ -273,57 +226,110 @@ class AltEvent(object):
         self.maxpos = max( maxpos, max( [node.maxpos for node in path2] ) )
         self.label = label
 
-# main loop
-for chrm in geneModel.getChromosomes():
-    if opts.verbose: sys.stderr.write('Processing genes from chromosome: %s\n' % chrm )
-    indicatorG = ProgressIndicator(10000, description=' genes', verbose=opts.verbose)
-    genes     = geneModel.getGeneRecords(chrm, geneFilter=gene_type_filter)
-    genes.sort()
-
-    for g in genes :
-        if opts.verbose : indicatorG.update()
-        geneGraph = makeSpliceGraph(g)
-        if geneGraph.name.upper() in spliceGraphs:
-            geneGraph = geneGraph.union(spliceGraphs[ geneGraph.name.upper() ])
-        geneGraph.annotate()
-
-        a5 = [ node for node in geneGraph.resolvedNodes() if node.isAltDonor() ]
-        a3 = [ node for node in geneGraph.resolvedNodes() if node.isAltAcceptor() ]
-        a5Events = [ ]
-        a3Events = [ ]
-        for node1 in a5:
-            for node2 in a5:
-                if upstream_a5(node1, node2) and overlap(node1, node2):
-                    path1, path2, pathType = resolve_a5( node1, node2 )
-                    if pathType != None:
-                        label = 'P' if node1.isPredicted() or node2.isPredicted() else 'K'
-                        a5Events.append( AltEvent( path1, path2, pathType, 
-                                                 'A5', chrm, geneGraph.name, label ))  
-        
-        for i, event in enumerate(a5Events):
-            writeEvent( event, outStream_a5, i+1 )
-
-        for node1 in a3:
-            for node2 in a3:
-                if upstream_a3(node1, node2) and overlap(node1, node2):
-                    path1, path2, pathType = resolve_a3( node1, node2 )
-                    if pathType != None:
-                        label = 'P' if node1.isPredicted() or node2.isPredicted() else 'K'
-                        a3Events.append( AltEvent( path1, path2, pathType, 
-                                                 'A3', chrm, geneGraph.name, label ))  
-        
-        for i, event in enumerate(a3Events):
-            writeEvent( event, outStream_a3, i+1 )
-                
-    
-    if opts.verbose : 
-        indicatorG.finish()
-        sys.stderr.write('%d genes\n' % indicatorG.ctr)
-    
-outStream_a5.flush()
-outStream_a5.close()
-outStream_a3.flush()
-outStream_a3.close()
+def build_parser():
+    parser = OptionParser()
+    parser.add_option('-m', dest='model',    default=SG_GENE_MODEL, help='Gene model GFF file [default: %default]')
+    parser.add_option('-o', dest='outbase',  default='AS',          help='Output file base')
+    parser.add_option('-v', dest='verbose',  default=False,         help='Verbose mode [default: %default]', action='store_true')
+    parser.add_option('-s', dest='graphPaths', default=None, help='File containing paths to splice graphs to augment gene models')
+    return parser
 
 
+def parse_args(argv=None):
+    parser = build_parser()
+    opts, args = parser.parse_args(argv)
+    errStrings = []
+    if not opts.model:
+        errStrings.append('** No GFF gene model specified.  Set SPLICEGRAPHER_GENE_MODEL or use the -m option.')
+    if errStrings:
+        parser.print_help()
+        sys.stderr.write('\n%s\n' % '\n'.join(errStrings))
+        raise SystemExit(1)
+    return opts, args
 
+
+def load_splice_graphs(graph_paths, verbose):
+    spliceGraphs = {}
+    if graph_paths is not None:
+        if verbose:
+            sys.stderr.write('Loading aux. splice graphs\n')
+        indicator = ProgressIndicator(10000, description=' files', verbose=verbose)
+        with open(graph_paths, 'r') as fin:
+            for line in fin:
+                fname = line.strip()
+                if not os.path.exists(fname):
+                    if verbose:
+                        sys.stderr.write('Missing splice graph file: %s\n' % fname)
+                    continue
+                indicator.update()
+                graph = getFirstGraph(fname)
+                geneName = graph.name.upper()
+                if geneName in spliceGraphs:
+                    spliceGraphs[geneName] = spliceGraphs[geneName].union(graph)
+                else:
+                    spliceGraphs[geneName] = graph
+        indicator.finish()
+        if verbose:
+            sys.stderr.write('Loaded %d aux. splice graphs\n' % indicator.ctr)
+    return spliceGraphs
+
+
+def main(argv=None):
+    opts, _ = parse_args(argv)
+    geneModel = loadGeneModels(opts.model, verbose=opts.verbose, alltypes=True)
+    spliceGraphs = load_splice_graphs(opts.graphPaths, opts.verbose)
+
+    with open(opts.outbase + '_a5.gff', 'w') as outStream_a5, \
+         open(opts.outbase + '_a3.gff', 'w') as outStream_a3, \
+         open('a5Maps.txt', 'w') as a5f, \
+         open('a3Maps.txt', 'w') as a3f:
+        for chrm in geneModel.getChromosomes():
+            if opts.verbose:
+                sys.stderr.write('Processing genes from chromosome: %s\n' % chrm)
+            indicatorG = ProgressIndicator(10000, description=' genes', verbose=opts.verbose)
+            genes = geneModel.getGeneRecords(chrm, geneFilter=gene_type_filter)
+            genes.sort()
+
+            for g in genes:
+                if opts.verbose:
+                    indicatorG.update()
+                geneGraph = makeSpliceGraph(g)
+                if geneGraph.name.upper() in spliceGraphs:
+                    geneGraph = geneGraph.union(spliceGraphs[geneGraph.name.upper()])
+                geneGraph.annotate()
+
+                a5 = [node for node in geneGraph.resolvedNodes() if node.isAltDonor()]
+                a3 = [node for node in geneGraph.resolvedNodes() if node.isAltAcceptor()]
+                a5Events = []
+                a3Events = []
+                for node1 in a5:
+                    for node2 in a5:
+                        if upstream_a5(node1, node2) and overlap(node1, node2):
+                            path1, path2, pathType = resolve_a5(node1, node2)
+                            if pathType is not None:
+                                label = 'P' if node1.isPredicted() or node2.isPredicted() else 'K'
+                                a5Events.append(AltEvent(path1, path2, pathType, 'A5', chrm, geneGraph.name, label))
+
+                for i, event in enumerate(a5Events):
+                    writeEvent(event, outStream_a5, i + 1, a5f, a3f)
+
+                for node1 in a3:
+                    for node2 in a3:
+                        if upstream_a3(node1, node2) and overlap(node1, node2):
+                            path1, path2, pathType = resolve_a3(node1, node2)
+                            if pathType is not None:
+                                label = 'P' if node1.isPredicted() or node2.isPredicted() else 'K'
+                                a3Events.append(AltEvent(path1, path2, pathType, 'A3', chrm, geneGraph.name, label))
+
+                for i, event in enumerate(a3Events):
+                    writeEvent(event, outStream_a3, i + 1, a5f, a3f)
+
+            if opts.verbose:
+                indicatorG.finish()
+                sys.stderr.write('%d genes\n' % indicatorG.ctr)
+
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

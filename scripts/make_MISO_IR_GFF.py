@@ -138,52 +138,65 @@ def getGraphIntrons(graph, chrom) :
 
     return resIR, resIE
 
-parser = OptionParser()
+def build_parser():
+    parser = OptionParser()
+    parser.add_option('-m', dest='model', default=SG_GENE_MODEL, help='Gene model GFF file [default: %default]')
+    parser.add_option('-o', dest='outfile', default='out.gff', help='Output file base')
+    parser.add_option('-v', dest='verbose', default=False, help='Verbose mode [default: %default]', action='store_true')
+    return parser
 
-parser.add_option('-m', dest='model',    default=SG_GENE_MODEL, help='Gene model GFF file [default: %default]')
-parser.add_option('-o', dest='outfile',  default='out.gff',          help='Output file base')
-parser.add_option('-v', dest='verbose',  default=False,         help='Verbose mode [default: %default]', action='store_true')
 
-opts, args = parser.parse_args(sys.argv[1:])
+def parse_args(argv=None):
+    parser = build_parser()
+    opts, args = parser.parse_args(argv)
+    errStrings = []
+    if not opts.model:
+        errStrings.append('** No GFF gene model specified.  Set SPLICEGRAPHER_GENE_MODEL or use the -m option.')
+    if errStrings:
+        parser.print_help()
+        sys.stderr.write('\n%s\n' % '\n'.join(errStrings))
+        raise SystemExit(1)
+    return opts, args
 
-errStrings = []
-if not opts.model : errStrings.append('** No GFF gene model specified.  Set SPLICEGRAPHER_GENE_MODEL or use the -m option.')
-if errStrings :
-    parser.print_help()
-    sys.stderr.write('\n%s\n' % '\n'.join(errStrings))
-    sys.exit(1)
 
-outStream = open(opts.outfile, 'w')
-geneModel = loadGeneModels(opts.model, verbose=opts.verbose, alltypes=True)
+def main(argv=None):
+    opts, _ = parse_args(argv)
+    geneModel = loadGeneModels(opts.model, verbose=opts.verbose, alltypes=True)
 
-irs = 0
-ies = 0
-for chrm in geneModel.getChromosomes():
-    if opts.verbose: sys.stderr.write('Processing genes from chromosome: %s\n' % chrm )
-    indicatorG = ProgressIndicator(10000, description=' genes', verbose=opts.verbose)
-    genes     = geneModel.getGeneRecords(chrm, geneFilter=gene_type_filter)
-    genes.sort()
+    irs = 0
+    ies = 0
+    with open(opts.outfile, 'w') as outStream:
+        for chrm in geneModel.getChromosomes():
+            if opts.verbose:
+                sys.stderr.write('Processing genes from chromosome: %s\n' % chrm)
+            indicatorG = ProgressIndicator(10000, description=' genes', verbose=opts.verbose)
+            genes = geneModel.getGeneRecords(chrm, geneFilter=gene_type_filter)
+            genes.sort()
 
-    for g in genes :
-        chrom = g.gffString().split('\t')[0]
-        if opts.verbose : indicatorG.update()
+            for g in genes:
+                chrom = g.gffString().split('\t')[0]
+                if opts.verbose:
+                    indicatorG.update()
 
-        geneGraph = makeSpliceGraph(g)
-        geneGraph.annotate()
+                geneGraph = makeSpliceGraph(g)
+                geneGraph.annotate()
 
-        # get introns from gene models
-        irGM, ieGM = getGraphIntrons(geneGraph, chrom)
-        writeIntrons( g, irGM, 'K', outStream )
-        writeIntrons( g, ieGM, 'P', outStream )
+                # get introns from gene models
+                irGM, ieGM = getGraphIntrons(geneGraph, chrom)
+                writeIntrons(g, irGM, 'K', outStream)
+                writeIntrons(g, ieGM, 'P', outStream)
 
-        irs += len(irGM)
-        ies += len(ieGM)
-        
-    if opts.verbose : 
-        indicatorG.finish()
-        sys.stderr.write('%d genes\n' % indicatorG.ctr)
-if opts.verbose : 
-    sys.stderr.write('Found %d retained introns and %d excised introns\n' % (irs, ies)) 
-outStream.flush()
-outStream.close()
+                irs += len(irGM)
+                ies += len(ieGM)
 
+            if opts.verbose:
+                indicatorG.finish()
+                sys.stderr.write('%d genes\n' % indicatorG.ctr)
+
+    if opts.verbose:
+        sys.stderr.write('Found %d retained introns and %d excised introns\n' % (irs, ies))
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

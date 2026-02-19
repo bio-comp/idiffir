@@ -29,3 +29,7 @@ def test_core_modules_import():
     load_script_module("script_idiffir_plotter", "scripts/idiffir_plotter.py")
     load_script_module("script_get_intron_expression", "scripts/get_intron_expression.py")
     load_script_module("script_get_gene_expression", "scripts/get_gene_expression.py")
+    load_script_module("script_make_miso_as_gff", "scripts/make_MISO_AS_GFF.py")
+    load_script_module("script_make_miso_ir_gff", "scripts/make_MISO_IR_GFF.py")
+    load_script_module("script_make_miso_se_gff", "scripts/make_MISO_SE_GFF.py")
+    load_script_module("script_simulate_ir", "scripts/simulate_IR.py")
