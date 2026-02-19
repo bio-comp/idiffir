@@ -4,3 +4,4 @@ doc/_build
 *.pyc
 release/
 iDiffIR_v*
+iDiffIR.egg-info/

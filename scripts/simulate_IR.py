@@ -39,38 +39,71 @@ USAGE="""%prog [options]
 
 """
 
-parser = OptionParser(usage=USAGE)
-parser.add_option('-f', dest='fasta',    default=SG_FASTA_REF,  help='FASTA reference file [default: %default]')
-parser.add_option('-m', dest='model',    default=SG_GENE_MODEL, help='Gene model GFF file [default: %default]')
-parser.add_option('-n', dest='qname',    default='DISimulator', help='QNAME for read alignment records [default: %default]')
-parser.add_option('-o', dest='outfile',  default=None,          help='Output file [default: %default]')
-parser.add_option('-g', dest='diffGExp', default=0.25, type=float, help='Frequency of differential gene expression [default: %default]')
-parser.add_option('-i', dest='diffIExp', default=0.10, type=float, help='Frequency of differential isoform expression [default: %default]')
-parser.add_option('-D', dest='diffIso', default=2.0, type=float, help='Relative differential isoform expression')
-parser.add_option('-l', dest='read_length', default=80, type=int, help='Length of simulated reads [default: %default]')
-parser.add_option('-a', dest='minAnchor', default=8, type=int, help='Minimum anchor length for a spliced alignment [default: %default]')
-parser.add_option('-t', dest='test', default=False, action='store_true', help='Run test [default: %default]')
-parser.add_option('-v', dest='verbose',  default=False,         help='Verbose mode [default: %default]', action='store_true')
-parser.add_option('-d', dest='depth', default=50, type=int, help='Depth of up-regulated and equal expression')
-parser.add_option('-e', dest='expfile', default=None, type=str, help='path of expression file')
-parser.add_option('-s', dest='summary_file', default='summary.txt', type=str, help='name of summary file')
-parser.add_option('-r', dest='reps', default=1, type=int, help='number of replicates for each condition')
-parser.add_option('-p', dest='procs', default=1, type=int, help='number of processors to use for sorting sam files')
-#-------------------------------------------------------
-# Main program
-#-------------------------------------------------------
-opts, args = parser.parse_args(sys.argv[1:])
-
-errStrings = []
-if not opts.model : errStrings.append('** No GFF gene model specified.  Set SPLICEGRAPHER_GENE_MODEL or use the -m option.')
-if not opts.fasta : errStrings.append('** No FASTA reference specified.  Set SPLICEGRAPHER_FASTA_REF or use the -f option.')
-if errStrings :
-    parser.print_help()
-    sys.stderr.write('\n%s\n' % '\n'.join(errStrings))
-    sys.exit(1)
-geneModel = loadGeneModels(opts.model, verbose=opts.verbose, alltypes=True)
-
+opts = None
+geneModel = None
 depths = {}
+genes = []
+loader = None
+diffIsos = []
+diffGenes = []
+
+
+def build_parser():
+    parser = OptionParser(usage=USAGE)
+    parser.add_option('-f', dest='fasta',    default=SG_FASTA_REF,  help='FASTA reference file [default: %default]')
+    parser.add_option('-m', dest='model',    default=SG_GENE_MODEL, help='Gene model GFF file [default: %default]')
+    parser.add_option('-n', dest='qname',    default='DISimulator', help='QNAME for read alignment records [default: %default]')
+    parser.add_option('-o', dest='outfile',  default=None,          help='Output file [default: %default]')
+    parser.add_option('-g', dest='diffGExp', default=0.25, type=float, help='Frequency of differential gene expression [default: %default]')
+    parser.add_option('-i', dest='diffIExp', default=0.10, type=float, help='Frequency of differential isoform expression [default: %default]')
+    parser.add_option('-D', dest='diffIso', default=2.0, type=float, help='Relative differential isoform expression')
+    parser.add_option('-l', dest='read_length', default=80, type=int, help='Length of simulated reads [default: %default]')
+    parser.add_option('-a', dest='minAnchor', default=8, type=int, help='Minimum anchor length for a spliced alignment [default: %default]')
+    parser.add_option('-t', dest='test', default=False, action='store_true', help='Run test [default: %default]')
+    parser.add_option('-v', dest='verbose',  default=False,         help='Verbose mode [default: %default]', action='store_true')
+    parser.add_option('-d', dest='depth', default=50, type=int, help='Depth of up-regulated and equal expression')
+    parser.add_option('-e', dest='expfile', default=None, type=str, help='path of expression file')
+    parser.add_option('-s', dest='summary_file', default='summary.txt', type=str, help='name of summary file')
+    parser.add_option('-r', dest='reps', default=1, type=int, help='number of replicates for each condition')
+    parser.add_option('-p', dest='procs', default=1, type=int, help='number of processors to use for sorting sam files')
+    return parser
+
+
+def parse_args(argv=None):
+    parser = build_parser()
+    parsed_opts, args = parser.parse_args(argv)
+    errStrings = []
+    if not parsed_opts.model:
+        errStrings.append('** No GFF gene model specified.  Set SPLICEGRAPHER_GENE_MODEL or use the -m option.')
+    if not parsed_opts.fasta:
+        errStrings.append('** No FASTA reference specified.  Set SPLICEGRAPHER_FASTA_REF or use the -f option.')
+    if errStrings:
+        parser.print_help()
+        sys.stderr.write('\n%s\n' % '\n'.join(errStrings))
+        raise SystemExit(1)
+    return parsed_opts, args
+
+
+def initialize_state(argv=None):
+    global opts, geneModel, depths, genes, loader, diffIsos, diffGenes
+    opts, _ = parse_args(argv)
+    geneModel = loadGeneModels(opts.model, verbose=opts.verbose, alltypes=True)
+    depths = {}
+    genes = geneModel.getAllGenes(geneFilter=gene_type_filter)
+    if depths:
+        genes = [g for g in genes if not g.isSingleExon() and g.id in depths]
+    else:
+        genes = [g for g in genes if not g.isSingleExon()]
+    genes.sort()
+    loader = FastaLoader(opts.fasta, verbose=opts.verbose)
+    multi_isos = [gene.id for gene in genes if len(gene.isoforms) > 1]
+    gene_IDs = [gene.id for gene in genes]
+    # select differential isoform genes
+    diffIsos = random.sample(multi_isos, int(len(multi_isos) * opts.diffIExp))
+    # select differential genes
+    diffGenes = random.sample(gene_IDs, int(len(gene_IDs) * opts.diffGExp))
+
+
 def loadExp( ):
     with open( opts.expfile, 'r') as fin:
         _ = fin.readline()
@@ -86,23 +119,6 @@ def loadExp( ):
             else:
                 wti = float(wti)
                 depths[gid] = ( max(1,mtg), max(1,wtg),  min(1.0,max(1.0,wti)/max(1,wtg) ))
-
-genes     = geneModel.getAllGenes(geneFilter=gene_type_filter)
-if depths:
-    genes     = [ g for g in genes if not g.isSingleExon() and g.id in depths]
-else:
-    genes     = [ g for g in genes if not g.isSingleExon() ]
-genes.sort()
-loader = FastaLoader(opts.fasta, verbose=opts.verbose)
-multi_isos = [ gene.id for gene in genes if len(gene.isoforms) > 1 ]
-gene_IDs = [ gene.id for gene in genes ]
-
-# select differential isoform genes
-diffIsos = random.sample( multi_isos, int( len(multi_isos) * opts.diffIExp) )
-# select differential genes
-diffGenes = random.sample( gene_IDs, int( len(gene_IDs) * opts.diffGExp) )
-
-
 
 def makeCIGAR( positions):
     cigar = ""
@@ -482,9 +498,9 @@ def main():
 #        os.system("""awk '$1 ~ /^@/{print $0;next}{print $0 | "sort --parallel=%d -k 3,3 -k 4,4n"}' mutant_%d.sam > tmpFile && mv tmpFile mutant_%d.#sam""" % (opts.procs, r+1, r+1))
 
 if __name__ == '__main__':
+    initialize_state()
     simulateReads.n = 0
     if opts.test:
         run_test()
     else:
         main()
-
