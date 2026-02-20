@@ -32,7 +32,7 @@ from iDiffIR.SpliceGrapher.view.GeneView             import GeneView
 from iDiffIR.SpliceGrapher.formats.loader            import *
 from iDiffIR.SpliceGrapher.formats.sam               import *
 from iDiffIR.SpliceGrapher                           import SpliceGraph
-from iDiffIR.SpliceGrapher.formats                   import gtf, wig, bed, xydata
+from iDiffIR.SpliceGrapher.formats                   import wig, bed, xydata
 
 import argparse
 
@@ -230,9 +230,7 @@ minpos = gene.minpos
 maxpos = gene.maxpos
 # Find splice graph boundaries
 predictedGraph = None
-if opts.gtf_file :
-    predictedGraph = gtf.getFirstGraph(opts.gtf_file)
-elif opts.splice_graph :
+if opts.splice_graph :
     predictedGraph = SpliceGraph.getFirstGraph(opts.splice_graph)
 
 if opts.orig_graph :

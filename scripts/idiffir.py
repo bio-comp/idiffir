@@ -243,15 +243,15 @@ def writeStatus( status, verbose=False ):
     sys.stderr.write( ' %s \n' % ( status ) )
     sys.stderr.write( '%s\n' % ( '-' * n ) )
 
-def runIntron(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
+def runIntron(gene_records, gene_model, nspace, valid_chroms, f1_lnorm, f2_lnorm):
     """Run differential IR analysis
 
     Run **iDiffIR** differential intron retention analysis.
 
     Parameters
     ----------
-    geneRecords : list of IntronModel.IntronModel objects
-    geneModel   : SpliceGrapher.formats.GeneModel.GeneModel
+    gene_records : list of IntronModel.IntronModel objects
+    gene_model   : SpliceGrapher.formats.GeneModel.GeneModel
                   Gene model object for the provided genome
     nspace      : argparse.ArgumentParser
                   Command line arguments for **idiffir.py**
@@ -263,77 +263,75 @@ def runIntron(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
     #            geneRecords, f1Dict, f1Dict, nspace.numClusts)
     #        rmi = rmsip(geneRecords, f1Dict, f2Dict )
     #        plotGBCs( f1Codes, f2Codes, f1Cnt, f2Cnt, rmi, nspace.outdir)
-    aVals = range(nspace.krange[0], nspace.krange[1]+1)
+    a_vals = range(nspace.krange[0], nspace.krange[1] + 1)
     # compute differential IR statistics
     writeStatus('Computing statistics', nspace.verbose)
-    computeIRStatistics( geneRecords, nspace, validChroms, f1LNorm, f2LNorm )
+    computeIRStatistics(gene_records, nspace, valid_chroms, f1_lnorm, f2_lnorm)
 
     # create a summary dictionary of results
-    summaryDict = summary( geneRecords, aVals, nspace.fdrlevel)
+    summary_dict = summary(gene_records, a_vals, nspace.fdrlevel)
     # write full latex table
-    fullTexTable(summaryDict,os.path.join(nspace.outdir, 'lists'))
+    fullTexTable(summary_dict, os.path.join(nspace.outdir, 'lists'))
     # write gene lists
-    writeLists( summaryDict, os.path.join(nspace.outdir, 'lists'))
+    writeLists(summary_dict, os.path.join(nspace.outdir, 'lists'))
     # write all IR events
-    writeAll( geneRecords, aVals, os.path.join(nspace.outdir, 'lists'))
+    writeAll(gene_records, a_vals, os.path.join(nspace.outdir, 'lists'))
     #writeGeneExpression(geneRecords, os.path.join(nspace.outdir, 'lists'))
 
     # plot figures for significant events
     writeStatus('Plotting Depths', nspace.verbose)
-    f1labs = [ '%s Rep %d' % (nspace.factorlabels[0], i+1) for i in range( len(nspace.factor1bamfiles))]
-    f2labs = [ '%s Rep %d' % (nspace.factorlabels[1], i+1) for i in range( len(nspace.factor2bamfiles))]
+    f1_labs = ['%s Rep %d' % (nspace.factorlabels[0], i + 1) for i in range(len(nspace.factor1bamfiles))]
+    f2_labs = ['%s Rep %d' % (nspace.factorlabels[1], i + 1) for i in range(len(nspace.factor2bamfiles))]
 
     # finish up if we're not plotting
     if nspace.noplot: return
 
     # plot diagnostic figures (p-value distribution and MvA )
-    plotPDist(geneRecords, os.path.join(nspace.outdir, 'figures'))
-    plotMVA(geneRecords, aVals, os.path.join(nspace.outdir, 'figures'))
+    plotPDist(gene_records, os.path.join(nspace.outdir, 'figures'))
+    plotMVA(gene_records, a_vals, os.path.join(nspace.outdir, 'figures'))
 
-    plotResults( geneRecords, f1labs+f2labs,
-                 nspace, geneModel, False,
+    plotResults( gene_records, f1_labs+f2_labs,
+                 nspace, gene_model, False,
                  os.path.join(nspace.outdir, 'figures'))
-    plotResults( geneRecords, f1labs+f2labs,
-                 nspace, geneModel, True,
+    plotResults( gene_records, f1_labs+f2_labs,
+                 nspace, gene_model, True,
                  os.path.join(nspace.outdir, 'figuresLog'))
 
 
-def runExon(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm):
+def runExon(gene_records, gene_model, nspace, valid_chroms, f1_lnorm, f2_lnorm):
     """Run differential exon skipping analysis
 
     Run iDiffIR's differential exon skipping analysis
 
     Parameters
     ----------
-    geneRecords : list
+    gene_records : list
                   List of IntronModel.IntronModel objects
-    geneModel   : SpliceGrapher.formats.GeneModel.GeneModel
+    gene_model   : SpliceGrapher.formats.GeneModel.GeneModel
                   Gene model object for the provided genome
     nspace      : argparse.ArgumentParser
                   Command line arguments for **idiffir.py**
 
     """
-    aVals = range(nspace.krange[0], nspace.krange[1]+1)
+    a_vals = range(nspace.krange[0], nspace.krange[1] + 1)
     writeStatus("Computing SE statistics", nspace.verbose)
-    computeSEStatistics( geneRecords, nspace, validChroms, f1LNorm, f2LNorm )
-    summaryDictSE = summarySE( geneRecords, aVals, nspace.fdrlevel)
-    fullTexTableSE(summaryDictSE,os.path.join(nspace.outdir, 'lists'))
+    computeSEStatistics(gene_records, nspace, valid_chroms, f1_lnorm, f2_lnorm)
+    summary_dict_se = summarySE(gene_records, a_vals, nspace.fdrlevel)
+    fullTexTableSE(summary_dict_se, os.path.join(nspace.outdir, 'lists'))
     #writeListsSE( summaryDict, os.path.join(nspace.outdir, 'lists'))
-    writeAllSE( geneRecords, aVals, os.path.join(nspace.outdir, 'lists'))
+    writeAllSE(gene_records, a_vals, os.path.join(nspace.outdir, 'lists'))
     writeStatus("Plotting Depths", nspace.verbose)
-    f1labs = [ '%s Rep %d' % (nspace.factorlabels[0], i+1) \
-               for i in range( len(nspace.factor1bamfiles))]
-    f2labs = [ '%s Rep %d' % (nspace.factorlabels[1], i+1) \
-               for i in range( len(nspace.factor2bamfiles))]
+    f1_labs = ['%s Rep %d' % (nspace.factorlabels[0], i + 1) for i in range(len(nspace.factor1bamfiles))]
+    f2_labs = ['%s Rep %d' % (nspace.factorlabels[1], i + 1) for i in range(len(nspace.factor2bamfiles))]
 
     if nspace.noplot: return
-    plotPDistSE(geneRecords, os.path.join(nspace.outdir, 'figures'))
-    plotMVASE(geneRecords, aVals, os.path.join(nspace.outdir, 'figures'))
-    plotResultsSE( geneRecords, f1labs+f2labs,
-                 nspace, geneModel, False,
+    plotPDistSE(gene_records, os.path.join(nspace.outdir, 'figures'))
+    plotMVASE(gene_records, a_vals, os.path.join(nspace.outdir, 'figures'))
+    plotResultsSE( gene_records, f1_labs+f2_labs,
+                 nspace, gene_model, False,
                  os.path.join(nspace.outdir, 'figures'))
-    plotResultsSE( geneRecords, f1labs+f2labs,
-                 nspace, geneModel, True,
+    plotResultsSE( gene_records, f1_labs+f2_labs,
+                 nspace, gene_model, True,
                  os.path.join(nspace.outdir, 'figuresLog'))
 
 
@@ -400,19 +398,28 @@ def main():
 
     """
     nspace = parseArgs()
-    validChroms = getValidChromosomes(nspace)
-    f1LNorm, f2LNorm, = getNormFactors(nspace)
+    valid_chroms = getValidChromosomes(nspace)
+    f1_lnorm, f2_lnorm = getNormFactors(nspace)
     if not makeOutputDir(nspace):
         sys.exit('Could not create directory: %s' % nspace.outdir)
 
     writeStatus('Loading models', nspace.verbose)
-    geneModel = loadGeneModels( nspace.genemodel, verbose=nspace.verbose )
+    gene_model = loadGeneModels(
+        nspace.genemodel,
+        verbose=nspace.verbose,
+        outdir=nspace.outdir,
+    )
     writeStatus('Making reduced models', nspace.verbose)
-    geneRecords = makeModels( geneModel, nspace.outdir, verbose=nspace.verbose,
-                              graphDirs=nspace.graphDirs,
-                              graphDirsOnly=nspace.graphDirsOnly,
-                              exonic=nspace.event=='SE', procs=nspace.procs )
-    _dispatch(nspace.event)(geneRecords, geneModel, nspace, validChroms, f1LNorm, f2LNorm)
+    gene_records = makeModels(
+        gene_model,
+        nspace.outdir,
+        verbose=nspace.verbose,
+        graphDirs=nspace.graphDirs,
+        graphDirsOnly=nspace.graphDirsOnly,
+        exonic=nspace.event == 'SE',
+        procs=nspace.procs,
+    )
+    _dispatch(nspace.event)(gene_records, gene_model, nspace, valid_chroms, f1_lnorm, f2_lnorm)
 
 if __name__ == "__main__":
     main()

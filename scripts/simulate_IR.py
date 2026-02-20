@@ -34,18 +34,19 @@ from iDiffIR.SpliceGrapher.formats.loader import loadGeneModels
 
 import argparse
 import os, sys, warnings, numpy, itertools, random, math
+from pathlib import Path
 
 USAGE="""%(prog)s [options]
 
 """
 
 opts = None
-geneModel = None
+gene_model = None
 depths = {}
 genes = []
 loader = None
-diffIsos = []
-diffGenes = []
+diff_isos = []
+diff_genes = []
 
 
 def build_parser():
@@ -85,11 +86,17 @@ def parse_args(argv=None):
 
 
 def initialize_state(argv=None):
-    global opts, geneModel, depths, genes, loader, diffIsos, diffGenes
+    """Load models and simulation state before generating reads."""
+    global opts, gene_model, depths, genes, loader, diff_isos, diff_genes
     opts, _ = parse_args(argv)
-    geneModel = loadGeneModels(opts.model, verbose=opts.verbose, alltypes=True)
+    gene_model = loadGeneModels(
+        opts.model,
+        verbose=opts.verbose,
+        alltypes=True,
+        outdir=Path(opts.outfile).parent if opts.outfile else Path.cwd(),
+    )
     depths = {}
-    genes = geneModel.getAllGenes(geneFilter=gene_type_filter)
+    genes = gene_model.getAllGenes(geneFilter=gene_type_filter)
     if depths:
         genes = [g for g in genes if not g.isSingleExon() and g.id in depths]
     else:
@@ -97,11 +104,11 @@ def initialize_state(argv=None):
     genes.sort()
     loader = FastaLoader(opts.fasta, verbose=opts.verbose)
     multi_isos = [gene.id for gene in genes if len(gene.isoforms) > 1]
-    gene_IDs = [gene.id for gene in genes]
+    gene_ids = [gene.id for gene in genes]
     # select differential isoform genes
-    diffIsos = random.sample(multi_isos, int(len(multi_isos) * opts.diffIExp))
+    diff_isos = random.sample(multi_isos, int(len(multi_isos) * opts.diffIExp))
     # select differential genes
-    diffGenes = random.sample(gene_IDs, int(len(gene_IDs) * opts.diffGExp))
+    diff_genes = random.sample(gene_ids, int(len(gene_ids) * opts.diffGExp))
 
 
 def loadExp( ):
@@ -197,7 +204,7 @@ def run_test( ):
     gene_dict = {}
     for gene in genes:
         gene_dict[gene.id] = gene
-    gene       = gene_dict[diffIsos[0]]
+    gene = gene_dict[diff_isos[0]]
     print(gene.id, gene.strand)
 
     g = makeSpliceGraph(gene)
@@ -379,7 +386,7 @@ def main():
         #otherwise pick random expression
         else:
         # differential gene expression
-            if gene.id in diffGenes:
+            if gene.id in diff_genes:
                 # pick mutant as up-regulated
                 if random.randint(0,1):
                     up_outstreams = mt_OutStreams
@@ -454,7 +461,7 @@ def main():
         lambdasDiff = numpy.array( [ isoScalar*lambdasEq[i] if i == diffIso_n else lambdasEq[i] for i in range( len(gene.isoforms))])
         lambdasDiff = lambdasDiff/sum(lambdasDiff)
 
-        if gene.id in diffIsos:
+        if gene.id in diff_isos:
             # pick up-regulated condition as differential isoform-containing condition
             if random.randint(0,1):
                 diso_label = up_label

@@ -218,34 +218,41 @@ def main():
 
     """
     nspace = parseArgs()
-    #validChroms = getValidChromosomes(nspace)
+    # valid_chroms = getValidChromosomes(nspace)
 
     if not os.path.exists(nspace.outdir):
         os.makedirs(nspace.outdir)
 
     writeStatus('Loading models', nspace.verbose)
-    geneModel = loadGeneModels( nspace.genemodel, verbose=nspace.verbose )
+    gene_model = loadGeneModels(
+        nspace.genemodel,
+        verbose=nspace.verbose,
+        outdir=nspace.outdir,
+    )
     writeStatus('Making reduced models', nspace.verbose)
-    geneRecords = makeModels( geneModel, None, verbose=nspace.verbose,
-                              graphDirs=nspace.graphDirs,
-                              graphDirsOnly=False,
-                              exonic=False, procs=nspace.procs )
-    f1labs = [ '%s Rep %d' % (nspace.factorlabels[0], i+1) \
-               for i in range( len(nspace.factor1bamfiles))]
-    f2labs = [ '%s Rep %d' % (nspace.factorlabels[1], i+1) \
-               for i in range( len(nspace.factor2bamfiles))]
+    gene_records = makeModels(
+        gene_model,
+        None,
+        verbose=nspace.verbose,
+        graphDirs=nspace.graphDirs,
+        graphDirsOnly=False,
+        exonic=False,
+        procs=nspace.procs,
+    )
+    f1labs = ['%s Rep %d' % (nspace.factorlabels[0], i + 1) for i in range(len(nspace.factor1bamfiles))]
+    f2labs = ['%s Rep %d' % (nspace.factorlabels[1], i + 1) for i in range(len(nspace.factor2bamfiles))]
     labs = f1labs + f2labs
     # get genes to be plotted and regions to highlight
-    geneDict = {}
+    gene_dict = {}
     with open(nspace.genelist, 'r') as fin:
         for line in fin:
-            geneID, rawlist = line.strip().split()
+            gene_id, raw_list = line.strip().split()
             highlights = []
-            for pair in rawlist.split(';'):
-                start,end = pair.split(',')
+            for pair in raw_list.split(';'):
+                start, end = pair.split(',')
                 highlights.append(sorted((int(start), int(end))))
-            geneDict[geneID.lower()] = highlights
+            gene_dict[gene_id.lower()] = highlights
 
-    plotList(geneRecords, geneDict, labs, nspace, geneModel, useLog=True, odir=nspace.outdir)
+    plotList(gene_records, gene_dict, labs, nspace, gene_model, useLog=True, odir=nspace.outdir)
 if __name__ == '__main__':
     main()
