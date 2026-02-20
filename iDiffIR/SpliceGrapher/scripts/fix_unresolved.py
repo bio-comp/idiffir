@@ -17,7 +17,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
 from iDiffIR.SpliceGrapher.shared.utils import *
-from iDiffIR.SpliceGrapher.formats.sam  import *
+from iDiffIR.SpliceGrapher.formats.alignment_io  import *
 from iDiffIR.SpliceGrapher.formats.FastaLoader  import *
 from iDiffIR.SpliceGrapher.SpliceGraph  import *
 import argparse
@@ -25,6 +25,14 @@ import os,sys
 
 PUTATIVE_PARENTS  = 'putative_parents'
 PUTATIVE_CHILDREN = 'putative_children'
+
+
+def parse_sam_line(sam_line):
+    """Extract the read id, 1-based start position, and query sequence from a SAM line."""
+    fields = sam_line.rstrip().split('\t')
+    if len(fields) < 10:
+        raise ValueError('Invalid SAM record: %s' % sam_line)
+    return fields[0], int(fields[3]), fields[9]
 
 class PseudoNode(object) :
     def __init__(self, node, minpos, maxpos) :
@@ -204,10 +212,10 @@ for line in ezopen(graphList) :
         # Form read pairs from SAM records for current transcript
         readPair = {}
         for s in samRecords[transId] :
-            r   = SAMRecord(s)
-            key = r.read()
+            read_id, start_pos, sequence = parse_sam_line(s)
+            key = read_id
             readPair.setdefault(key,[])
-            readPair[key].append(r)
+            readPair[key].append((start_pos, sequence))
 
         resolvedNodeSet = set()
         if opts.coverage :
@@ -215,9 +223,9 @@ for line in ezopen(graphList) :
             for pid in readPair :
                 pairMin = sys.maxsize
                 pairMax = 0
-                for r in readPair[pid] :
-                    last    = r.pos() + len(r.query()) - 1
-                    pairMin = min(pairMin, r.pos())
+                for start_pos, sequence in readPair[pid] :
+                    last    = start_pos + len(sequence) - 1
+                    pairMin = min(pairMin, start_pos)
                     pairMax = max(pairMax, last)
                 coverage.update(range(pairMin,pairMax+1))
 
@@ -239,9 +247,9 @@ for line in ezopen(graphList) :
                 # Track coverage across full pair:
                 pairMin = sys.maxsize
                 pairMax = 0
-                for r in readPair[pid] :
-                    last    = r.pos() + len(r.query()) - 1
-                    pairMin = min(pairMin, r.pos())
+                for start_pos, sequence in readPair[pid] :
+                    last    = start_pos + len(sequence) - 1
+                    pairMin = min(pairMin, start_pos)
                     pairMax = max(pairMax, last)
 
                 # Find unresolved nodes that overlap the range

@@ -22,7 +22,7 @@ from iDiffIR.SpliceGrapher.shared.ShortRead          import *
 from iDiffIR.SpliceGrapher.SpliceGraph               import *
 from iDiffIR.SpliceGrapher.shared.GeneModelConverter import *
 from iDiffIR.SpliceGrapher.formats.loader            import *
-from iDiffIR.SpliceGrapher.formats.sam               import *
+from iDiffIR.SpliceGrapher.formats.alignment_io               import *
 import argparse
 import os,sys
 

@@ -35,7 +35,7 @@ from iDiffIR.SpliceGrapher.shared.utils     import *
 from iDiffIR.SpliceGrapher.shared.config    import *
 from iDiffIR.SpliceGrapher.shared.ShortRead import SpliceJunction, PREDICTED_JCT, KNOWN_JCT, depthsToClusters
 from iDiffIR.SpliceGrapher.shared.GeneModelConverter  import makeSpliceGraph
-from iDiffIR.SpliceGrapher.formats.sam      import *
+from iDiffIR.SpliceGrapher.formats.alignment_io      import *
 from iDiffIR.SpliceGrapher.SpliceGraph      import *
 
 import sys, os, re
