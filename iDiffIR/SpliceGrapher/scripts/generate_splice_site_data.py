@@ -29,7 +29,7 @@ from iDiffIR.SpliceGrapher.formats.FastaLoader import FastaLoader
 from iDiffIR.SpliceGrapher.formats.loader      import *
 from iDiffIR.SpliceGrapher.SpliceGraph         import *
 
-from optparse import OptionParser, OptionGroup
+import argparse
 from glob     import glob
 from sys import maxsize as MAXINT
 import os, random, sys, warnings
@@ -123,38 +123,40 @@ def writeReport(options, jctDict) :
 # How far to extend sequences around splice sites:
 WINDOW_SIZE = 50
 
-USAGE="""%prog [options]"""
+USAGE="""%(prog)s [options]"""
 
 DESCR="""Generates positive or negative examples of splice sites based on
 an organism's GFF gene model annotations or a set of splice graphs, and its
 FASTA reference sequences.  Default splice site type is 'donor' and the
 default dimer is 'GT'."""
 
-parser = OptionParser(usage=USAGE, description=DESCR)
-required = OptionGroup(parser, 'Required', "Note: use a gene model (-m), a list of splice graphs (-S), or both, but at least one is required.  A FASTA reference is always required.")
-required.add_option('-f', dest='fasta',        default=SG_FASTA_REF,  help='(Required) FASTA reference file [default: %default]')
-required.add_option('-m', dest='model',        default=SG_GENE_MODEL, help='GFF gene model file [default: %default]')
-required.add_option('-S', dest='splicegraphs', default=None,          help='File containing a list of splice graph file paths [default: %default]')
-parser.add_option_group(required)
-
-optional = OptionGroup(parser, 'Other')
-optional.add_option('-a', dest='acceptor',     default=False,         help='Look for dimer in acceptor sites [default: %default]', action='store_true')
-optional.add_option('-D', dest='add_dimer',    default=False,         help='Include dimer in sequence output [default: %default]', action='store_true')
-optional.add_option('-d', dest='dimers',       default='GT',          help='Dimers to look for [default: %default]')
-optional.add_option('-i', dest='minintron',    default=4,             help='Minimum allowed intron length [default: all]', type='int')
-optional.add_option('-n', dest='limit',        default=0,             help='Generate given number of examples [default: all]', type='int')
-optional.add_option('-W', dest='window',       default=WINDOW_SIZE,   help='Set window size on either side of splice site [default: %default]', type='int')
-optional.add_option('-o', dest='outfile',      default=None,          help='Output file [default: %default]')
-optional.add_option('-r', dest='report',       default=None ,         help='Produce splice site frequency report [default: %default]')
-optional.add_option('-N', dest='negative',     default=False,         help='Generate negative examples [default: %default]', action='store_true')
-optional.add_option('-v', dest='verbose',      default=False,         help='Verbose mode [default: %default]', action='store_true')
-parser.add_option_group(optional)
-
+parser = argparse.ArgumentParser(usage=USAGE, description=DESCR)
+required = parser.add_argument_group('Required', "Note: use a gene model (-m), a list of splice graphs (-S), or both, but at least one is required.  A FASTA reference is always required.")
+required.add_argument('-f', dest='fasta',        default=SG_FASTA_REF,  help='(Required) FASTA reference file [default: %(default)s]')
+required.add_argument('-m', dest='model',        default=SG_GENE_MODEL, help='GFF gene model file [default: %(default)s]')
+required.add_argument('-S', dest='splicegraphs', default=None,          help='File containing a list of splice graph file paths [default: %(default)s]')
+optional = parser.add_argument_group('Other')
+optional.add_argument('-a', dest='acceptor',     default=False,         help='Look for dimer in acceptor sites [default: %(default)s]', action='store_true')
+optional.add_argument('-D', dest='add_dimer',    default=False,         help='Include dimer in sequence output [default: %(default)s]', action='store_true')
+optional.add_argument('-d', dest='dimers',       default='GT',          help='Dimers to look for [default: %(default)s]')
+optional.add_argument('-i', dest='minintron',    default=4,             help='Minimum allowed intron length [default: all]', type=int)
+optional.add_argument('-n', dest='limit',        default=0,             help='Generate given number of examples [default: all]', type=int)
+optional.add_argument('-W', dest='window',       default=WINDOW_SIZE,   help='Set window size on either side of splice site [default: %(default)s]', type=int)
+optional.add_argument('-o', dest='outfile',      default=None,          help='Output file [default: %(default)s]')
+optional.add_argument('-r', dest='report',       default=None ,         help='Produce splice site frequency report [default: %(default)s]')
+optional.add_argument('-N', dest='negative',     default=False,         help='Generate negative examples [default: %(default)s]', action='store_true')
+optional.add_argument('-v', dest='verbose',      default=False,         help='Verbose mode [default: %(default)s]', action='store_true')
 #-------------------------------------------------------
 # Main program
 #-------------------------------------------------------
-opts, args = parser.parse_args(sys.argv[1:])
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 errStrings = []
 if not (opts.model or opts.splicegraphs) :
     errStrings.append('** No GFF gene model or splice graphs specified.  Use the -m or -S option, or set SG_GENE_MODEL in your SpliceGrapher configuration.')

@@ -17,7 +17,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
 from iDiffIR.SpliceGrapher.predict.SpliceSiteValidator import *
-from iDiffIR.SpliceGrapher.predict.SiteClassifier      import *
 from iDiffIR.SpliceGrapher.formats.loader              import *
 from iDiffIR.SpliceGrapher.formats.FastaLoader         import *
 from iDiffIR.SpliceGrapher.shared.config               import *
@@ -26,14 +25,28 @@ from iDiffIR.SpliceGrapher.shared.streams              import *
 from iDiffIR.SpliceGrapher.formats.sam                 import *
 
 import sys, gzip, zipfile
-from optparse import OptionParser
+import argparse
 
-try :
-    from PyML import *
-    from PyML.containers import SequenceData
-except ImportError :
-    sys.stderr.write('\n** Unable to load PyML modules required for this script.\n')
-    sys.exit(1)
+def _require_pyml():
+    try:
+        from PyML.containers import SequenceData
+        from iDiffIR.SpliceGrapher.predict.SiteClassifier import (
+            SiteClassifier,
+            positionalKmerData,
+            unzipClassifiers,
+        )
+    except ImportError:
+        sys.stderr.write('\n** Unable to load PyML modules required for this script.\n')
+        sys.exit(1)
+
+    globals().update(
+        {
+            "SequenceData": SequenceData,
+            "SiteClassifier": SiteClassifier,
+            "positionalKmerData": positionalKmerData,
+            "unzipClassifiers": unzipClassifiers,
+        }
+    )
 
 try :
     from pysam import *
@@ -146,24 +159,30 @@ def validSpliceSite(chrom, strand, pos, classifiers, storedValues, **args) :
 def getSequence(chrom, pos1, pos2, strand) :
     return seqDict.subsequence(chrom, pos1, pos2, reverse=(strand=='-'))
 
-USAGE = """%prog SAM/BAM-file classifiers [options]
+USAGE = """%(prog)s SAM/BAM-file classifiers [options]
 
 Removes false-positive spliced alignments from a SAM or BAM file.
 The classifers may be given as a zip-file or as a list of classifier
 configuration (.cfg) files."""
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-C', dest='cigar',   default=None,          help='File for storing unrecognized CIGAR strings [default: %default]')
-parser.add_option('-f', dest='fasta',   default=SG_FASTA_REF,  help='Reference genome FASTA [default: %default]')
-parser.add_option('-F', dest='fpsites', default=None,          help='File for storing false-positive SAM alignment records [default: %default]')
-parser.add_option('-m', dest='model',   default=SG_GENE_MODEL, help='Gene model file (GTF/GFF3 format) [default: %default]')
-parser.add_option('-o', dest='output',  default=None,          help='Output file [default: stdout]')
-parser.add_option('-r', dest='report',  default=None,          help='Write classifier scores to file [default: %default]')
-parser.add_option('-v', dest='verbose', default=False,         help='Verbose mode [default: %default]', action='store_true')
-parser.add_option('-z', dest='gzip',    default=False,         help='Apply gzip compression to output [default: %default]', action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-C', dest='cigar',   default=None,          help='File for storing unrecognized CIGAR strings [default: %(default)s]')
+parser.add_argument('-f', dest='fasta',   default=SG_FASTA_REF,  help='Reference genome FASTA [default: %(default)s]')
+parser.add_argument('-F', dest='fpsites', default=None,          help='File for storing false-positive SAM alignment records [default: %(default)s]')
+parser.add_argument('-m', dest='model',   default=SG_GENE_MODEL, help='Gene model file (GTF/GFF3 format) [default: %(default)s]')
+parser.add_argument('-o', dest='output',  default=None,          help='Output file [default: stdout]')
+parser.add_argument('-r', dest='report',  default=None,          help='Write classifier scores to file [default: %(default)s]')
+parser.add_argument('-v', dest='verbose', default=False,         help='Verbose mode [default: %(default)s]', action='store_true')
+parser.add_argument('-z', dest='gzip',    default=False,         help='Apply gzip compression to output [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) < 2 :
     parser.print_help()
     sys.exit(1)
@@ -178,6 +197,7 @@ if opts.gzip and not opts.output :
     sys.stderr.write('You must specify an output file if you want to use GZIP compression.\n')
     sys.exit(1)
 
+_require_pyml()
 for f in args : validateFile(f)
 
 # Check SAM/BAM formats

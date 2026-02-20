@@ -20,7 +20,7 @@ from iDiffIR.SpliceGrapher.shared.utils import *
 from iDiffIR.SpliceGrapher.formats.sam  import *
 from iDiffIR.SpliceGrapher.formats.FastaLoader  import *
 from iDiffIR.SpliceGrapher.SpliceGraph  import *
-from optparse                   import OptionParser
+import argparse
 import os,sys
 
 # IsoLasso GTF example (last field only):
@@ -44,17 +44,23 @@ def attributeDict(line) :
         result[key] = val
     return result
 
-USAGE = """%prog graph-list transcript-map IsoLasso-GTF [options]
+USAGE = """%(prog)s graph-list transcript-map IsoLasso-GTF [options]
 
 Updates SpliceGrapher predictions using transcripts confirmed by IsoLasso."""
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-d', dest='outdir',    default='.',  help='Top-level output directory [default: %default]')
-parser.add_option('-t', dest='threshold', default=1.0,  help='FPKM minimum threshold [default: %default]', type='float')
-parser.add_option('-v', dest='verbose',   default=False,help='Verbose mode [default: %default]', action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-d', dest='outdir',    default='.',  help='Top-level output directory [default: %(default)s]')
+parser.add_argument('-t', dest='threshold', default=1.0,  help='FPKM minimum threshold [default: %(default)s]', type=float)
+parser.add_argument('-v', dest='verbose',   default=False,help='Verbose mode [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) != 3 :
     parser.print_help()
     sys.exit(1)

@@ -24,7 +24,7 @@ from iDiffIR.SpliceGrapher.shared.config import *
 from iDiffIR.SpliceGrapher.shared.utils  import *
 from iDiffIR.SpliceGrapher.formats.fasta import *
 
-from optparse import OptionParser
+import argparse
 from glob import glob
 import os,sys,subprocess
 
@@ -82,7 +82,7 @@ def checkIsoLassoValues(isoFile) :
 
     return 'range of FPKM values was %.3f to %.3f\n' % (min(fpkmVals), max(fpkmVals))
 
-USAGE = """%prog graph-files SAM-file [options]
+USAGE = """%(prog)s graph-files SAM-file [options]
 
 Where:
     graph-files    is either a file of paths to splice graph files
@@ -91,21 +91,27 @@ Where:
     SAM-file       is a SAM file to be used with IsoLasso
 
 Example:
-    %prog my_predictions filtered.sam
+    %(prog)s my_predictions filtered.sam
 
 Runs the IsoLasso software (Li et al., 2011) using SpliceGrapher predictions as a reference."""
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-C', dest='cem',       default=False,  help='Use CEM instead of LASSO [default: %default]', action='store_true')
-parser.add_option('-d', dest='outdir',    default='isolasso', help='Output directory [default: %default]')
-parser.add_option('-p', dest='params',    default='',     help='Additional parameters for IsoLasso [default: %default]')
-parser.add_option('-f', dest='fasta',     default=SG_FASTA_REF, help='FASTA genome reference [default: %default]')
-parser.add_option('-t', dest='threshold', default=1.0,    help='Minimum FPKM threshold [default: %default]', type='float')
-parser.add_option('-U', dest='unresolved',default=False,  help='Include unresolved transcripts [default: %default]', action='store_true')
-parser.add_option('-v', dest='verbose',   default=False,  help='Verbose mode [default: %default]', action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-C', dest='cem',       default=False,  help='Use CEM instead of LASSO [default: %(default)s]', action='store_true')
+parser.add_argument('-d', dest='outdir',    default='isolasso', help='Output directory [default: %(default)s]')
+parser.add_argument('-p', dest='params',    default='',     help='Additional parameters for IsoLasso [default: %(default)s]')
+parser.add_argument('-f', dest='fasta',     default=SG_FASTA_REF, help='FASTA genome reference [default: %(default)s]')
+parser.add_argument('-t', dest='threshold', default=1.0,    help='Minimum FPKM threshold [default: %(default)s]', type=float)
+parser.add_argument('-U', dest='unresolved',default=False,  help='Include unresolved transcripts [default: %(default)s]', action='store_true')
+parser.add_argument('-v', dest='verbose',   default=False,  help='Verbose mode [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 #-------------------------------------------------------------------------------------------------
 # Parse the command line and make sure everything looks OK
 MIN_ARGS = 2
