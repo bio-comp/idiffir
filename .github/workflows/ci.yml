@@ -24,7 +24,7 @@ jobs:
         uses: astral-sh/setup-uv@v3
 
       - name: Install project and test dependencies
-        run: uv sync --extra test
+        run: uv sync --group dev
 
       - name: Compile gate (warnings as errors)
         run: uv run python -W error::SyntaxWarning -m compileall -f -q iDiffIR scripts tests
