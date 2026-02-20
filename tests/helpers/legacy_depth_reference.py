@@ -4,6 +4,11 @@ from pathlib import Path
 import numpy
 import pysam
 
+# TODO(#41): Remove this temporary parity shim after Phase 1 parser migration
+# stabilizes. Removal criteria:
+# 1) #36 merged; 2) CI green for two consecutive weeks (or one stable patch cycle);
+# 3) fixture-based golden outputs replace code-based legacy oracle checks.
+
 
 MATCH = 0
 INSERT = 1
