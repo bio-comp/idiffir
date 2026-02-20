@@ -22,7 +22,7 @@ Example script that demonstrates the splice graph prediction module.
 from iDiffIR.SpliceGrapher.shared.config                import *
 from iDiffIR.SpliceGrapher.predict.SpliceGraphPredictor import *
 from iDiffIR.SpliceGrapher.shared.GeneModelConverter    import *
-from iDiffIR.SpliceGrapher.formats.sam                  import *
+from iDiffIR.SpliceGrapher.formats.alignment_io                  import *
 from iDiffIR.SpliceGrapher.formats.loader               import *
 from iDiffIR.SpliceGrapher                              import SpliceGraph
 

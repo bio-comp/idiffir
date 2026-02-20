@@ -15,13 +15,17 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
-"""
-Module for manipulating SAM-formatted files.
-"""
+"""Alignment I/O helpers for SAM/BAM/CRAM inputs."""
 from iDiffIR.SpliceGrapher.shared.utils import ProgressIndicator, ezopen, getAttribute
 from iDiffIR.SpliceGrapher.shared.ShortRead import *
 from sys import maxsize as MAXINT
-import sys,re
+import io
+import os
+from pathlib import Path
+import re
+import sys
+
+import pysam
 
 # Header tags
 HEADER_HD_TAG = 'HD'
@@ -92,7 +96,7 @@ BAM_CDIFF      = 8
 # Our own lists for convenience
 PYSAM_MERGE_OPS  = [BAM_CINS, BAM_CSOFT_CLIP, BAM_CHARD_CLIP]
 PYSAM_IGNORE_OPS = [BAM_CDEL, BAM_CPAD]
-PYSAM_SAVE_OPS   = [BAM_CMATCH, BAM_CREF_SKIP]
+PYSAM_SAVE_OPS   = [BAM_CMATCH, BAM_CEQUAL, BAM_CDIFF, BAM_CREF_SKIP]
 
 NULL_CIGAR      = '*'
 NULL_CHROMOSOME = '*'
@@ -141,6 +145,184 @@ class ChromosomeTracker(object) :
         self.chromosome  = chrom
         return True
 
+
+def _is_alignment_path(source) :
+    """Return ``True`` when ``source`` is a filesystem path to an alignment file."""
+    return isinstance(source, str) and os.path.isfile(source)
+
+
+def isCramFile(filePath) :
+    """Simple heuristic returns True if path is a CRAM file; false otherwise."""
+    return filePath.lower().endswith('.cram')
+
+
+def _open_alignment_file(path, **args) :
+    """Open SAM/BAM/CRAM input with pysam and CRAM reference safeguards."""
+    reference_fasta = getAttribute('reference_fasta', None, **args)
+    if isBamFile(path) :
+        return pysam.AlignmentFile(path, "rb")
+    if isCramFile(path) :
+        try :
+            if reference_fasta :
+                return pysam.AlignmentFile(path, "rc", reference_filename=str(reference_fasta))
+            return pysam.AlignmentFile(path, "rc")
+        except ValueError as exc:
+            if "reference" in str(exc).lower() :
+                raise ValueError(
+                    "Unable to decode CRAM without reference. Re-run with reference_fasta=<path-to-fasta>."
+                ) from exc
+            raise
+    return pysam.AlignmentFile(path, "r")
+
+
+def _tokenize_cigar_tuples(cigar_tuples) :
+    """Convert pysam cigar tuples into M/N tokens compatible with legacy APIs."""
+    if not cigar_tuples :
+        return []
+
+    merged = pysamMergeCigar(cigar_tuples)
+    tokens = []
+    for op, size in merged :
+        if op == BAM_CREF_SKIP :
+            tokens.append('%dN' % size)
+        elif op in [BAM_CMATCH, BAM_CEQUAL, BAM_CDIFF] :
+            tokens.append('%dM' % size)
+    return tokens
+
+
+def _pysam_record_to_tokens(rec) :
+    """Return normalized CIGAR tokens for a pysam aligned segment."""
+    if rec.cigartuples is None :
+        return []
+    tokens = _tokenize_cigar_tuples(rec.cigartuples)
+    if not tokens :
+        read_len = rec.query_length or 0
+        if read_len > 0 :
+            return ['%dM' % read_len]
+    return tokens
+
+
+def _build_splice_junctions(chromosome, start_pos, tokens, strand, jct_code='') :
+    """Build SpliceJunction objects from normalized ``M/N`` CIGAR tokens."""
+    if len(tokens) < 2 :
+        return []
+
+    sizes = [int(t[:-1]) for t in tokens]
+    pos = [start_pos + sizes[0] - 1]
+    for block in sizes[1:-1] :
+        pos.append(pos[-1] + block)
+
+    exons = [int(t[:-1]) for t in tokens if t.endswith('M')]
+    result = []
+    exon_idx = 0
+    for i in range(0, len(pos), 2) :
+        junction = SpliceJunction(
+            chromosome,
+            pos[i],
+            pos[i + 1] + 1,
+            [exons[exon_idx], exons[exon_idx + 1]],
+            jct_code,
+            strand,
+        )
+        result.append(junction)
+        exon_idx += 1
+    return result
+
+
+def _collect_pysam_data(path, **args) :
+    """Collect depths/junctions/alignment spans using pysam-backed iteration."""
+    alignments = getAttribute('alignments', False, **args)
+    chromosomes = getAttribute('chromosomes', None, **args)
+    chrom_set = makeChromosomeSet(chromosomes)
+    get_junctions = getAttribute('junctions', True, **args)
+    maxpos = getAttribute('maxpos', MAXINT, **args)
+    minanchor = getAttribute('minanchor', 0, **args)
+    minjct = getAttribute('minjct', 1, **args)
+
+    align = {}
+    depths = {}
+    junction_tmp = {}
+    limit = {}
+
+    with _open_alignment_file(path, **args) as alignment :
+        for rec in alignment.fetch(until_eof=True) :
+            if rec.is_unmapped :
+                continue
+
+            chrom = alignment.get_reference_name(rec.reference_id).lower()
+            if chrom_set and chrom not in chrom_set :
+                continue
+
+            start_pos = rec.reference_start + 1
+            if start_pos > maxpos :
+                continue
+
+            if chrom not in depths :
+                depths[chrom] = [0] * (maxpos + 1) if maxpos < MAXINT else [0]
+            if chrom not in limit :
+                limit[chrom] = 0
+            if alignments and chrom not in align :
+                align[chrom] = []
+
+            tokens = _pysam_record_to_tokens(rec)
+            if not tokens :
+                continue
+
+            cur_pos = start_pos
+            for token in tokens :
+                code = token[-1]
+                delta = int(token[:-1])
+                nxt_pos = cur_pos + delta
+                while nxt_pos + 1 > len(depths[chrom]) :
+                    depths[chrom] += [0] * len(depths[chrom])
+
+                if code == 'M' :
+                    for i in range(cur_pos, nxt_pos) :
+                        depths[chrom][i] += 1
+                    if alignments :
+                        align[chrom].append((cur_pos, delta))
+                cur_pos = nxt_pos
+
+            limit[chrom] = max(limit[chrom], cur_pos + 1)
+
+            if get_junctions and len(tokens) > 1 :
+                strand = rec.get_tag(STRAND_TAG) if rec.has_tag(STRAND_TAG) else ('-' if rec.is_reverse else '+')
+                jct_code = rec.get_tag(JCT_CODE_TAG) if rec.has_tag(JCT_CODE_TAG) else ''
+                jct_list = _build_splice_junctions(chrom, start_pos, tokens, strand, jct_code)
+                if not jct_list :
+                    continue
+
+                junction_tmp.setdefault(chrom, {})
+                junction_tmp[chrom].setdefault(strand, {})
+                for new_jct in jct_list :
+                    junction_tmp[chrom][strand].setdefault(new_jct.p1, {})
+                    junction_tmp[chrom][strand][new_jct.p1].setdefault(new_jct.p2, None)
+                    existing = junction_tmp[chrom][strand][new_jct.p1][new_jct.p2]
+                    if existing is None :
+                        junction_tmp[chrom][strand][new_jct.p1][new_jct.p2] = new_jct
+                    else :
+                        existing.update(new_jct)
+
+    for chrom in depths :
+        max_depth = max(maxpos, limit[chrom]) if maxpos < MAXINT else limit[chrom]
+        if max_depth < len(depths[chrom]) :
+            depths[chrom] = depths[chrom][:max_depth]
+
+    junctions = {}
+    if get_junctions :
+        for chrom in sorted(junction_tmp.keys()) :
+            junctions[chrom] = []
+            for strand in sorted(junction_tmp[chrom].keys()) :
+                for anchor in sorted(junction_tmp[chrom][strand].keys()) :
+                    for acceptor in sorted(junction_tmp[chrom][strand][anchor].keys()) :
+                        jct = junction_tmp[chrom][strand][anchor][acceptor]
+                        if jct.count >= minjct and jct.minAnchor() >= minanchor :
+                            junctions[chrom].append(jct)
+
+    if alignments :
+        return depths, junctions, align
+    return depths, junctions
+
 def acceptSAMRecord(s, counter, **args) :
     """Converts a string to a SAM record and returns the record if it's valid;
     returns None for unmapped SAM records; throws an exception for illegal records.
@@ -149,7 +331,7 @@ def acceptSAMRecord(s, counter, **args) :
     if s[0] == '@' : return None,None # SAM comments
 
     try :
-        rec = SAMRecord(s)
+        rec = AlignmentRecord(s)
     except ValueError as ve:
         sys.stderr.write('\n*** Error in SAM file at line %d ***\n' % counter)
         sys.stderr.write('Line: %s\n' % s)
@@ -182,19 +364,15 @@ def acceptSAMRecord(s, counter, **args) :
 
     return rec, tokens
 
-def bamIterator(path) :
-    """Return an iterator over SAM/BAM records."""
-    from pysam import Samfile
-    bamStream = Samfile(path, 'rb')
-    chrMap    = pysamChromosomeMap(bamStream)
-    headers   = pysamHeaders(bamStream)
-    # As in a SAM file: first the headers, then the alignments.
-    for h in headers :
-        yield h
-
-    for r in bamStream :
-        result = pysamReadToString(r,chrMap)
-        yield result
+def bamIterator(path, **args) :
+    """Return an iterator over alignment records rendered as SAM strings."""
+    with _open_alignment_file(path, **args) as bam_stream :
+        chr_map = pysamChromosomeMap(bam_stream)
+        headers = pysamHeaders(bam_stream)
+        for h in headers :
+            yield h
+        for rec in bam_stream :
+            yield pysamReadToString(rec, chr_map)
 
 def cigarTokens(cigar) :
     """Takes a CIGAR string and returns a list of cigar tokens.
@@ -226,7 +404,7 @@ def convertCigarString(tokens, requiredSize) :
             # Tokens must be an integer followed by a single character
             size = int(curr[:-1])
         except ValueError as ve:
-            raise ValueError('Unrecognized CIGAR string: "%s"' % s)
+            raise ValueError('Unrecognized CIGAR string: "%s"' % curr)
 
         if symbol == 'M' :
             # If a match follows a hard/soft clip, just
@@ -531,6 +709,12 @@ def getSamDepths(samRecords, **args) :
     chromosomes = getAttribute('chromosomes', None, **args)
     chromSet    = makeChromosomeSet(chromosomes)
 
+    if _is_alignment_path(samRecords) and (
+        isBamFile(samRecords) or isCramFile(samRecords) or samRecords.lower().endswith('.sam')
+    ) :
+        depths, _ = _collect_pysam_data(samRecords, junctions=False, **args)
+        return depths
+
     if isDepthsFile(samRecords) :
         depths,jcts = readDepths(samRecords, junctions=False, **args)
         return depths
@@ -608,18 +792,27 @@ def getSamDepths(samRecords, **args) :
 
 def getSamHeaders(samRecords, **args) :
     """Reads a SAM file and returns just the header strings as a list."""
+    if _is_alignment_path(samRecords) :
+        with _open_alignment_file(samRecords, **args) as sam_stream :
+            return [h.strip() for h in pysamHeaders(sam_stream)]
+
     result = []
     instream = samInput(samRecords)
     for line in instream :
         if not line.startswith('@') : break
         result.append(line.strip())
-    if type(instream) == file :
+    if isinstance(instream, io.IOBase) :
         instream.close()
     return result
 
 def getSamHeaderInfo(samStream, **args) :
     """Parses header records in a SAM file and returns a list of
     possible chromosomes along with the first alignment record."""
+    if _is_alignment_path(samStream) :
+        with _open_alignment_file(samStream, **args) as stream :
+            chroms = set([name for name in stream.references])
+            return chroms, None
+
     verbose  = getAttribute('verbose', False, **args)
     seedLine = None
     result   = set()
@@ -647,6 +840,12 @@ def getSamJunctions(samRecords, **args) :
     minanchor   = getAttribute('minanchor', 0, **args)
     minjct      = getAttribute('minjct', 1, **args)
     chromosomes = getAttribute('chromosomes', None, **args)
+
+    if _is_alignment_path(samRecords) and (
+        isBamFile(samRecords) or isCramFile(samRecords) or samRecords.lower().endswith('.sam')
+    ) :
+        _, junctions = _collect_pysam_data(samRecords, **args)
+        return junctions
 
     if isDepthsFile(samRecords) :
         depths,jcts = readDepths(samRecords, depths=False, **args)
@@ -718,6 +917,11 @@ def getSamReadData(samRecords, **args) :
     minanchor   = getAttribute('minanchor', 0, **args)
     minjct      = getAttribute('minjct', 1, **args)
     verbose     = getAttribute('verbose', False, **args)
+
+    if _is_alignment_path(samRecords) and (
+        isBamFile(samRecords) or isCramFile(samRecords) or samRecords.lower().endswith('.sam')
+    ) :
+        return _collect_pysam_data(samRecords, **args)
 
     if isDepthsFile(samRecords) :
         depths,jcts = readDepths(samRecords, **args)
@@ -854,7 +1058,7 @@ def loadSAMRecords(f) :
     result  = []
     for s in ezopen(f) :
         if not s.startswith('@') :
-            result.append(SAMRecord(s))
+            result.append(AlignmentRecord(s))
     return result
 
 def makeChromosomeSet(chromList) :
@@ -900,17 +1104,17 @@ def samInput(source) :
     """Convenience method that returns an iterator over a set of SAM records.
     If source is a list, set or file stream it returns the object.  A string
     is interpreted as a file path to be opened for input and the stream returned."""
-    if type(source) in [list, set, file] :
+    if isinstance(source, (list, tuple, set, io.IOBase)) :
         return source
-    elif type(source) == str :
+    elif isinstance(source, str) :
         return samIterator(source)
     else :
         raise ValueError('Unrecognized type %s for SAM input' % type(source))
 
-def samIterator(path) :
-    """Return an iterator over SAM/BAM records."""
-    if isBamFile(path) :
-        return bamIterator(path)
+def samIterator(path, isBam=False, **args) :
+    """Return an iterator over SAM/BAM/CRAM records."""
+    if isBam or isBamFile(path) or isCramFile(path) :
+        return bamIterator(path, **args)
     else :
         return ezopen(path)
 
@@ -923,7 +1127,7 @@ def validCigarString(s) :
     else :
         return (CIGAR_MATCH.match(s) is not None)
 
-class SAMRecord(object) :
+class AlignmentRecord(object) :
     """Encapsulates all the information in a SAM record."""
     def __init__(self,s) :
         self.attrs  = {}

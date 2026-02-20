@@ -18,7 +18,7 @@
 # USA.
 from iDiffIR.SpliceGrapher.shared.config import *
 from iDiffIR.SpliceGrapher.shared.utils  import *
-from iDiffIR.SpliceGrapher.formats.sam   import *
+from iDiffIR.SpliceGrapher.formats.alignment_io   import *
 from iDiffIR.SpliceGrapher.shared.ShortRead import *
 import argparse
 import os,sys
@@ -54,39 +54,11 @@ if os.path.isfile(opts.output) :
     sys.stderr.write('%s will be over-written after SAM data has been loaded\n' % opts.output)
 
 outStream = open(opts.output, 'w')
-oldChrom  = None
-chrLines  = []
-used      = set()
-for line in samIterator(samFile) :
-    # Ignore headers
-    if line.startswith('@') : continue
-    s     = line.strip()
-    parts = s.split('\t')
-    chrom = parts[2]
-    if chrom != oldChrom :
-        # write current set of records
-        if chrLines :
-            if opts.verbose : sys.stderr.write('  converting SAM records to depths\n')
-            depthDict,jctDict = getSamReadData(chrLines)
-            if opts.verbose : sys.stderr.write('  writing to %s\n' % opts.output)
-            writeDepths(outStream, depthDict=depthDict, jctDict=jctDict)
-            used.add(oldChrom)
-
-        # initialize new chromosome
-        chrLines = []
-        if chrom in used :
-            raise ValueError("%s appears to be unsorted (chromosome '%s' found twice)" % (samFile, chrom))
-        elif opts.verbose :
-            sys.stderr.write('chromosome %s:\n' % chrom)
-            sys.stderr.write('  reading records\n')
-
-    chrLines.append(s)
-    oldChrom = chrom
-
-if chrLines :
-    if opts.verbose : sys.stderr.write('  converting SAM records to depths\n')
-    depthDict,jctDict = getSamReadData(chrLines)
-    if opts.verbose : sys.stderr.write('  writing to %s\n' % opts.output)
-    writeDepths(outStream, depthDict=depthDict, jctDict=jctDict)
+if opts.verbose :
+    sys.stderr.write('converting alignment records to depths\n')
+depthDict,jctDict = getSamReadData(samFile, verbose=opts.verbose)
+if opts.verbose :
+    sys.stderr.write('writing to %s\n' % opts.output)
+writeDepths(outStream, depthDict=depthDict, jctDict=jctDict)
 
 if opts.verbose : sys.stderr.write('Finished.\n')

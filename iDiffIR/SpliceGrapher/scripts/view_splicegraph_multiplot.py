@@ -30,7 +30,7 @@ from iDiffIR.SpliceGrapher.shared.GeneModelConverter import *
 from iDiffIR.SpliceGrapher.view.ViewerUtils          import *
 from iDiffIR.SpliceGrapher.view.GeneView             import GeneView
 from iDiffIR.SpliceGrapher.formats.loader            import *
-from iDiffIR.SpliceGrapher.formats.sam               import *
+from iDiffIR.SpliceGrapher.formats.alignment_io               import *
 from iDiffIR.SpliceGrapher                           import SpliceGraph
 from iDiffIR.SpliceGrapher.formats                   import wig, bed, xydata
 

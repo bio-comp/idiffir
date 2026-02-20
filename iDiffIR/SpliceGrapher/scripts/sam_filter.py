@@ -22,7 +22,8 @@ from iDiffIR.SpliceGrapher.formats.FastaLoader         import *
 from iDiffIR.SpliceGrapher.shared.config               import *
 from iDiffIR.SpliceGrapher.shared.utils                import *
 from iDiffIR.SpliceGrapher.shared.streams              import *
-from iDiffIR.SpliceGrapher.formats.sam                 import *
+from iDiffIR.SpliceGrapher.formats.alignment_io                 import *
+import iDiffIR.SpliceGrapher.formats.alignment_io as alignment_io
 
 import sys, gzip, zipfile
 import argparse
@@ -86,20 +87,11 @@ def mapSitesToGenes(geneModel) :
 
 def bamIterator(path) :
     """Return an iterator over SAM/BAM records."""
-    bamStream = Samfile(path, 'rb')
-    chrMap    = pysamChromosomeMap(bamStream)
-    headers   = pysamHeaders(bamStream)
-    for h in headers :
-        yield h
-    for r in bamStream :
-        yield pysamReadToString(r,chrMap)
+    return alignment_io.bamIterator(path)
 
 def samIterator(path, isBam=False) :
     """Return an iterator over SAM/BAM records."""
-    if isBam :
-        return bamIterator(path)
-    else :
-        return ezopen(path)
+    return alignment_io.samIterator(path, isBam=isBam)
 
 def siteString(c,p,s,stype='d') :
     return '%s;%d;%s;%s' % (c,p,s,stype)

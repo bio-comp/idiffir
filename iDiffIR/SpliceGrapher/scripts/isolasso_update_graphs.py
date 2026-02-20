@@ -17,7 +17,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
 from iDiffIR.SpliceGrapher.shared.utils import *
-from iDiffIR.SpliceGrapher.formats.sam  import *
+from iDiffIR.SpliceGrapher.formats.alignment_io  import *
 from iDiffIR.SpliceGrapher.formats.FastaLoader  import *
 from iDiffIR.SpliceGrapher.SpliceGraph  import *
 import argparse

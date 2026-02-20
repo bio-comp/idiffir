@@ -20,7 +20,7 @@ from iDiffIR.SpliceGrapher.shared.config     import *
 from iDiffIR.SpliceGrapher.shared.utils      import *
 from iDiffIR.SpliceGrapher.shared.ShortRead  import *
 from iDiffIR.SpliceGrapher.formats.loader    import *
-from iDiffIR.SpliceGrapher.formats.sam       import *
+from iDiffIR.SpliceGrapher.formats.alignment_io       import *
 from iDiffIR.SpliceGrapher.predict.SpliceGraphPredictor import *
 
 import argparse
@@ -106,57 +106,36 @@ if isDepthsFile(dataFile) :
     predCount, totalGenes = depthPredictions(commonChromSet, depthDict, jctDict, model, opts)
 else :
     # SAM-based predictions:
-    # Load header information about the chromosomes stored in the SAM
-    # file and get the first (seed) alignment.
-    if opts.verbose : sys.stderr.write('Initializing SAM input from %s\n' % dataFile)
-    samStream      = ezopen(dataFile)
-    cset, seedLine = getSamHeaderInfo(samStream)
-    depthChromSet  = set([c.lower() for c in cset])
+    if opts.verbose :
+        sys.stderr.write('Initializing SAM input from %s\n' % dataFile)
+    depth_chrom_set = set([c.lower() for c in getSamSequences(dataFile).keys()])
 
     # Find chromosomes common to both gene models and alignment records:
-    commonChromSet = getCommonChromosomes(geneChromSet, depthChromSet, dataFile, opts)
+    commonChromSet = getCommonChromosomes(geneChromSet, depth_chrom_set, dataFile, opts)
 
-    # Track chromosomes that already have been processed
-    usedChrom  = {}.fromkeys(depthChromSet,False)
-    totalGenes = predCount  = 0
-    chrBuffer  = []
+    totalGenes = predCount = 0
     sys.stderr.write('Generating predictions:\n')
-
-    # We will have a seed line (first alignment) for each new chromosome
-    while seedLine :
-        c = None
-        # Only want data relevant to gene models
-        while c not in commonChromSet :
-            chrBuffer, seedLine = getNextSamChromosome(samStream, seedLine, verbose=opts.verbose)
-            if len(chrBuffer) <= 1 : break
-            c = chrBuffer[0].split('\t')[2].lower()
-            if c not in commonChromSet :
-                sys.stderr.write('  ** skipping unrecognized chromosome %s in %s **\n' % (c, dataFile))
-
-        if len(chrBuffer) <= 1 : break
-
-        try :
-            if usedChrom[c] : raise ValueError('Unsorted file: chromosome %s found twice\n' % c)
-            usedChrom[c] = True
-        except KeyError :
-            raise ValueError('Chromosome %s not found in %s\n' % dataFile)
-
+    for c in sorted(commonChromSet):
         sys.stderr.write('  starting chromosome %s\n' % c)
         sys.stderr.write('    loading alignment records from %s\n' % dataFile)
-        depthDict, jctDict = getSamReadData(chrBuffer, minjct=opts.minjct, minanchor=opts.anchor)
+        depthDict, jctDict = getSamReadData(
+            dataFile,
+            minjct=opts.minjct,
+            minanchor=opts.anchor,
+            chromosomes=[c],
+        )
 
         sys.stderr.write('    predicting splice graphs ')
-        geneList    = model.getGeneRecords(c)
+        geneList = model.getGeneRecords(c)
         totalGenes += len(geneList)
         geneList.sort()
 
         depths = depthDict[c] if c in depthDict else []
-        jcts   = jctDict[c] if c in jctDict else []
+        jcts = jctDict[c] if c in jctDict else []
         outDir = os.path.join(opts.outdir, c)
-        if not os.path.isdir(outDir) : os.makedirs(outDir)
+        if not os.path.isdir(outDir) :
+            os.makedirs(outDir)
         predCount += predictGraphs(geneList, depths, jcts, outDir, depthThreshold=opts.mindepth, novelOnly=opts.novel)
-        remaining = [c for c in commonChromSet if not usedChrom[c]]
-        if not remaining : break
 
 sys.stderr.write('Finished: splice graphs were modified for %s / %s genes.\n' % \
         (commaFormat(predCount), commaFormat(totalGenes)))
