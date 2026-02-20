@@ -22,7 +22,7 @@ a sequence of plots to appear on one page.
 """
 from iDiffIR.SpliceGrapher.shared.utils       import *
 from iDiffIR.SpliceGrapher.plot.PlotterConfig import *
-from optparse import OptionParser
+import argparse
 from sys import maxsize as MAXINT
 import os,sys
 
@@ -97,7 +97,7 @@ def setValue(argv, key, cfgValue, default) :
     if not cfgValue : return default
     return default if key in argv else cfgValue
 
-USAGE = """%prog config-file [options]
+USAGE = """%(prog)s config-file [options]
 
 Produces a plot for a single gene following guidelines specified in a
 configuration file.  If the -o option is used, the output format is
@@ -105,15 +105,21 @@ determined by the file extension.  Valid file extensions are:
   """ + ', '.join(VALID_FORMATS)
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-F', dest='fontsize',default=DEFAULT_FONT,   help='Font size (points) [default: %default-point]', type='float')
-parser.add_option('-H', dest='height',  default=DEFAULT_HEIGHT, help='Plotting area width (inches) [default: %default]', type='float')
-parser.add_option('-W', dest='width',   default=DEFAULT_WIDTH,  help='Plotting area width (inches) [default: %default]', type='float')
-parser.add_option('-o', dest='output',  default=None,           help='Output file [default: stdout]')
-parser.add_option('-v', dest='verbose', default=False,          help='Verbose mode [default: %default]', action='store_true')
-parser.add_option('--extended', dest='extended', default=False,  help='Output extended help text and quit [default: %default]', action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-F', dest='fontsize',default=DEFAULT_FONT,   help='Font size (points) [default: %(default)s-point]', type=float)
+parser.add_argument('-H', dest='height',  default=DEFAULT_HEIGHT, help='Plotting area width (inches) [default: %(default)s]', type=float)
+parser.add_argument('-W', dest='width',   default=DEFAULT_WIDTH,  help='Plotting area width (inches) [default: %(default)s]', type=float)
+parser.add_argument('-o', dest='output',  default=None,           help='Output file [default: stdout]')
+parser.add_argument('-v', dest='verbose', default=False,          help='Verbose mode [default: %(default)s]', action='store_true')
+parser.add_argument('--extended', dest='extended', default=False,  help='Output extended help text and quit [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if opts.extended :
     parser.print_help()
     sys.stderr.write(EXTENDED_HELP)

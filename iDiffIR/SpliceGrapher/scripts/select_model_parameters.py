@@ -28,16 +28,26 @@ from iDiffIR.SpliceGrapher.shared.streams           import *
 from iDiffIR.SpliceGrapher.predict.SpliceSite       import truncateSequences
 from iDiffIR.SpliceGrapher.predict.ClassifierConfig import ClassifierConfig
 
-from optparse import OptionParser
+import argparse
 import sys, os
 
-try :
-    from PyML import *
-    from PyML.containers  import SequenceData, Labels
-    from PyML.classifiers import SVM, modelSelection
-except ImportError :
-    sys.stderr.write('\n** Unable to import PyML modules required for this script.\n')
-    sys.exit(1)
+def _require_pyml():
+    try:
+        from PyML.containers import Labels, SequenceData
+        from PyML.classifiers import SVM, modelSelection, svm
+    except ImportError:
+        sys.stderr.write('\n** Unable to import PyML modules required for this script.\n')
+        sys.exit(1)
+
+    globals().update(
+        {
+            "Labels": Labels,
+            "SVM": SVM,
+            "SequenceData": SequenceData,
+            "modelSelection": modelSelection,
+            "svm": svm,
+        }
+    )
 
 C_DEFAULTS = [10.0**x for x in range(-2,3)]
 C_DEF_STR  = ','.join(['%.4f'%x for x in C_DEFAULTS])
@@ -143,7 +153,7 @@ def positionalKmer(trainingSet, exonSize, intronSize, **args) :
 
     return SequenceData(trainingSet, mismatchProfile=mismatchProfile, **args)
 
-USAGE="""%prog FASTA-train dimer [options]
+USAGE="""%(prog)s FASTA-train dimer [options]
 
 Builds a weighted-degree kernel SVM for labeled FASTA sequences and runs cross-validation
 on a variety of parameter settings.  Saves the best SVM, configuration and data for later use.
@@ -153,27 +163,34 @@ by adding training data or by decreasing intron or exon size."""
 
 #--------------------------------------------
 # Command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-a', dest='acceptor',   default=False,      help='Treat sites as acceptors [default = donor sites]', action='store_true')
-parser.add_option('-e', dest='exonsize',   default='8,12,16',  help='List of exon sizes to try [default = %default]')
-parser.add_option('-C', dest='Clist',      default=C_DEF_STR,  help='List of regularization constants for SVM [default = %default]')
-parser.add_option('-i', dest='intronsize', default='15,20,25', help='List of intron sizes to try [default = %default]')
-parser.add_option('-l', dest='logfile',    default=None,       help='Optional logfile for tracking performance [default = dimer]')
-parser.add_option('-k', dest='kfolds',     default=5,          help='Number of folds to run cross-validation [default = %default]', type='int')
-parser.add_option('-m', dest='mink',       default='1',        help='Minimum k value for kernel [default = %default]')
-parser.add_option('-M', dest='maxk',       default='1',        help='Maximum k value for kernel [default = %default]')
-parser.add_option('-N', dest='nonnorm',    default=False,      help='Turn normalization OFF [default = %default]', action='store_true')
-parser.add_option('-p', dest='profile',    default=False,      help='Use mismatch profile [default = %default]', action='store_true')
-parser.add_option('-P', dest='prefix',     default=None,       help='Optional prefix for output files [default = dimer]')
-parser.add_option('-S', dest='shift',      default='0',        help='List of maximum shift values [default = %default]')
-parser.add_option('-v', dest='verbose',    default=False,      help='Verbose mode [default = %default]', action='store_true')
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-a', dest='acceptor',   default=False,      help='Treat sites as acceptors [default = donor sites]', action='store_true')
+parser.add_argument('-e', dest='exonsize',   default='8,12,16',  help='List of exon sizes to try [default = %(default)s]')
+parser.add_argument('-C', dest='Clist',      default=C_DEF_STR,  help='List of regularization constants for SVM [default = %(default)s]')
+parser.add_argument('-i', dest='intronsize', default='15,20,25', help='List of intron sizes to try [default = %(default)s]')
+parser.add_argument('-l', dest='logfile',    default=None,       help='Optional logfile for tracking performance [default = dimer]')
+parser.add_argument('-k', dest='kfolds',     default=5,          help='Number of folds to run cross-validation [default = %(default)s]', type=int)
+parser.add_argument('-m', dest='mink',       default='1',        help='Minimum k value for kernel [default = %(default)s]')
+parser.add_argument('-M', dest='maxk',       default='1',        help='Maximum k value for kernel [default = %(default)s]')
+parser.add_argument('-N', dest='nonnorm',    default=False,      help='Turn normalization OFF [default = %(default)s]', action='store_true')
+parser.add_argument('-p', dest='profile',    default=False,      help='Use mismatch profile [default = %(default)s]', action='store_true')
+parser.add_argument('-P', dest='prefix',     default=None,       help='Optional prefix for output files [default = dimer]')
+parser.add_argument('-S', dest='shift',      default='0',        help='List of maximum shift values [default = %(default)s]')
+parser.add_argument('-v', dest='verbose',    default=False,      help='Verbose mode [default = %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
-opts, args = parser.parse_args(sys.argv[1:])
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) != 2 :
     parser.print_help()
     sys.exit(1)
 
+_require_pyml()
 trainingFile  = args[0]
 validateFile(trainingFile)
 writeStartupMessage()

@@ -23,7 +23,7 @@ from iDiffIR.SpliceGrapher.formats.loader    import *
 from iDiffIR.SpliceGrapher.formats.sam       import *
 from iDiffIR.SpliceGrapher.predict.SpliceGraphPredictor import *
 
-from optparse import OptionParser
+import argparse
 import os,sys
 
 def depthPredictions(chromosomes, dDict, jDict, model, opts) :
@@ -56,23 +56,29 @@ def getCommonChromosomes(geneSet, depthSet, depthsFile, opts) :
         sys.exit(1)
     return result
 
-USAGE = """%prog SAM-file [options]
+USAGE = """%(prog)s SAM-file [options]
 
 Predicts splice graphs for all genes based on evidence in the given SAM file.
 Predicted graphs will be put into separate files under the given output directory,
 creating a subdirectory for each chromosome."""
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-a', dest='anchor',   default=8,   help='Minimum anchor required for junctions [default: %default]', type='int')
-parser.add_option('-d', dest='outdir',   default='.', help='Output file [default: current directory]')
-parser.add_option('-j', dest='minjct',   default=2,   help='Minimum coverage required for splice junctions [default: %default]', type='int')
-parser.add_option('-D', dest='mindepth', default=1,   help='Minimum average read depth required for clusters [default: %default]', type='float')
-parser.add_option('-m', dest='model',    default=SG_GENE_MODEL, help='Gene models file [default: %default]')
-parser.add_option('-N', dest='novel',    default=False, help='Only write splice graphs that were modified [default: %default]', action='store_true')
-parser.add_option('-v', dest='verbose',  default=False, help='Verbose mode [default: %default]', action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-a', dest='anchor',   default=8,   help='Minimum anchor required for junctions [default: %(default)s]', type=int)
+parser.add_argument('-d', dest='outdir',   default='.', help='Output file [default: current directory]')
+parser.add_argument('-j', dest='minjct',   default=2,   help='Minimum coverage required for splice junctions [default: %(default)s]', type=int)
+parser.add_argument('-D', dest='mindepth', default=1,   help='Minimum average read depth required for clusters [default: %(default)s]', type=float)
+parser.add_argument('-m', dest='model',    default=SG_GENE_MODEL, help='Gene models file [default: %(default)s]')
+parser.add_argument('-N', dest='novel',    default=False, help='Only write splice graphs that were modified [default: %(default)s]', action='store_true')
+parser.add_argument('-v', dest='verbose',  default=False, help='Verbose mode [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 MIN_ARGS = 1
 if len(args) != MIN_ARGS :
     parser.print_help()

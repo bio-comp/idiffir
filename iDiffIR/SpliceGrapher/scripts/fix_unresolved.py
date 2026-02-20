@@ -20,7 +20,7 @@ from iDiffIR.SpliceGrapher.shared.utils import *
 from iDiffIR.SpliceGrapher.formats.sam  import *
 from iDiffIR.SpliceGrapher.formats.FastaLoader  import *
 from iDiffIR.SpliceGrapher.SpliceGraph  import *
-from optparse                   import OptionParser
+import argparse
 import os,sys
 
 PUTATIVE_PARENTS  = 'putative_parents'
@@ -108,22 +108,28 @@ def seqString(s, indent=0, width=60) :
         result += s[i:i+width+1] + '\n'
     return result.strip()
 
-USAGE = """%prog graph-list transcript-map SAM-file [options]
+USAGE = """%(prog)s graph-list transcript-map SAM-file [options]
 
 Updates SpliceGrapher predictions using ungapped read alignments
 to putative transcripts.  Works with either single-end or paired-end reads."""
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-c', dest='coverage',    default=False, help='Use all coverage to accept nodes [default: %default]', action='store_true')
-parser.add_option('-d', dest='outdir',      default='.',   help='Top-level output directory [default: %default]')
-parser.add_option('-f', dest='fasta',       default=None,  help='Optional FASTA file for validating sequences [default: %default]')
-parser.add_option('-O', dest='min_overlap', default=10,    help='Minimum overlap required to resolve a node [default: %default]', type='int')
-parser.add_option('-R', dest='report',      default=None,  help='Report update statistics to file [default: %default]')
-parser.add_option('-S', dest='sensitive',   default=False, help='Accepting nodes with overlapping reads [default: %default]', action='store_true')
-parser.add_option('-v', dest='verbose',     default=False, help='Verbose mode [default: %default]', action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-c', dest='coverage',    default=False, help='Use all coverage to accept nodes [default: %(default)s]', action='store_true')
+parser.add_argument('-d', dest='outdir',      default='.',   help='Top-level output directory [default: %(default)s]')
+parser.add_argument('-f', dest='fasta',       default=None,  help='Optional FASTA file for validating sequences [default: %(default)s]')
+parser.add_argument('-O', dest='min_overlap', default=10,    help='Minimum overlap required to resolve a node [default: %(default)s]', type=int)
+parser.add_argument('-R', dest='report',      default=None,  help='Report update statistics to file [default: %(default)s]')
+parser.add_argument('-S', dest='sensitive',   default=False, help='Accepting nodes with overlapping reads [default: %(default)s]', action='store_true')
+parser.add_argument('-v', dest='verbose',     default=False, help='Verbose mode [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) != 3 :
     parser.print_help()
     sys.exit(1)

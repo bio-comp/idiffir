@@ -24,7 +24,7 @@ gene models.
 from iDiffIR.SpliceGrapher.shared.config import *
 from iDiffIR.SpliceGrapher.shared.utils  import *
 from iDiffIR.SpliceGrapher.formats.fasta import *
-from optparse                    import OptionParser
+import argparse
 import os,sys,subprocess
 
 C_DEFAULTS      = [10.0**x for x in range(-2,3)]
@@ -111,7 +111,7 @@ def selectModelParameters(dimer, trainingFile, opts, acceptor=False, logstream=N
         runCommand(command, logstream=logstream, debug=opts.commands)
     return dimerFile
 
-USAGE = """%prog [options]
+USAGE = """%(prog)s [options]
 
 Creates an organism's splice-site classifiers by performing the following steps:
    1. Generates training data for each splice site dimer
@@ -119,25 +119,31 @@ Creates an organism's splice-site classifiers by performing the following steps:
    3. Creates a .zip file that contains the resulting classifiers"""
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-a', dest='acceptors',  default=ACC_STRINGS,   help='Acceptor site dimers to predict [default: %default]')
-parser.add_option('-d', dest='donors',     default=DON_STRINGS,   help='Donor site dimers to predict [default: %default]')
-parser.add_option('-f', dest='fasta',      default=SG_FASTA_REF,  help='FASTA genomic reference [default: %default]')
-parser.add_option('-m', dest='model',      default=SG_GENE_MODEL, help='Gene model annotations (GFF3/GTF) [default: %default]')
-parser.add_option('-n', dest='examples',   default=2000,          help='Number of examples in training set [default: %default]', type='int')
-parser.add_option('-l', dest='logfile',    default=None,          help='Optional log file [default: %default]')
-parser.add_option('-v', dest='verbose',    default=False,         help='Verbose mode [default: %default]', action='store_true')
-parser.add_option('--commands', dest='commands', default=False,   help="Show but don't run commands [default: %default]", action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-a', dest='acceptors',  default=ACC_STRINGS,   help='Acceptor site dimers to predict [default: %(default)s]')
+parser.add_argument('-d', dest='donors',     default=DON_STRINGS,   help='Donor site dimers to predict [default: %(default)s]')
+parser.add_argument('-f', dest='fasta',      default=SG_FASTA_REF,  help='FASTA genomic reference [default: %(default)s]')
+parser.add_argument('-m', dest='model',      default=SG_GENE_MODEL, help='Gene model annotations (GFF3/GTF) [default: %(default)s]')
+parser.add_argument('-n', dest='examples',   default=2000,          help='Number of examples in training set [default: %(default)s]', type=int)
+parser.add_argument('-l', dest='logfile',    default=None,          help='Optional log file [default: %(default)s]')
+parser.add_argument('-v', dest='verbose',    default=False,         help='Verbose mode [default: %(default)s]', action='store_true')
+parser.add_argument('--commands', dest='commands', default=False,   help="Show but don't run commands [default: %(default)s]", action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 # Omitted to simplify interface
-#parser.add_option('-C', dest='Clist',      default=C_DEF_STR,     help='List of regularization constants for SVM [default = %default]')
-#parser.add_option('-e', dest='exonsize',   default=EXON_DEFAULT,  help='List of exon sizes to try [default = %default]')
-#parser.add_option('-i', dest='intronsize', default=INTRON_DEFAULT, help='List of intron sizes to try [default = %default]')
-#parser.add_option('-M', dest='maxk',       default=MAXK_DEFAULT,  help='Maximum k value for kernel [default = %default]')
-#parser.add_option('-O', dest='overwrite',  default=False,         help='Over-write any existing files [default: %default]', action='store_true')
-#parser.add_option('-p', dest='profile',    default=False,         help='Use mismatch profile [default = %default]', action='store_true')
-#parser.add_option('-S', dest='shift',      default=SHIFT_DEFAULT, help='List of maximum shift values [default = %default]')
+#parser.add_argument('-C', dest='Clist',      default=C_DEF_STR,     help='List of regularization constants for SVM [default = %(default)s]')
+#parser.add_argument('-e', dest='exonsize',   default=EXON_DEFAULT,  help='List of exon sizes to try [default = %(default)s]')
+#parser.add_argument('-i', dest='intronsize', default=INTRON_DEFAULT, help='List of intron sizes to try [default = %(default)s]')
+#parser.add_argument('-M', dest='maxk',       default=MAXK_DEFAULT,  help='Maximum k value for kernel [default = %(default)s]')
+#parser.add_argument('-O', dest='overwrite',  default=False,         help='Over-write any existing files [default: %(default)s]', action='store_true')
+#parser.add_argument('-p', dest='profile',    default=False,         help='Use mismatch profile [default = %(default)s]', action='store_true')
+#parser.add_argument('-S', dest='shift',      default=SHIFT_DEFAULT, help='List of maximum shift values [default = %(default)s]')
 #
 
 # If options are commented back in above, comment them out here:

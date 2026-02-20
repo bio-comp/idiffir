@@ -26,32 +26,38 @@ from iDiffIR.SpliceGrapher.shared.GeneModelConverter import *
 from iDiffIR.SpliceGrapher.formats.loader    import *
 from iDiffIR.SpliceGrapher.formats.GeneModel import GENE_TYPE, defaultGeneFilter, gene_type_filter
 
-from optparse    import OptionParser
+import argparse
 
 import sys, os
 
-USAGE = """%prog [options]
+USAGE = """%(prog)s [options]
 
 Converts GFF gene models into splice graphs.  Produces a splice graph
 for every gene in its own separate file."""
 
-parser = OptionParser(usage=USAGE)
-parser.add_option('-A',    dest='alltypes',  default=False, help='Include all gene types [default: protein-coding only]', action='store_true')
-parser.add_option('-a',    dest='annotate',  default=False, help='annotate any AS found in the model [default: %default]', action='store_true')
-parser.add_option('-c',    dest='chrom',     default=None,  help='generate graphs only for genes in the given chromosome [default: %default]')
-parser.add_option('--CDS', dest='cds',       default=False, help='use CDS/UTR records for exon boundaries [default: exon records]', action='store_true')
-parser.add_option('-d',    dest='dir',       default=None,  help='top-level directory for gene file(s) [default: %default]')
-parser.add_option('-g',    dest='genes',     default=None,  help='generate graphs for genes given either in a comma-separated list or a file [default: %default]')
-parser.add_option('-e',    dest='minexon',   default=1,     help='minimum allowable exon size [default: %default]', type='int')
-parser.add_option('-i',    dest='minintron', default=1,     help='minimum allowable intron size [default: %default]', type='int')
-parser.add_option('-m',    dest='model',     default=SG_GENE_MODEL, help='optional GFF3/GTF gene model file [default: %default]')
-parser.add_option('-n',    dest='name',      default=False, help='use gene name instead of gene id for output filename [default: %default]', action='store_true')
-parser.add_option('-o',    dest='output',    default=None,  help='file for output splice graph [default: %default]')
-parser.add_option('-S',    dest='subdirs',   default=False, help='create chromosome subdirectories (only with -d option) [default: %default]', action='store_true')
-parser.add_option('-v',    dest='verbose',   default=False, help='use verbose output [default: %default]', action='store_true')
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-A',    dest='alltypes',  default=False, help='Include all gene types [default: protein-coding only]', action='store_true')
+parser.add_argument('-a',    dest='annotate',  default=False, help='annotate any AS found in the model [default: %(default)s]', action='store_true')
+parser.add_argument('-c',    dest='chrom',     default=None,  help='generate graphs only for genes in the given chromosome [default: %(default)s]')
+parser.add_argument('--CDS', dest='cds',       default=False, help='use CDS/UTR records for exon boundaries [default: exon records]', action='store_true')
+parser.add_argument('-d',    dest='dir',       default=None,  help='top-level directory for gene file(s) [default: %(default)s]')
+parser.add_argument('-g',    dest='genes',     default=None,  help='generate graphs for genes given either in a comma-separated list or a file [default: %(default)s]')
+parser.add_argument('-e',    dest='minexon',   default=1,     help='minimum allowable exon size [default: %(default)s]', type=int)
+parser.add_argument('-i',    dest='minintron', default=1,     help='minimum allowable intron size [default: %(default)s]', type=int)
+parser.add_argument('-m',    dest='model',     default=SG_GENE_MODEL, help='optional GFF3/GTF gene model file [default: %(default)s]')
+parser.add_argument('-n',    dest='name',      default=False, help='use gene name instead of gene id for output filename [default: %(default)s]', action='store_true')
+parser.add_argument('-o',    dest='output',    default=None,  help='file for output splice graph [default: %(default)s]')
+parser.add_argument('-S',    dest='subdirs',   default=False, help='create chromosome subdirectories (only with -d option) [default: %(default)s]', action='store_true')
+parser.add_argument('-v',    dest='verbose',   default=False, help='use verbose output [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
-opts, args = parser.parse_args(sys.argv[1:])
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) > 0 :
     parser.print_help()
     if args : sys.stderr.write('\nReceived %d unexpected parameters:\n  %s\n' % (len(args), '\n  '.join(args)))

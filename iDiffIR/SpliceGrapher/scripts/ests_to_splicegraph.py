@@ -26,13 +26,13 @@ from iDiffIR.SpliceGrapher.formats.loader    import *
 from iDiffIR.SpliceGrapher.predict.SpliceSiteValidator import *
 from iDiffIR.SpliceGrapher.SpliceGraph       import SpliceGraph, updateRoot, updateLeaf
 
-from optparse import OptionParser
+import argparse
 import sys, os
 
 def pslCmp(a,b) :
     return (a.Tend-b.Tend) if a.Tstart == b.Tstart else (a.Tstart-b.Tstart)
 
-USAGE = """%prog [options] psl-file
+USAGE = """%(prog)s [options] psl-file
 
 Converts EST alignments from a PSL alignment file into splice graphs by using ESTs
 that fall within a gene on the same strand.  Target sequences referenced in the PSL
@@ -40,21 +40,27 @@ file must match names in the gene model file for graphs to be produced.  Only ES
 that match a gene's strand will be included for that gene, so reverse-complement
 matches should be resolved prior to running this script."""
 
-parser = OptionParser(usage=USAGE)
-parser.add_option('-a', dest='annotate',default=False,   help='Annotate the output graphs [default: %default]', action='store_true')
-parser.add_option('-A', dest='adjust',  default=False,   help='Adjust graphs to gene boundaries (requires gene model) [default: %default]', action='store_true')
-parser.add_option('-d', dest='dir',     default='.',     help='Output directory for splice graph files (overrides -o option) [default: %default]')
-parser.add_option('-f', dest='fasta',   default=None,    help='FASTA reference to validate splice sites [default: %default]')
-parser.add_option('-g', dest='gene',    default=None,    help='Gene name [default: infer from PSL]')
-parser.add_option('-i', dest='intron',  default=4,       help='Minimum intron length allowed [default: %default]', type='int')
-parser.add_option('-m', dest='model',   default=SG_GENE_MODEL, help='Gene model file [default: %default]')
-parser.add_option('-s', dest='singles', default=False,   help='Allow single-exon ESTs to be included [default: %default]', action='store_true')
-parser.add_option('-S', dest='suffix',  default='_ests', help='File name suffix for ouput files [default: %default]')
-parser.add_option('-V', dest='valid',   default=False,   help='Only output files for valid graphs [default: %default]', action='store_true')
-parser.add_option('-v', dest='verbose', default=False,   help='Use verbose output [default: %default]', action='store_true')
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-a', dest='annotate',default=False,   help='Annotate the output graphs [default: %(default)s]', action='store_true')
+parser.add_argument('-A', dest='adjust',  default=False,   help='Adjust graphs to gene boundaries (requires gene model) [default: %(default)s]', action='store_true')
+parser.add_argument('-d', dest='dir',     default='.',     help='Output directory for splice graph files (overrides -o option) [default: %(default)s]')
+parser.add_argument('-f', dest='fasta',   default=None,    help='FASTA reference to validate splice sites [default: %(default)s]')
+parser.add_argument('-g', dest='gene',    default=None,    help='Gene name [default: infer from PSL]')
+parser.add_argument('-i', dest='intron',  default=4,       help='Minimum intron length allowed [default: %(default)s]', type=int)
+parser.add_argument('-m', dest='model',   default=SG_GENE_MODEL, help='Gene model file [default: %(default)s]')
+parser.add_argument('-s', dest='singles', default=False,   help='Allow single-exon ESTs to be included [default: %(default)s]', action='store_true')
+parser.add_argument('-S', dest='suffix',  default='_ests', help='File name suffix for ouput files [default: %(default)s]')
+parser.add_argument('-V', dest='valid',   default=False,   help='Only output files for valid graphs [default: %(default)s]', action='store_true')
+parser.add_argument('-v', dest='verbose', default=False,   help='Use verbose output [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
-opts, args = parser.parse_args(sys.argv[1:])
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) != 1 :
     parser.print_help()
     sys.exit(1)

@@ -24,7 +24,7 @@ from iDiffIR.SpliceGrapher.formats.GeneModel      import *
 from iDiffIR.SpliceGrapher.SpliceGraph            import *
 from iDiffIR.SpliceGrapher.shared.SpliceGraphPath import *
 
-from optparse import OptionParser
+import argparse
 import os,sys
 
 PUTATIVE_CHILDREN = 'putative_children'
@@ -106,7 +106,7 @@ def start(x) :
     return x.minpos if x.strand == '+' else x.maxpos
 
 
-USAGE = """%prog graph-files [options]
+USAGE = """%(prog)s graph-files [options]
 
 Where:
     graph-files  is a file containing a list of splice graphs
@@ -117,18 +117,24 @@ Generates putative sequences for all possible paths through each
 of the splice graphs provided."""
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-A', dest='allgenes',   default=False,        help='Include all genes in list [default: %default]', action='store_true')
-parser.add_option('-f', dest='fasta',      default=SG_FASTA_REF, help='FASTA reference sequence [default: %default]')
-parser.add_option('-l', dest='seqlimit',   default=1000,         help='Exclude graphs with more paths than this [default: %default]', type='int')
-parser.add_option('-o', dest='output',     default=None,         help='Output FASTA file [default: one per chromosome]')
-parser.add_option('-U', dest='unresolved', default=False,        help='Include unresolved-node transcripts [default: %default]', action='store_true')
-parser.add_option('-m', dest='mapfile',    default=None,         help='Create a file that maps transcript ids to exon ids [default: %default]')
-parser.add_option('-M', dest='savemodel',  default=None,         help='Convert the putative graphs to a gene model [default: %default]')
-parser.add_option('-v', dest='verbose',    default=False,        help='Verbose mode [default: %default]', action='store_true')
-parser.add_option('--gff3', dest='gffmodel',default=False,help='Save model using GFF3 format [default: %default]', action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-A', dest='allgenes',   default=False,        help='Include all genes in list [default: %(default)s]', action='store_true')
+parser.add_argument('-f', dest='fasta',      default=SG_FASTA_REF, help='FASTA reference sequence [default: %(default)s]')
+parser.add_argument('-l', dest='seqlimit',   default=1000,         help='Exclude graphs with more paths than this [default: %(default)s]', type=int)
+parser.add_argument('-o', dest='output',     default=None,         help='Output FASTA file [default: one per chromosome]')
+parser.add_argument('-U', dest='unresolved', default=False,        help='Include unresolved-node transcripts [default: %(default)s]', action='store_true')
+parser.add_argument('-m', dest='mapfile',    default=None,         help='Create a file that maps transcript ids to exon ids [default: %(default)s]')
+parser.add_argument('-M', dest='savemodel',  default=None,         help='Convert the putative graphs to a gene model [default: %(default)s]')
+parser.add_argument('-v', dest='verbose',    default=False,        help='Verbose mode [default: %(default)s]', action='store_true')
+parser.add_argument('--gff3', dest='gffmodel',default=False,help='Save model using GFF3 format [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 MIN_ARGS = 1
 if len(args) != MIN_ARGS :
     parser.print_help()
