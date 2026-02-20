@@ -20,20 +20,26 @@ from iDiffIR.SpliceGrapher.shared.utils import *
 from iDiffIR.SpliceGrapher.formats.sam  import *
 from iDiffIR.SpliceGrapher.formats.FastaLoader  import *
 from iDiffIR.SpliceGrapher.SpliceGraph  import *
-from optparse                   import OptionParser
+import argparse
 import os,sys
 
-USAGE = """%prog graph-list transcript-map psginfer-isoform-table [options]
+USAGE = """%(prog)s graph-list transcript-map psginfer-isoform-table [options]
 
 Updates SpliceGrapher predictions using transcripts confirmed by psgInfer."""
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-d', dest='outdir',    default='.',  help='Top-level output directory [default: %default]')
-parser.add_option('-t', dest='threshold', default=0.1,  help='Threshold for accepting isoforms (between 0 and 1)[default: %default]', type='float')
-parser.add_option('-v', dest='verbose',   default=False,help='Verbose mode [default: %default]', action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-d', dest='outdir',    default='.',  help='Top-level output directory [default: %(default)s]')
+parser.add_argument('-t', dest='threshold', default=0.1,  help='Threshold for accepting isoforms (between 0 and 1)[default: %(default)s]', type=float)
+parser.add_argument('-v', dest='verbose',   default=False,help='Verbose mode [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) != 3 :
     parser.print_help()
     sys.exit(1)

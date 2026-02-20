@@ -26,7 +26,7 @@ from iDiffIR.SpliceGrapher.shared.utils              import *
 from iDiffIR.SpliceGrapher.shared.GeneModelConverter import *
 
 from pylab      import *
-from optparse   import OptionParser, OptionGroup
+import argparse
 from sys import maxsize as MAXINT
 import sys, os
 
@@ -56,7 +56,7 @@ X_PAD_FRACTION = 0.01
 #==========================================================================
 # Main program
 #==========================================================================
-USAGE = """%prog [options] files-or-genes
+USAGE = """%(prog)s [options] files-or-genes
 
 Displays one or more splice graphs given a list of files or genes.  A name
 that is not a file is assumed to be a gene.  When gene names are given,
@@ -64,41 +64,47 @@ gene models must also be provided (using SG_GENE_MODEL or the -m option).
 
 Examples:
 
-    %prog gene_1.gff                    (plot a single graph file)
-    %prog gene*.gff                     (display all graphs in the local directory that begin with 'gene')
-    %prog AT1G01060 AT1G01260 AT1G01910 (plot several genes)
-    %prog AT1G01060 gene_[123].gff      (mixture of gene model graphs and splice graph files)
+    %(prog)s gene_1.gff                    (plot a single graph file)
+    %(prog)s gene*.gff                     (display all graphs in the local directory that begin with 'gene')
+    %(prog)s AT1G01060 AT1G01260 AT1G01910 (plot several genes)
+    %(prog)s AT1G01060 gene_[123].gff      (mixture of gene model graphs and splice graph files)
 
 For more than four graphs you may need to adjust the output height (-H)."""
 
 #==========================================================================
 # Initialize command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-a', dest='annotate', default=False,         help='(Re)annotate graphs [default: %default]', action='store_true')
-parser.add_option('-m', dest='model',    default=SG_GENE_MODEL, help='GFF gene model reference [default: %default]')
-parser.add_option('-o', dest='output',   default=None,          help='Output file [default: screen]')
-parser.add_option('-x', dest='xLabel',   default=False,         help='Show genomic positions [default: %default]', action='store_true')
-parser.add_option('-v', dest='verbose',  default=False,         help='Use verbose output [default: %default]', action='store_true')
-parser.add_option('-E', dest='edge',     default=1,             help='Intron edge weight [default: %default]', type='int')
-parser.add_option('-L', dest='legend',   default=False,         help='Add legend to splice graph plot [default: %default]', action='store_true')
-parser.add_option('-F', dest='fontsize', default=12,            help='Font size for plot titles [default: %default]', type='int')
-parser.add_option('-H', dest='height',   default=8,             help='Display height, in inches [default: %default]', type='float')
-parser.add_option('-W', dest='width',    default=15,            help='Display width, in inches [default: %default]', type='float')
-parser.add_option('-S', dest='shrink',   default=False,         help='Shrink introns [default: %default]', action='store_true')
-parser.add_option('-X', dest='xrange',   default=False,         help='Use the same genomic position range for all plots [default: %default]', action='store_true')
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-a', dest='annotate', default=False,         help='(Re)annotate graphs [default: %(default)s]', action='store_true')
+parser.add_argument('-m', dest='model',    default=SG_GENE_MODEL, help='GFF gene model reference [default: %(default)s]')
+parser.add_argument('-o', dest='output',   default=None,          help='Output file [default: screen]')
+parser.add_argument('-x', dest='xLabel',   default=False,         help='Show genomic positions [default: %(default)s]', action='store_true')
+parser.add_argument('-v', dest='verbose',  default=False,         help='Use verbose output [default: %(default)s]', action='store_true')
+parser.add_argument('-E', dest='edge',     default=1,             help='Intron edge weight [default: %(default)s]', type=int)
+parser.add_argument('-L', dest='legend',   default=False,         help='Add legend to splice graph plot [default: %(default)s]', action='store_true')
+parser.add_argument('-F', dest='fontsize', default=12,            help='Font size for plot titles [default: %(default)s]', type=int)
+parser.add_argument('-H', dest='height',   default=8,             help='Display height, in inches [default: %(default)s]', type=float)
+parser.add_argument('-W', dest='width',    default=15,            help='Display width, in inches [default: %(default)s]', type=float)
+parser.add_argument('-S', dest='shrink',   default=False,         help='Shrink introns [default: %(default)s]', action='store_true')
+parser.add_argument('-X', dest='xrange',   default=False,         help='Use the same genomic position range for all plots [default: %(default)s]', action='store_true')
 
 # Deprecated to simplify interface:
-#parser.add_option('-t', dest='titles',   default=None,          help='List of graph titles [default: %default]')
-#parser.add_option('-A', dest='adjust',   default=False,         help='Adjust graphs to match gene boundaries [default: %default]', action='store_true')
-#parser.add_option('-G', dest='grid',     default=False,         help='Add axis grids to plots [default: %default]', action='store_true')
-## parser.add_option('-U', dest='urmargin', default=0,             help='Margin for subsuming unresolved nodes into resolved exons [default: %default]', type='int')
-#parser.add_option('-l', dest='labels',   default=False,         help='Show exon labels on plots [default: %default]', action='store_true')
-#parser.add_option('--shrink-factor', dest='shrinkfactor', default=MIN_INTRON_SIZE, help='Factor for shrinking introns (-S option) [default: %default]', type='int')
+#parser.add_argument('-t', dest='titles',   default=None,          help='List of graph titles [default: %(default)s]')
+#parser.add_argument('-A', dest='adjust',   default=False,         help='Adjust graphs to match gene boundaries [default: %(default)s]', action='store_true')
+#parser.add_argument('-G', dest='grid',     default=False,         help='Add axis grids to plots [default: %(default)s]', action='store_true')
+## parser.add_argument('-U', dest='urmargin', default=0,             help='Margin for subsuming unresolved nodes into resolved exons [default: %(default)s]', type=int)
+#parser.add_argument('-l', dest='labels',   default=False,         help='Show exon labels on plots [default: %(default)s]', action='store_true')
+#parser.add_argument('--shrink-factor', dest='shrinkfactor', default=MIN_INTRON_SIZE, help='Factor for shrinking introns (-S option) [default: %(default)s]', type=int)
 
 #==========================================================================
 # Process command-line options:
-opts, args   = parser.parse_args(sys.argv[1:])
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 #----------------------------------
 # Deprecated to simplify interface:
 opts.adjust       = False

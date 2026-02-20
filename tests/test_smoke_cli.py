@@ -7,6 +7,16 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = [
+    "iDiffIR/SpliceGrapher/scripts/generate_splice_site_data.py",
+    "iDiffIR/SpliceGrapher/scripts/isolasso_pipeline.py",
+    "iDiffIR/SpliceGrapher/scripts/isolasso_update_graphs.py",
+    "iDiffIR/SpliceGrapher/scripts/psginfer_pipeline.py",
+    "iDiffIR/SpliceGrapher/scripts/psginfer_update_graphs.py",
+    "iDiffIR/SpliceGrapher/scripts/realignment_pipeline.py",
+    "iDiffIR/SpliceGrapher/scripts/sam_filter.py",
+    "iDiffIR/SpliceGrapher/scripts/splice_junction_pipeline.py",
+    "iDiffIR/SpliceGrapher/scripts/view_splicegraph_multiplot.py",
+    "iDiffIR/SpliceGrapher/scripts/view_splicegraphs.py",
     "scripts/convertSam.py",
     "scripts/getDepths.py",
     "scripts/get_gene_expression.py",

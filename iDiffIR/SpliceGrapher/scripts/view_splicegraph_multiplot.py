@@ -34,7 +34,7 @@ from iDiffIR.SpliceGrapher.formats.sam               import *
 from iDiffIR.SpliceGrapher                           import SpliceGraph
 from iDiffIR.SpliceGrapher.formats                   import gtf, wig, bed, xydata
 
-from optparse import OptionParser, OptionGroup
+import argparse
 
 import sys, os
 
@@ -78,53 +78,56 @@ X_PAD_FRACTION  = 0.01
 #==========================================================================
 # Main program
 #==========================================================================
-USAGE = """%prog [options] gene-name
+USAGE = """%(prog)s [options] gene-name
 
 Interface for viewing alternative splicing information for a gene."""
 
 #==========================================================================
 # Initialize command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-v', dest='verbose',      default=False,       action='store_true', help='use verbose output [default: %default]')
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-v', dest='verbose',      default=False,       action='store_true', help='use verbose output [default: %(default)s]')
 
-fileGroup  = OptionGroup(parser, 'File Options')
-fileGroup.add_option('-m', dest='model',        default=SG_GENE_MODEL, help='GFF gene model reference [default: %default]')
-fileGroup.add_option('-o', dest='output',       default=None,          help='Output file (extension determines format) [default: screen]')
-fileGroup.add_option('-d', dest='depth_file',   default=None,          help='SAM alignment file (gapped and spliced reads) [default: %default]')
-fileGroup.add_option('-s', dest='splice_graph', default=None,          help='GFF splice graph file [default: %default]')
-fileGroup.add_option('-G', dest='orig_graph',   default=None,          help='Baseline graph file [default: none]')
-fileGroup.add_option('-X', dest='xydata',       default=None,          help='File of X,Y value pairs for X-Y plot [default: %default]')
-parser.add_option_group(fileGroup)
-
-displayGroup = OptionGroup(parser, 'Display Options')
-displayGroup.add_option('-c', dest='jctcover', default=False, help='Display read coverage on junctions [default: %default]', action='store_true')
-displayGroup.add_option('-x', dest='xLabels',  default=False, help='Add genomic position labels to plots [default: %default]', action='store_true')
-displayGroup.add_option('-E', dest='edge',     default=2,     help='Minimum edge thickness [default: %default]', type='int')
-displayGroup.add_option('-J', dest='minjct',   default=2,     help='Minimum coverage for displaying junctions [default: %default]', type='int')
-displayGroup.add_option('-L', dest='legend',   default=False, help='Add legend to graph [default: %default]', action='store_true')
-displayGroup.add_option('-H', dest='height',   default=8.5,   help='Display window height (inches) [default: %default]', type='float')
-displayGroup.add_option('-W', dest='width',    default=11,    help='Display window width (inches) [default: %default]', type='float')
-displayGroup.add_option('-F', dest='fontsize', default=12,    help='Font size for plot titles [default: %default]', type='int')
-displayGroup.add_option('-S', dest='shrink',   default=False, help='Shrink introns relative to exons [default: %default]', action='store_true')
-displayGroup.add_option('-D', dest='display',  default='OPJR',
-        help="Display order string for plots (O=original model, P=predicted graph, J=splice junctions, R=read depth, X=XY graph).  Examples: 'OPR', 'RJP' [default: '%default']")
-parser.add_option_group(displayGroup)
-
+fileGroup = parser.add_argument_group('File Options')
+fileGroup.add_argument('-m', dest='model',        default=SG_GENE_MODEL, help='GFF gene model reference [default: %(default)s]')
+fileGroup.add_argument('-o', dest='output',       default=None,          help='Output file (extension determines format) [default: screen]')
+fileGroup.add_argument('-d', dest='depth_file',   default=None,          help='SAM alignment file (gapped and spliced reads) [default: %(default)s]')
+fileGroup.add_argument('-s', dest='splice_graph', default=None,          help='GFF splice graph file [default: %(default)s]')
+fileGroup.add_argument('-G', dest='orig_graph',   default=None,          help='Baseline graph file [default: none]')
+fileGroup.add_argument('-X', dest='xydata',       default=None,          help='File of X,Y value pairs for X-Y plot [default: %(default)s]')
+displayGroup = parser.add_argument_group('Display Options')
+displayGroup.add_argument('-c', dest='jctcover', default=False, help='Display read coverage on junctions [default: %(default)s]', action='store_true')
+displayGroup.add_argument('-x', dest='xLabels',  default=False, help='Add genomic position labels to plots [default: %(default)s]', action='store_true')
+displayGroup.add_argument('-E', dest='edge',     default=2,     help='Minimum edge thickness [default: %(default)s]', type=int)
+displayGroup.add_argument('-J', dest='minjct',   default=2,     help='Minimum coverage for displaying junctions [default: %(default)s]', type=int)
+displayGroup.add_argument('-L', dest='legend',   default=False, help='Add legend to graph [default: %(default)s]', action='store_true')
+displayGroup.add_argument('-H', dest='height',   default=8.5,   help='Display window height (inches) [default: %(default)s]', type=float)
+displayGroup.add_argument('-W', dest='width',    default=11,    help='Display window width (inches) [default: %(default)s]', type=float)
+displayGroup.add_argument('-F', dest='fontsize', default=12,    help='Font size for plot titles [default: %(default)s]', type=int)
+displayGroup.add_argument('-S', dest='shrink',   default=False, help='Shrink introns relative to exons [default: %(default)s]', action='store_true')
+displayGroup.add_argument('-D', dest='display',  default='OPJR',
+        help="Display order string for plots (O=original model, P=predicted graph, J=splice junctions, R=read depth, X=XY graph).  Examples: 'OPR', 'RJP' [default: '%(default)s']")
 # Deprecated to simplify interface:
-## fileGroup.add_option('-b', dest='bed_file',     default=None,          help='BED predicted junctions file [default: %default]')
-## fileGroup.add_option('-j', dest='junctions',    default=None,          help='SAM spliced alignment file (spliced reads only) [default: %default]')
-## fileGroup.add_option('-t', dest='gtf_file',     default=None,          help='GTF file [default: %default]')
-## fileGroup.add_option('-w', dest='wig_file',     default=None,          help='WIG depth file [default: %default]')
-## displayGroup.add_option('-l', dest='labels',   default=False, help='Include exon labels [default: %default]', action='store_true')
-## displayGroup.add_option('-A', dest='adjust',   default=False, help='Adjust splice graph to match gene boundaries [default: %default]', action='store_true')
-## displayGroup.add_option('-U', dest='urmargin', default=0,     help='Margin for subsuming unresolved node into known exons [default: %default]', type='int')
-## displayGroup.add_option('-C', dest='clusters', default=False, help='Show read clusters instead of read depths [default: %default]', action='store_true')
-## displayGroup.add_option('-T', dest='threshold',default=1,     help='Minimum threshold for clusters (-C option) [default: %default]', type='int')
-## displayGroup.add_option('--titles', dest='titles',   default=None,  help='Alternate title for each display [default: %default]')
+## fileGroup.add_argument('-b', dest='bed_file',     default=None,          help='BED predicted junctions file [default: %(default)s]')
+## fileGroup.add_argument('-j', dest='junctions',    default=None,          help='SAM spliced alignment file (spliced reads only) [default: %(default)s]')
+## fileGroup.add_argument('-t', dest='gtf_file',     default=None,          help='GTF file [default: %(default)s]')
+## fileGroup.add_argument('-w', dest='wig_file',     default=None,          help='WIG depth file [default: %(default)s]')
+## displayGroup.add_argument('-l', dest='labels',   default=False, help='Include exon labels [default: %(default)s]', action='store_true')
+## displayGroup.add_argument('-A', dest='adjust',   default=False, help='Adjust splice graph to match gene boundaries [default: %(default)s]', action='store_true')
+## displayGroup.add_argument('-U', dest='urmargin', default=0,     help='Margin for subsuming unresolved node into known exons [default: %(default)s]', type=int)
+## displayGroup.add_argument('-C', dest='clusters', default=False, help='Show read clusters instead of read depths [default: %(default)s]', action='store_true')
+## displayGroup.add_argument('-T', dest='threshold',default=1,     help='Minimum threshold for clusters (-C option) [default: %(default)s]', type=int)
+## displayGroup.add_argument('--titles', dest='titles',   default=None,  help='Alternate title for each display [default: %(default)s]')
 
 #==========================================================================
 # Process command-line options:
-opts, args   = parser.parse_args(sys.argv[1:])
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
+
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 opts.display = opts.display.upper()
 
 # Removed after version 0.1.0 to simplify interface:

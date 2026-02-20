@@ -23,7 +23,7 @@ sequences prior to running alignments.
 from iDiffIR.SpliceGrapher.shared.config import *
 from iDiffIR.SpliceGrapher.shared.utils  import *
 from iDiffIR.SpliceGrapher.formats.fasta import *
-from optparse                    import OptionParser
+import argparse
 import os,sys,subprocess
 
 LEGAL_DIMERS    = ['%s%s'%(a,b) for a in 'acgt' for b in 'acgt']
@@ -89,7 +89,7 @@ def selectModelParameters(dimer, trainingFile, opts, acceptor=False, logstream=N
         runCommand(command, logstream=logstream, debug=opts.debug, stderr=nullStream, stdout=nullStream)
     return dimerFile
 
-USAGE = """%prog [options]
+USAGE = """%(prog)s [options]
 
 Script for running the full splice junction prediction pipeline.
 This will perform the following steps:
@@ -101,21 +101,27 @@ This will perform the following steps:
        d. Use predicted sites to generate predicted junction sequences (--gendb option)"""
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-a', dest='acceptors',  default=ACC_STRINGS,   help='Acceptor site dimers to predict [default: %default]')
-parser.add_option('-D', dest='debug',      default=False,         help="Show but don't run commands [default: %default]", action='store_true')
-parser.add_option('-d', dest='donors',     default=DON_STRINGS,   help='Donor site dimers to predict [default: %default]')
-parser.add_option('-f', dest='fasta',      default=SG_FASTA_REF,  help='Fasta reference file [default: %default]')
-parser.add_option('-m', dest='model',      default=SG_GENE_MODEL, help='Gene model annotations (GFF3) [default: %default]')
-parser.add_option('-l', dest='logfile',    default=None,          help='Optional log file [default: %default]')
-parser.add_option('-o', dest='overlap',    default=10,            help='Required overlap on either side of a junction [default: %default]', type='int')
-parser.add_option('-O', dest='overwrite',  default=False,         help='Over-write any existing files [default: %default]', action='store_true')
-parser.add_option('-r', dest='readlen',    default=36,            help='Read length [default: %default]', type='int')
-parser.add_option('-t', dest='training',   default=1000,          help='Training data set size [default: %default]', type='int')
-parser.add_option('-v', dest='verbose',    default=False,         help='Verbose mode [default: %default]', action='store_true')
-parser.add_option('--gendb', dest='gendb', default=False,         help="Use predicted splice sites to generate splice junction sequence database (can take a long time) [default: %default]", action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-a', dest='acceptors',  default=ACC_STRINGS,   help='Acceptor site dimers to predict [default: %(default)s]')
+parser.add_argument('-D', dest='debug',      default=False,         help="Show but don't run commands [default: %(default)s]", action='store_true')
+parser.add_argument('-d', dest='donors',     default=DON_STRINGS,   help='Donor site dimers to predict [default: %(default)s]')
+parser.add_argument('-f', dest='fasta',      default=SG_FASTA_REF,  help='Fasta reference file [default: %(default)s]')
+parser.add_argument('-m', dest='model',      default=SG_GENE_MODEL, help='Gene model annotations (GFF3) [default: %(default)s]')
+parser.add_argument('-l', dest='logfile',    default=None,          help='Optional log file [default: %(default)s]')
+parser.add_argument('-o', dest='overlap',    default=10,            help='Required overlap on either side of a junction [default: %(default)s]', type=int)
+parser.add_argument('-O', dest='overwrite',  default=False,         help='Over-write any existing files [default: %(default)s]', action='store_true')
+parser.add_argument('-r', dest='readlen',    default=36,            help='Read length [default: %(default)s]', type=int)
+parser.add_argument('-t', dest='training',   default=1000,          help='Training data set size [default: %(default)s]', type=int)
+parser.add_argument('-v', dest='verbose',    default=False,         help='Verbose mode [default: %(default)s]', action='store_true')
+parser.add_argument('--gendb', dest='gendb', default=False,         help="Use predicted splice sites to generate splice junction sequence database (can take a long time) [default: %(default)s]", action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 #-------------------------------------------------------------------------------------------------
 # Parse the command line and make sure everything looks OK
 errStrings = []

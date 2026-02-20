@@ -24,7 +24,7 @@ from iDiffIR.SpliceGrapher.shared.config import *
 from iDiffIR.SpliceGrapher.shared.utils  import *
 from iDiffIR.SpliceGrapher.formats.fasta import *
 
-from optparse import OptionParser
+import argparse
 from glob import glob
 import os,sys,subprocess
 
@@ -56,24 +56,30 @@ RESULTS_DIR      = 'putative_forms_psg_results'
 PRED_DIR         = 'psgpred'
 ISOFORM_RESULTS  = 'isoform.results.txt'
 
-USAGE = """%prog graph-list fastq1 fastq2 [options]
+USAGE = """%(prog)s graph-list fastq1 fastq2 [options]
 
 Example:
-    %prog initial_predictions.lis reads_1.fq reads_2.fq
+    %(prog)s initial_predictions.lis reads_1.fq reads_2.fq
 
 Runs the PSGInfer software (Dewey et al., 2010) using SpliceGrapher
 predictions as a reference."""
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-d', dest='outdir',  default='.',          help='Output directory [default: %default]')
-parser.add_option('-D', dest='debug',   default=False,        help='Debug mode (just show commands) [default: %default]', action='store_true')
-parser.add_option('-f', dest='fasta',   default=SG_FASTA_REF, help='Genome reference FASTA [default: %default]')
-parser.add_option('-l', dest='logfile', default=None,         help='Optional log file [default: %default]')
-parser.add_option('-t', dest='thresh',  default=DEFAULT_THRESH, help='Probability threshold [default: %default]', type='float')
-parser.add_option('-v', dest='verbose', default=False,        help='Verbose mode [default: %default]', action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-d', dest='outdir',  default='.',          help='Output directory [default: %(default)s]')
+parser.add_argument('-D', dest='debug',   default=False,        help='Debug mode (just show commands) [default: %(default)s]', action='store_true')
+parser.add_argument('-f', dest='fasta',   default=SG_FASTA_REF, help='Genome reference FASTA [default: %(default)s]')
+parser.add_argument('-l', dest='logfile', default=None,         help='Optional log file [default: %(default)s]')
+parser.add_argument('-t', dest='thresh',  default=DEFAULT_THRESH, help='Probability threshold [default: %(default)s]', type=float)
+parser.add_argument('-v', dest='verbose', default=False,        help='Verbose mode [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 #-------------------------------------------------------------------------------------------------
 # Parse the command line and make sure everything looks OK
 MIN_ARGS = 3
