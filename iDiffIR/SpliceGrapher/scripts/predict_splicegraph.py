@@ -26,10 +26,10 @@ from iDiffIR.SpliceGrapher.formats.sam                  import *
 from iDiffIR.SpliceGrapher.formats.loader               import *
 from iDiffIR.SpliceGrapher                              import SpliceGraph
 
-from optparse import OptionParser
+import argparse
 import sys, os
 
-USAGE = """%prog gene-or-file [options]
+USAGE = """%(prog)s gene-or-file [options]
 
 Predicts an output splice graph given a baseline graph and additional input such as short read
 data and putative splice junction data.  The baseline may be given either as a gene name or a
@@ -37,19 +37,25 @@ file (if a file with the given name is not found, it is assumed to be a gene nam
 
 If a gene name is given, a gene model must also be provided using SG_GENE_MODEL or the -m option."""
 
-parser = OptionParser(usage=USAGE)
-parser.add_option('-d', dest='alignments',default=None, help='SAM file containing RNA-Seq alignment data [default: %default]')
-parser.add_option('-j', dest='junctions', default=None, help='Alternate SAM file with spliced alignments (deprecated)')
-parser.add_option('-J', dest='jmindepth', default=1,    help='Minimum depth required for junction evidence [default: %default]', type='int')
-parser.add_option('-m', dest='model',     default=SG_GENE_MODEL, help='File for output splice graph (GFF) [default: %default]')
-parser.add_option('-M', dest='minanchor', default=0,    help='Minimum anchor size required for junction evidence [default: %default]', type='int')
-parser.add_option('-o', dest='output',    default=sys.stdout, help='File for output splice graph (GFF) [default: stdout]')
-parser.add_option('-s', dest='graphs',    default=None, help='Comma-separated list of splice graph files to augment baseline graph [default: %default]')
-parser.add_option('-T', dest='threshold', default=1,    help='Minimum depth threshold for identifying clusters [default: %default]', type='int')
-parser.add_option('-v', dest='verbose',   default=False, action='store_true', help='use verbose output [default: %default]')
-parser.add_option('--CDS', dest='useCDS', default=False, action='store_true', help='use mRNA/CDS records to infer isoforms [default: %default]')
-opts, args   = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-d', dest='alignments',default=None, help='SAM file containing RNA-Seq alignment data [default: %(default)s]')
+parser.add_argument('-j', dest='junctions', default=None, help='Alternate SAM file with spliced alignments (deprecated)')
+parser.add_argument('-J', dest='jmindepth', default=1,    help='Minimum depth required for junction evidence [default: %(default)s]', type=int)
+parser.add_argument('-m', dest='model',     default=SG_GENE_MODEL, help='File for output splice graph (GFF) [default: %(default)s]')
+parser.add_argument('-M', dest='minanchor', default=0,    help='Minimum anchor size required for junction evidence [default: %(default)s]', type=int)
+parser.add_argument('-o', dest='output',    default=sys.stdout, help='File for output splice graph (GFF) [default: stdout]')
+parser.add_argument('-s', dest='graphs',    default=None, help='Comma-separated list of splice graph files to augment baseline graph [default: %(default)s]')
+parser.add_argument('-T', dest='threshold', default=1,    help='Minimum depth threshold for identifying clusters [default: %(default)s]', type=int)
+parser.add_argument('-v', dest='verbose',   default=False, action='store_true', help='use verbose output [default: %(default)s]')
+parser.add_argument('--CDS', dest='useCDS', default=False, action='store_true', help='use mRNA/CDS records to infer isoforms [default: %(default)s]')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) != 1 :
     parser.print_help()
     sys.exit(1)

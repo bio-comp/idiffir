@@ -18,7 +18,7 @@
 # USA.
 from iDiffIR.SpliceGrapher.shared.utils import *
 from iDiffIR.SpliceGrapher.formats.sam  import *
-from optparse                   import OptionParser
+import argparse
 import os,sys,math,functools,re
 
 NONSENSE_CHROM = ''
@@ -38,18 +38,24 @@ def validCigar(seq, cigar) :
     except ValueError :
         return False
 
-USAGE = """%prog input-SAM-file output-SAM-file [options]
+USAGE = """%(prog)s input-SAM-file output-SAM-file [options]
 
 Identifies valid (concordant) paired-end read alignments in a SAM file
 and places them in the given output file."""
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-i', dest='indicator', default='/',   help="Read mate indicator (e.g., '/' for /1, /2 style) [default: '%default']")
-parser.add_option('-v', dest='verbose',   default=False, help='Verbose mode [default: %default]', action='store_true')
-parser.add_option('-I', dest='pairids',   default=False, help='Look for pair ids [default: %default]', action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-i', dest='indicator', default='/',   help="Read mate indicator (e.g., '/' for /1, /2 style) [default: '%(default)s']")
+parser.add_argument('-v', dest='verbose',   default=False, help='Verbose mode [default: %(default)s]', action='store_true')
+parser.add_argument('-I', dest='pairids',   default=False, help='Look for pair ids [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) != 2 :
     parser.print_help()
     sys.exit(1)

@@ -29,7 +29,7 @@ from iDiffIR.SpliceGrapher.formats.FastaLoader import FastaLoader
 from iDiffIR.SpliceGrapher.formats.fasta       import FastaRecord
 
 from glob     import glob
-from optparse import OptionParser
+import argparse
 import os, sys, warnings
 
 # Window around splice sites:
@@ -106,27 +106,33 @@ def getGraphIntrons(graph, min_intron=4) :
             if len(intron) >= min_intron : result.add(intron)
     return result
 
-USAGE="""%prog [options]
+USAGE="""%(prog)s [options]
 
 Generates sequences for known splice junctions."""
 
-parser = OptionParser(usage=USAGE)
-parser.add_option('-C', dest='canonical',  default=False,         help='Canonical GT/AG and GC/AG sites only [default: %default]', action='store_true')
-parser.add_option('-D', dest='add_dimers', default=False,         help='Include dimer in sequence output [default: %default]', action='store_true')
-parser.add_option('-i', dest='minintron',  default=4,             help='Minimum allowed intron size [default: %default]', type='int')
-parser.add_option('-f', dest='fasta',      default=SG_FASTA_REF,  help='FASTA reference file [default: %default]')
-parser.add_option('-m', dest='model',      default=SG_GENE_MODEL, help='Gene model GFF file [default: %default]')
-parser.add_option('-o', dest='outfile',    default=None,          help='Output file [default: %default]')
-parser.add_option('-S', dest='sg_list',    default=None,          help='List of splice graph files to augment gene model [default: %default]')
-parser.add_option('-P', dest='predfile',   default=None,          help='Store splice sites using prediction file format [default: %default]')
-parser.add_option('-v', dest='verbose',    default=False,         help='Verbose mode [default: %default]', action='store_true')
-parser.add_option('-w', dest='window',     default=WINDOW_SIZE,   help='Length for exon portions around splice site [default: %default]', type='int')
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-C', dest='canonical',  default=False,         help='Canonical GT/AG and GC/AG sites only [default: %(default)s]', action='store_true')
+parser.add_argument('-D', dest='add_dimers', default=False,         help='Include dimer in sequence output [default: %(default)s]', action='store_true')
+parser.add_argument('-i', dest='minintron',  default=4,             help='Minimum allowed intron size [default: %(default)s]', type=int)
+parser.add_argument('-f', dest='fasta',      default=SG_FASTA_REF,  help='FASTA reference file [default: %(default)s]')
+parser.add_argument('-m', dest='model',      default=SG_GENE_MODEL, help='Gene model GFF file [default: %(default)s]')
+parser.add_argument('-o', dest='outfile',    default=None,          help='Output file [default: %(default)s]')
+parser.add_argument('-S', dest='sg_list',    default=None,          help='List of splice graph files to augment gene model [default: %(default)s]')
+parser.add_argument('-P', dest='predfile',   default=None,          help='Store splice sites using prediction file format [default: %(default)s]')
+parser.add_argument('-v', dest='verbose',    default=False,         help='Verbose mode [default: %(default)s]', action='store_true')
+parser.add_argument('-w', dest='window',     default=WINDOW_SIZE,   help='Length for exon portions around splice site [default: %(default)s]', type=int)
 
 #-------------------------------------------------------
 # Main program
 #-------------------------------------------------------
-opts, args = parser.parse_args(sys.argv[1:])
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 errStrings = []
 if not (opts.model or opts.sg_list) :
     errStrings.append('** No GFF gene model specified.  Use the -m option or set SG_GENE_MODEL in your SpliceGrapher configuration.')

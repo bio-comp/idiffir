@@ -17,10 +17,10 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
 from iDiffIR.SpliceGrapher.shared.utils import *
-from optparse                   import OptionParser
+import argparse
 import os,sys,gzip
 
-USAGE = """%prog SAM-file [options]
+USAGE = """%(prog)s SAM-file [options]
 
 Splits a SAM file into individual files for each target
 sequence (usually chromosomes).  Output files will have
@@ -28,13 +28,19 @@ the names [pre][chromosome][suf].sam, where pre and suf
 are optional prefix and suffix strings."""
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-p', dest='prefix',  default='',    help='Optional prefix string for output files [default: none]')
-parser.add_option('-s', dest='suffix',  default='',    help='Optional suffix string for output files [default: none]')
-parser.add_option('-v', dest='verbose', default=False, help='Verbose mode [default: %default]', action='store_true')
-parser.add_option('-z', dest='gzip',    default=False, help='Use gzip compression on output [default: %default]', action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-p', dest='prefix',  default='',    help='Optional prefix string for output files [default: none]')
+parser.add_argument('-s', dest='suffix',  default='',    help='Optional suffix string for output files [default: none]')
+parser.add_argument('-v', dest='verbose', default=False, help='Verbose mode [default: %(default)s]', action='store_true')
+parser.add_argument('-z', dest='gzip',    default=False, help='Use gzip compression on output [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) != 1 :
     parser.print_help()
     sys.exit(1)

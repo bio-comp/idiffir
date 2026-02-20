@@ -18,26 +18,32 @@
 # USA.
 from iDiffIR.SpliceGrapher.shared.utils import *
 from iDiffIR.SpliceGrapher.formats.gtf  import *
-from optparse                   import OptionParser
+import argparse
 from sys import maxsize as MAXINT
 import os,sys,gzip
 
-USAGE = """%prog GTF-file [options]
+USAGE = """%(prog)s GTF-file [options]
 
 Converts an ENSEMBL GTF gene model annotation file into its GFF3 equivalent.
 Note that it only accepts records with the protein_coding tag by default."""
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-A', dest='alltypes', default=False, help='Accept all source types (overrides -E and -S) [default: %default]', action='store_true')
-parser.add_option('-o', dest='output',   default=None,  help='Output file [default: stdout]')
-parser.add_option('-E', dest='ensembl',  default=False, help='Accept all ENSEMBL source types (see --show-types) [default: %default]', action='store_true')
-parser.add_option('-S', dest='sources',  default=PROTEIN_CODING,  help='Comma-separated list of GTF source types to accept [default: %default]')
-parser.add_option('-v', dest='verbose',  default=False, help='Verbose mode [default: %default]', action='store_true')
-parser.add_option('-z', dest='gzip',     default=False, help='Use gzip compression on output [default: %default]', action='store_true')
-parser.add_option('--show-types', dest='showtypes', default=False, help='Outputs ENSEMBLE source types and exits. [default: %default]', action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-A', dest='alltypes', default=False, help='Accept all source types (overrides -E and -S) [default: %(default)s]', action='store_true')
+parser.add_argument('-o', dest='output',   default=None,  help='Output file [default: stdout]')
+parser.add_argument('-E', dest='ensembl',  default=False, help='Accept all ENSEMBL source types (see --show-types) [default: %(default)s]', action='store_true')
+parser.add_argument('-S', dest='sources',  default=PROTEIN_CODING,  help='Comma-separated list of GTF source types to accept [default: %(default)s]')
+parser.add_argument('-v', dest='verbose',  default=False, help='Verbose mode [default: %(default)s]', action='store_true')
+parser.add_argument('-z', dest='gzip',     default=False, help='Use gzip compression on output [default: %(default)s]', action='store_true')
+parser.add_argument('--show-types', dest='showtypes', default=False, help='Outputs ENSEMBLE source types and exits. [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if opts.showtypes :
     print("Known ENSEMBL source types:")
     for t in ALL_ENSEMBL_SOURCES :
