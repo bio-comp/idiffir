@@ -30,10 +30,13 @@ jobs:
         run: uv run python -W error::SyntaxWarning -m compileall -f -q iDiffIR scripts tests
 
       - name: Build wheel
-        run: uv run python -m pip install build && uv run python -m build
+        run: uv build --wheel
 
       - name: Validate wheel install
-        run: uv run python -m pip install --force-reinstall dist/*.whl
+        run: |
+          uv venv .wheel-venv --python ${{ matrix.python-version }}
+          uv pip install --python .wheel-venv/bin/python --force-reinstall dist/*.whl
+          .wheel-venv/bin/python -c "import iDiffIR"
 
       - name: Run tests
         run: uv run pytest
