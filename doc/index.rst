@@ -16,10 +16,10 @@ Welcome to the home of **iDiffIR**, a method for **i**\ dentifying
    installation
    tutorial
    contact
+   pyml_sklearn_migration
 
 
 *   :ref:`search`
-
 
 
 
