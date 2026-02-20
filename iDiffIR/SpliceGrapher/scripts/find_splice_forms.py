@@ -23,28 +23,34 @@ from iDiffIR.SpliceGrapher.SpliceGraph               import *
 from iDiffIR.SpliceGrapher.shared.GeneModelConverter import *
 from iDiffIR.SpliceGrapher.formats.loader            import *
 from iDiffIR.SpliceGrapher.formats.sam               import *
-from optparse                                import OptionParser
+import argparse
 import os,sys
 
-USAGE = """%prog SAM-file [options]
+USAGE = """%(prog)s SAM-file [options]
 
 Uses existing gene models to predict splice forms represented in a set of RNA-Seq
 alignments.  For each gene, it produces a splice graph to represent the splice forms
 based on spliced alignments and read depths found in the SAM file.  If there is no
 unique evidence to identify any splice form, no graph will be produced."""
 
-parser = OptionParser(usage=USAGE)
-parser.add_option('-d', dest='outdir',    default=None,  help='Output directory (overrides -o) [default: %default]')
-parser.add_option('-D', dest='avgdepth',  default=1,     help='Minimum average depth for accepting a cluster [default: %default]', type='float')
-parser.add_option('-j', dest='minjct',    default=2,     help='Minimum junction threshold [default: %default]', type='int')
-parser.add_option('-m', dest='model',     default=SG_GENE_MODEL, help='Gene model file [default: %default]')
-parser.add_option('-o', dest='output',    default=None,  help='Output file [default: stdout]')
-parser.add_option('-O', dest='overlap',   default=1,     help='Minimum number of bases that a read cluster must overlap a feature [default: %default]', type='int')
-parser.add_option('-S', dest='list',      default=None,  help='List of splice graphs to use as a reference (overrides -m) [default: %default]')
-parser.add_option('-t', dest='threshold', default=1,     help='Minimum read coverage threshold for predicting exons [default: %default]', type='float')
-parser.add_option('-v', dest='verbose',   default=False, help='Verbose mode [default: %default]', action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-d', dest='outdir',    default=None,  help='Output directory (overrides -o) [default: %(default)s]')
+parser.add_argument('-D', dest='avgdepth',  default=1,     help='Minimum average depth for accepting a cluster [default: %(default)s]', type=float)
+parser.add_argument('-j', dest='minjct',    default=2,     help='Minimum junction threshold [default: %(default)s]', type=int)
+parser.add_argument('-m', dest='model',     default=SG_GENE_MODEL, help='Gene model file [default: %(default)s]')
+parser.add_argument('-o', dest='output',    default=None,  help='Output file [default: stdout]')
+parser.add_argument('-O', dest='overlap',   default=1,     help='Minimum number of bases that a read cluster must overlap a feature [default: %(default)s]', type=int)
+parser.add_argument('-S', dest='list',      default=None,  help='List of splice graphs to use as a reference (overrides -m) [default: %(default)s]')
+parser.add_argument('-t', dest='threshold', default=1,     help='Minimum read coverage threshold for predicting exons [default: %(default)s]', type=float)
+parser.add_argument('-v', dest='verbose',   default=False, help='Verbose mode [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) != 1 :
     parser.print_help()
     sys.exit(1)

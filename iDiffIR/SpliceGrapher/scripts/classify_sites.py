@@ -20,7 +20,6 @@
 Python script for classifying putative splice sites within a FASTA file.
 """
 from iDiffIR.SpliceGrapher.shared.config            import *
-from iDiffIR.SpliceGrapher.predict.SiteClassifier   import *
 from iDiffIR.SpliceGrapher.shared.utils             import *
 from iDiffIR.SpliceGrapher.shared.ShortRead         import *
 from iDiffIR.SpliceGrapher.shared.streams           import *
@@ -28,20 +27,29 @@ from iDiffIR.SpliceGrapher.shared.dna               import *
 from iDiffIR.SpliceGrapher.formats.FastaLoader      import FastaLoader
 from iDiffIR.SpliceGrapher.formats.loader           import *
 from iDiffIR.SpliceGrapher.predict.SpliceSite       import *
-from iDiffIR.SpliceGrapher.predict.ClassifierConfig import *
 
-from optparse import OptionParser
+import argparse
 import sys, os.path
 
-try :
-    from PyML import *
-    from PyML.containers import SequenceData
-    from PyML.containers import Labels
-    from PyML.classifiers import SVM
-    from PyML.classifiers.svm import loadSVM
-except ImportError :
-    sys.stderr.write('\n** Unable to import PyML modules required for this script.\n')
-    sys.exit(1)
+def _require_pyml():
+    try:
+        from iDiffIR.SpliceGrapher.predict.SiteClassifier import SiteClassifier
+        from PyML.containers import Labels, SequenceData
+        from PyML.classifiers import SVM
+        from PyML.classifiers.svm import loadSVM
+    except ImportError:
+        sys.stderr.write('\n** Unable to import PyML modules required for this script.\n')
+        sys.exit(1)
+
+    globals().update(
+        {
+            "Labels": Labels,
+            "SVM": SVM,
+            "SequenceData": SequenceData,
+            "SiteClassifier": SiteClassifier,
+            "loadSVM": loadSVM,
+        }
+    )
 
 DEFAULT_DIMERS = ['gt', 'gc', 'ag']
 DIMER_STRING   = ','.join(DEFAULT_DIMERS)
@@ -205,24 +213,30 @@ def classifySequence(chrom, strand, classifiers, outStream, **args) :
 def getSequence(chrom, pos1, pos2, strand) :
     return seqDict.subsequence(chrom, pos1, pos2, reverse=(strand=='-'))
 
-USAGE="""%prog chromosome [options]
+USAGE="""%(prog)s chromosome [options]
 
 Applies one or more SVMs to the chromosome from the given FASTA
 reference sequence file to classify novel splice sites."""
 
-parser = OptionParser(usage=USAGE)
-parser.add_option('-A', dest='all',       default=False, help='Output all results, not just positive scores [default: %default]', action='store_true')
-parser.add_option('-c', dest='cfg_files', default=None,  help='list of dimer configuration files to load [default=%default]')
-parser.add_option('-f', dest='fasta',     default=SG_FASTA_REF,  help='FASTA reference file reference [default=%default]')
-parser.add_option('-m', dest='model',     default=SG_GENE_MODEL, help='GFF genome reference [default=%default]')
-parser.add_option('-o', dest='output',    default=None,  help='output file [default=stdout]')
-parser.add_option('-r', dest='range',     default=None,  help='prediction position range (e.g., "10000,20000") [default=whole chromosome]')
-parser.add_option('-v', dest='verbose',   default=False, help='verbose mode [default: %default]', action='store_true')
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-A', dest='all',       default=False, help='Output all results, not just positive scores [default: %(default)s]', action='store_true')
+parser.add_argument('-c', dest='cfg_files', default=None,  help='list of dimer configuration files to load [default=%(default)s]')
+parser.add_argument('-f', dest='fasta',     default=SG_FASTA_REF,  help='FASTA reference file reference [default=%(default)s]')
+parser.add_argument('-m', dest='model',     default=SG_GENE_MODEL, help='GFF genome reference [default=%(default)s]')
+parser.add_argument('-o', dest='output',    default=None,  help='output file [default=stdout]')
+parser.add_argument('-r', dest='range',     default=None,  help='prediction position range (e.g., "10000,20000") [default=whole chromosome]')
+parser.add_argument('-v', dest='verbose',   default=False, help='verbose mode [default: %(default)s]', action='store_true')
 
 #=======================================================
 # Main program
-opts, args = parser.parse_args(sys.argv[1:])
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) != 1 :
     parser.print_help()
     sys.exit(1)
@@ -243,6 +257,7 @@ if errStrings :
 chrom = args[0].lower()
 #-------------------------------------------------------
 # Required parameters:
+_require_pyml()
 validateFile(opts.model)
 validateFile(opts.fasta)
 writeStartupMessage()

@@ -23,20 +23,29 @@ from iDiffIR.SpliceGrapher.shared.config            import *
 from iDiffIR.SpliceGrapher.shared.utils             import *
 from iDiffIR.SpliceGrapher.shared.streams           import *
 from iDiffIR.SpliceGrapher.predict.ClassifierConfig import *
-from iDiffIR.SpliceGrapher.predict.SiteClassifier   import *
 
-from optparse import OptionParser
+import argparse
 import sys, os.path, random, numpy
 
-try :
-    from PyML                 import *
-    from PyML.containers      import SequenceData
-    from PyML.containers      import Labels
-    from PyML.classifiers     import SVM
-    from PyML.classifiers.svm import loadSVM
-except ImportError :
-    sys.stderr.write('\n** Unable to import PyML modules required for this script.\n')
-    sys.exit(1)
+def _require_pyml():
+    try:
+        from iDiffIR.SpliceGrapher.predict.SiteClassifier import SiteClassifier
+        from PyML.containers import Labels, SequenceData
+        from PyML.classifiers import SVM
+        from PyML.classifiers.svm import loadSVM
+    except ImportError:
+        sys.stderr.write('\n** Unable to import PyML modules required for this script.\n')
+        sys.exit(1)
+
+    globals().update(
+        {
+            "Labels": Labels,
+            "SVM": SVM,
+            "SequenceData": SequenceData,
+            "SiteClassifier": SiteClassifier,
+            "loadSVM": loadSVM,
+        }
+    )
 
 #==================================================================================================
 # Incompatibilities in some matplotlib versions may yield the following runtime warning:
@@ -216,27 +225,34 @@ def validateFile(path) :
         raise Exception("File '%s' not found; exiting." % path)
         sys.exit(1)
 
-USAGE="""%prog config-file [options]
+USAGE="""%(prog)s config-file [options]
 
 Generates an ROC curve for the SVM for the given configuration file."""
 
-parser    = OptionParser(usage=USAGE)
-parser.add_option('-o', dest='output',    default=None,  help='Output file [default= <dimer>_roc.pdf]')
-parser.add_option('-s', dest='species',   default=None,  help='Species name for title [default= %default]')
-parser.add_option('-A', dest='auc',       default=False, help='Display AUC and accuracy values for curve [default: %default]', action='store_true')
-parser.add_option('-D', dest='dfunc',     default=False, help='Display decision function thresholds at ROC=0.9,0.95,0.975 [default: %default]', action='store_true')
-parser.add_option('-E', dest='thickness', default=2,     help='Adjust graph line thickness [default: %default]', type='int')
-parser.add_option('-Z', dest='zero',      default=False, help='Display ROC score for decision function 0 value [default: %default]', action='store_true')
-parser.add_option('-v', dest='verbose',   default=False, help='Verbose mode [default: %default]', action='store_true')
+parser    = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-o', dest='output',    default=None,  help='Output file [default= <dimer>_roc.pdf]')
+parser.add_argument('-s', dest='species',   default=None,  help='Species name for title [default= %(default)s]')
+parser.add_argument('-A', dest='auc',       default=False, help='Display AUC and accuracy values for curve [default: %(default)s]', action='store_true')
+parser.add_argument('-D', dest='dfunc',     default=False, help='Display decision function thresholds at ROC=0.9,0.95,0.975 [default: %(default)s]', action='store_true')
+parser.add_argument('-E', dest='thickness', default=2,     help='Adjust graph line thickness [default: %(default)s]', type=int)
+parser.add_argument('-Z', dest='zero',      default=False, help='Display ROC score for decision function 0 value [default: %(default)s]', action='store_true')
+parser.add_argument('-v', dest='verbose',   default=False, help='Verbose mode [default: %(default)s]', action='store_true')
 
 #=======================================================
 # Main program
-opts, args = parser.parse_args(sys.argv[1:])
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) != 1 :
     parser.print_help()
     sys.exit(1)
 
+_require_pyml()
 validateFile(args[0])
 writeStartupMessage()
 
