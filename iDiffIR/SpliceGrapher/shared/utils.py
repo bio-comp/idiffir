@@ -20,7 +20,6 @@ Module containing general utility methods.
 """
 import configparser as ConfigParser
 import gzip
-import locale
 import os
 import random
 import subprocess
@@ -79,9 +78,7 @@ def bsearch(X, target, getValue=lambda a:a, **args) :
 
 def commaFormat(d) :
     """Formats integer values using commas.  For example, 123456789 becomes '123,456,789'"""
-    # Establish user's default their OS:
-    locale.setlocale(locale.LC_ALL, '')
-    return locale.format("%d", d, grouping=True)
+    return f"{int(d):,}"
 
 def configMap(cfgFile):
     """Reads a configuration file and returns a dictionary of all sections, options and values."""

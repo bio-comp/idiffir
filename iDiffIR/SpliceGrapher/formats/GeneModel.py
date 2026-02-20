@@ -25,6 +25,7 @@ from iDiffIR.SpliceGrapher.shared.utils import ProgressIndicator, ezopen, getAtt
 import difflib
 
 import os, sys
+from urllib.parse import unquote
 
 # GFF record types
 CDS_TYPE        = 'cds'
@@ -170,6 +171,16 @@ def featureCmp(a, b) :
         return a.maxpos - b.maxpos
     else :
         return a.minpos - b.minpos
+
+
+def featureSortKey(feature) :
+    """Sort features by genomic interval."""
+    return (feature.minpos, feature.maxpos)
+
+
+def geneSortKey(gene) :
+    """Sort genes by interval, then id for deterministic ties."""
+    return (gene.minpos, gene.maxpos, gene.id)
 
 def featureOverlaps(a, b) :
     """
@@ -335,7 +346,7 @@ class Isoform(BaseFeature) :
         """
         Returns a list of acceptor positions for the isoform.
         """
-        self.exons.sort(reverse=(self.strand=='-'))
+        self.exons.sort(key=featureSortKey, reverse=(self.strand=='-'))
         return [e.acceptor() for e in self.exons[1:]]
 
     def addExon(self, exon) :
@@ -381,7 +392,7 @@ class Isoform(BaseFeature) :
         """
         Returns a list of donor positions for the isoform.
         """
-        self.exons.sort(reverse=(self.strand=='-'))
+        self.exons.sort(key=featureSortKey, reverse=(self.strand=='-'))
         return [e.donor() for e in self.exons[:-1]]
 
     def exonString(self) :
@@ -405,7 +416,7 @@ class Isoform(BaseFeature) :
     def gtfStrings(self) :
         result   = []
         # Always sort in ascending order by position
-        exonList = sorted(self.exons)
+        exonList = sorted(self.exons, key=featureSortKey)
         for i in range(len(exonList)) :
             exon = exonList[i]
             result.append(exon.gtfString(self.id, self.parent, i+1))
@@ -416,7 +427,7 @@ class Isoform(BaseFeature) :
         Sorts the exons in an isoform based on its strand and
         returns the sorted list of exon objects.
         """
-        self.exons.sort(reverse=(self.strand=='-'))
+        self.exons.sort(key=featureSortKey, reverse=(self.strand=='-'))
         return self.exons
 
     def sortedIntrons(self) :
@@ -484,7 +495,7 @@ class mRNA(Isoform) :
 
     def acceptorList(self) :
         """Returns a list of acceptor positions for the mRNA."""
-        self.cds.sort(reverse=(self.strand=='-'))
+        self.cds.sort(key=featureSortKey, reverse=(self.strand=='-'))
         return [c.acceptor() for c in self.cds[1:]]
 
     def addCDS(self, cds) :
@@ -511,7 +522,7 @@ class mRNA(Isoform) :
 
     def donorList(self) :
         """Returns a list of donor positions for the mRNA."""
-        self.cds.sort(reverse=(self.strand=='-'))
+        self.cds.sort(key=featureSortKey, reverse=(self.strand=='-'))
         return [c.donor() for c in self.cds[:-1]]
 
     def endCodon(self) :
@@ -526,7 +537,7 @@ class mRNA(Isoform) :
         the relative positions of UTR and CDS records."""
         if self.end_codon and self.start_codon : return
         if not self.cds : return
-        self.cds.sort(reverse=(self.strand=='-'))
+        self.cds.sort(key=featureSortKey, reverse=(self.strand=='-'))
         prev = self.cds[0]
         for c in self.cds[1:] :
             if not self.start_codon and prev.featureType == FP_UTR_TYPE and c.featureType == CDS_TYPE :
@@ -590,7 +601,7 @@ class mRNA(Isoform) :
         if codonString : result.append(codonString)
 
         # Always sort in ascending order by position
-        cdsList = sorted(self.cds)
+        cdsList = sorted(self.cds, key=featureSortKey)
         for i in range(len(cdsList)) :
             c = cdsList[i]
             result.append(c.gtfString(self.id, self.parent, i+1))
@@ -604,7 +615,7 @@ class mRNA(Isoform) :
         """
         Sorts the CDS in an mRNA based on its strand and returns the sorted list of CDS objects.
         """
-        self.cds.sort(reverse=(self.strand=='-'))
+        self.cds.sort(key=featureSortKey, reverse=(self.strand=='-'))
         return self.cds
 
     def sortedExons(self, **args) :
@@ -793,7 +804,7 @@ class Gene(BaseFeature) :
         result = {}
         for iid in self.isoforms.keys() :
             iso   = self.isoforms[iid]
-            exons = sorted(iso.exons, reverse=(self.strand=='-'))
+            exons = sorted(iso.exons, key=featureSortKey, reverse=(self.strand=='-'))
             for i in range(1,len(exons)) :
                 duple = (exons[i-1].donor(), exons[i].acceptor())
                 result[duple] = 1
@@ -812,7 +823,7 @@ class Gene(BaseFeature) :
         for k in allKeys :
             if k in commonKeys :
                 allExons = self.isoforms[k].exons + self.mrna[k].cds
-                allExons.sort(reverse=(self.strand=='-'))
+                allExons.sort(key=featureSortKey, reverse=(self.strand=='-'))
                 stringList.append(self.mrna[k].gffString())
                 gffAttr = {PARENT_FIELD:k}
                 gtfAttr = {PARENT_FIELD:k, GTF_TRANSCRIPT:k, GTF_TRANSNAME:k, GTF_PROTEIN_ID:k}
@@ -843,7 +854,7 @@ class Gene(BaseFeature) :
         for k in allKeys :
             if k in commonKeys :
                 allExons = self.isoforms[k].exons + self.mrna[k].cds
-                allExons.sort()
+                allExons.sort(key=featureSortKey)
 
                 # Ensure that there are codons to write
                 self.mrna[k].inferCodons()
@@ -886,7 +897,7 @@ class Gene(BaseFeature) :
             tmpset.update([e for e in self.mrna[mid].sortedExons() if (e.minpos,e.maxpos) not in stored])
 
         result = list(tmpset)
-        result.sort(reverse=(self.strand=='-'))
+        result.sort(key=featureSortKey, reverse=(self.strand=='-'))
         return result
 
     def startCodons(self) :
@@ -996,8 +1007,7 @@ class GeneModel(object) :
         """
         Some feature names include URL characters that we may wish to fix.
         """
-        import urllib
-        revised = urllib.unquote(s)
+        revised = unquote(s)
         revised = revised.replace(',','')
         return revised.replace(' ','-')
 
@@ -1539,8 +1549,10 @@ class GeneModel(object) :
         for chrom in self.model.keys() :
             self.sorted[chrom] = {}
             # Get a list of gene objects sorted by position
-            geneList = self.model[chrom].values()
-            geneList.sort()
+            geneList = sorted(
+                self.model[chrom].values(),
+                key=geneSortKey,
+            )
             # Note: we accept unknown ('.') strands, but it's
             # up to calling routines to ask for them specifically
             self.sorted[chrom] = {'-':[], '+':[], '.':[]}
@@ -1562,7 +1574,7 @@ class GeneModel(object) :
             genes = self.getGeneRecords(c, geneFilter)
             if geneSubset :
                 genes = [g for g in genes if g.id in geneSubset or g.name in geneSubset]
-            genes.sort()
+            genes.sort(key=geneSortKey)
             for g in genes :
                 indicator.update()
                 strings = g.gffStrings()
@@ -1578,7 +1590,7 @@ class GeneModel(object) :
         for c in chromList :
             chrom = self.getChromosome(c)
             genes = self.getGeneRecords(c, geneFilter)
-            genes.sort()
+            genes.sort(key=geneSortKey)
             for g in genes :
                 indicator.update()
                 strings = g.gtfStrings()

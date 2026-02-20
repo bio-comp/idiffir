@@ -298,7 +298,8 @@ def procGeneStatsIR( tasks, test_status):
                                                                        nspace.factor1bamfiles,
                                                                        nspace.factor2bamfiles
                                                                    )
-        allJcts = set.intersection( *map(set, [x.keys() for x in f1Juncs]) + map(set, [x.keys() for x in f2Juncs]) )
+        junction_sets = [set(x.keys()) for x in f1Juncs] + [set(x.keys()) for x in f2Juncs]
+        allJcts = set.intersection(*junction_sets) if junction_sets else set()
         aVals = range(nspace.krange[0], nspace.krange[1]+1)
         # nothing to test
 
@@ -542,6 +543,8 @@ def testIR(geneRecords, aVals, nspace):
                                                     for t in range(len(geneRecords[i].IRstat)) \
                                                     if geneRecords[i].IRTested[t] and geneRecords[i].IRGTested]) \
                                        for i in range(len(geneRecords)) if geneRecords[i].IRGTested]) )
+        if not X:
+            continue
         mu = numpy.mean(X)
         #mu = numpy.median(X)
 
@@ -1061,8 +1064,20 @@ def computeSE( gene, f1EV, f2EV, f1LNorm, f2LNorm):
     F2Cr = numpy.array([ numpy.array([numpy.median(f2EV[i][s:(e+1)]) \
                           for s,e in gene.exonsI]).mean() for i in range(len( f2EV))]) + EPS
 
-    F1 = numpy.array(list(chain.from_iterable( [f1ExonExp[i]*f1RepExps[i] for i in range(len(f1ExonExp))]))) + EPS
-    F2 = numpy.array(list(chain.from_iterable( [f2ExonExp[i]*f2RepExps[i] for i in range(len(f2ExonExp))]))) + EPS
+    F1 = numpy.array(
+        list(
+            chain.from_iterable(
+                [numpy.array(f1ExonExp[i]) * f1RepExps[i] for i in range(len(f1ExonExp))]
+            )
+        )
+    ) + EPS
+    F2 = numpy.array(
+        list(
+            chain.from_iterable(
+                [numpy.array(f2ExonExp[i]) * f2RepExps[i] for i in range(len(f2ExonExp))]
+            )
+        )
+    ) + EPS
     up = max(F1C.sum(), F2C.sum())
     fc = numpy.log2(F1C.mean() / F2C.mean())
     f1Exp = F1C.mean()
