@@ -30,7 +30,7 @@ from iDiffIR.SpliceGrapher.formats.fasta          import FastaRecord
 from iDiffIR.SpliceGrapher.predict.PredictedSites import *
 from iDiffIR.SpliceGrapher.predict.SpliceSite     import *
 
-from optparse import OptionParser
+import argparse
 import gzip, os, sys
 
 DEFAULT_ACCEPTORS = 'ag'
@@ -43,7 +43,7 @@ def getSequence(chrom, pos1, pos2, strand) :
     # NOTE: relies on global 'seqDict' FastaLoader instance
     return seqDict.subsequence(chrom, pos1, pos2, reverse=(strand=='-'))
 
-USAGE="""Usage: %prog predictions-file [options]
+USAGE="""Usage: %(prog)s predictions-file [options]
 
 Python script that uses splice site predictions to generate splice-junction
 sequences for short-read alignments.  Outputs only novel splice junctions
@@ -52,18 +52,24 @@ where at least one of the two splice sites is not previously documented.
 Where: 'predictions-file' contains predicted splice sites using the format:
 chromosome	strand	position	dimer	score	site-code"""
 
-parser = OptionParser(usage=USAGE)
-parser.add_option('-a', dest='acceptors', default=DEFAULT_ACCEPTORS, help='Comma-separated list of acceptor dimers [default: %default]')
-parser.add_option('-d', dest='donors',    default=DEFAULT_DONORS,    help='Comma-separated list of donor dimers [default: %default]')
-parser.add_option('-f', dest='fasta',     default=SG_FASTA_REF,      help='Fasta reference file [default: %default]')
-parser.add_option('-g', dest='gene',      default=None,              help='Generate sequences only for the given gene [default: %default]')
-parser.add_option('-m', dest='model',     default=SG_GENE_MODEL,     help='Gene model GFF3 file [default: %default]')
-parser.add_option('-o', dest='output',    default=None,              help='FASTA output file [default: stdout]')
-parser.add_option('-W', dest='window',    default=DEFAULT_WINDOW,    help='Sequence window either side of splice site [default: %default]', type='int')
-parser.add_option('-v', dest='verbose',   default=False,             help='Verbose mode [default: %default]', action='store_true')
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-a', dest='acceptors', default=DEFAULT_ACCEPTORS, help='Comma-separated list of acceptor dimers [default: %(default)s]')
+parser.add_argument('-d', dest='donors',    default=DEFAULT_DONORS,    help='Comma-separated list of donor dimers [default: %(default)s]')
+parser.add_argument('-f', dest='fasta',     default=SG_FASTA_REF,      help='Fasta reference file [default: %(default)s]')
+parser.add_argument('-g', dest='gene',      default=None,              help='Generate sequences only for the given gene [default: %(default)s]')
+parser.add_argument('-m', dest='model',     default=SG_GENE_MODEL,     help='Gene model GFF3 file [default: %(default)s]')
+parser.add_argument('-o', dest='output',    default=None,              help='FASTA output file [default: stdout]')
+parser.add_argument('-W', dest='window',    default=DEFAULT_WINDOW,    help='Sequence window either side of splice site [default: %(default)s]', type=int)
+parser.add_argument('-v', dest='verbose',   default=False,             help='Verbose mode [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
-opts, args = parser.parse_args(sys.argv[1:])
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) < 1 :
     parser.print_help()
     sys.exit(1)

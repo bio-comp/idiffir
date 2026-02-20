@@ -20,19 +20,25 @@ from iDiffIR.SpliceGrapher.shared.config import *
 from iDiffIR.SpliceGrapher.shared.utils  import *
 from iDiffIR.SpliceGrapher.formats.sam   import *
 from iDiffIR.SpliceGrapher.shared.ShortRead import *
-from optparse                    import OptionParser
+import argparse
 import os,sys
 
-USAGE = """%prog SAM-file [options]
+USAGE = """%(prog)s SAM-file [options]
 
 Converts a SAM/BAM file into a SpliceGrapher depth file."""
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-o', dest='output',  default=None,  help='Output file [default: same file with .depths extension]')
-parser.add_option('-v', dest='verbose', default=False, help='Verbose mode [default: %default]', action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-o', dest='output',  default=None,  help='Output file [default: same file with .depths extension]')
+parser.add_argument('-v', dest='verbose', default=False, help='Verbose mode [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) != 1 :
     parser.print_help()
     sys.exit(1)

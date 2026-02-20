@@ -19,7 +19,7 @@
 from iDiffIR.SpliceGrapher.shared.utils               import *
 from iDiffIR.SpliceGrapher.statistics.GraphStatistics import *
 from iDiffIR.SpliceGrapher.SpliceGraph                import *
-from optparse                                 import OptionParser
+import argparse
 import os,sys
 
 STAT_TYPES = [IR_ABBREV, ES_ABBREV, ALT5_ABBREV, ALT3_ABBREV]
@@ -46,20 +46,26 @@ def addLatexValues(outStream, count, percent) :
 def finishLatexTable(outStream) :
     outStream.write('\\end{tabular}\n')
 
-USAGE = """%prog file-list [options]
+USAGE = """%(prog)s file-list [options]
 
 Computes statistics for all the splice graphs given by the file list.
 The file list may either be a list of splicegraph GFF files or a directory
 that contains splicegraph GFF files."""
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('-a', dest='annotate',default=False, help='Annotate graphs before generating statistics [default: %default]', action='store_true')
-parser.add_option('-o', dest='output',  default=None,  help='Output file [default: stdout]')
-parser.add_option('-v', dest='verbose', default=False, help='Verbose mode [default: %default]', action='store_true')
-parser.add_option('-L', dest='latex',   default=False, help='Write table for import into a Latex document [default: %default]', action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('-a', dest='annotate',default=False, help='Annotate graphs before generating statistics [default: %(default)s]', action='store_true')
+parser.add_argument('-o', dest='output',  default=None,  help='Output file [default: stdout]')
+parser.add_argument('-v', dest='verbose', default=False, help='Verbose mode [default: %(default)s]', action='store_true')
+parser.add_argument('-L', dest='latex',   default=False, help='Write table for import into a Latex document [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) != 1 :
     parser.print_help()
     sys.exit(1)

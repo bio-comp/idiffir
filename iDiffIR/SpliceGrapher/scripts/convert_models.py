@@ -17,21 +17,27 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
 from iDiffIR.SpliceGrapher.formats.loader import *
-from optparse import OptionParser
+import argparse
 import sys
 
-USAGE = """%prog gene-model-file [options]
+USAGE = """%(prog)s gene-model-file [options]
 
 Converts a gene model file in GTF or GFF3 format into an output
 file in GTF or GFF3 format."""
 
 # Establish command-line options:
-parser = OptionParser(usage=USAGE)
-parser.add_option('--gff3', dest='gff3',    default=None,  help='Output file for GFF3 format [default: stdout]')
-parser.add_option('--gtf',  dest='gtf',     default=None,  help='Output file for GTF format [default: stdout]')
-parser.add_option('-v',     dest='verbose', default=False, help='Verbose mode [default: %default]', action='store_true')
-opts, args = parser.parse_args(sys.argv[1:])
+parser = argparse.ArgumentParser(usage=USAGE)
+parser.add_argument('--gff3', dest='gff3',    default=None,  help='Output file for GFF3 format [default: stdout]')
+parser.add_argument('--gtf',  dest='gtf',     default=None,  help='Output file for GTF format [default: stdout]')
+parser.add_argument('-v',     dest='verbose', default=False, help='Verbose mode [default: %(default)s]', action='store_true')
+def _parse_opts_and_args(parser, argv):
+    parser.add_argument('args', nargs='*')
+    opts = parser.parse_args(argv)
+    args = opts.args
+    delattr(opts, 'args')
+    return opts, args
 
+opts, args = _parse_opts_and_args(parser, sys.argv[1:])
 if len(args) != 1 :
     parser.print_help()
     sys.exit(1)
