@@ -15,18 +15,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
-from iDiffIR.SpliceGrapher.formats.GTFLoader import *
-from iDiffIR.SpliceGrapher.formats.GeneModel import *
-
-import os
+from iDiffIR.SpliceGrapher.formats.annotation_io import load_gene_models
 
 def loadGeneModels(path, **args) :
-    """Loads a set of gene models in either GTF or GFF3 format.
-    Uses a simple heuristic that looks for '.gtf' anywhere in the
-    filename (case insensitive)."""
-    base = os.path.basename(path)
-    base = base.lower()
-    if base.find('.gtf') >= 0 :
-        return GTFLoader(path, **args).model
-    else :
-        return GeneModel(path, **args)
+    """Load gene models via the annotation I/O backend."""
+    return load_gene_models(path, **args)

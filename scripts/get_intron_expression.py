@@ -23,6 +23,7 @@ from iDiffIR.IntronModel import *
 from iDiffIR.BamfileIO import *
 from iDiffIR.SpliceGrapher.formats.fasta import *
 from argparse import ArgumentParser, ArgumentTypeError
+from pathlib import Path
 import os, sys, numpy
 from iDiffIR.SpliceGrapher.shared.utils      import *
 from iDiffIR.SpliceGrapher.formats.loader import loadGeneModels
@@ -124,15 +125,16 @@ def writeStatus( status ):
     sys.stderr.write( ' %s \n' % ( status ) )
     sys.stderr.write( '%s\n' % ( '-' * n ) )
 
-def loadData( nspace, geneModel ):
+def loadData( nspace, gene_model ):
+    """Load per-gene depth arrays from count files for both factors."""
     """
     Load gene depths
     """
     f1Dict = { }
     f2Dict = { }
     def load( factorfiles, fDict ):
-        for chrm in sorted(geneModel.getChromosomes()):
-            genes     = geneModel.getGeneRecords(chrm)
+        for chrm in sorted(gene_model.getChromosomes()):
+            genes = gene_model.getGeneRecords(chrm)
             genes.sort()
 
             for i in range(len(factorfiles)):
@@ -171,22 +173,30 @@ def loadData( nspace, geneModel ):
     return f1Dict, f2Dict
 
 def main():
+    """Load models and BAMs, then write intron/gene expression summary rows."""
     nspace = parseArgs()
     writeStatus('Loading models')
-    geneModel = loadGeneModels( nspace.genemodel, verbose=nspace.verbose )
+    gene_model = loadGeneModels(
+        nspace.genemodel,
+        verbose=nspace.verbose,
+        outdir=Path(nspace.outfile).parent,
+    )
     writeStatus('Making reduced models')
-    geneRecords = makeModels( geneModel, None,
-                              verbose=nspace.verbose,
-                              graphDirs=None,
-                              exonic=False,
-                              procs=nspace.procs )
+    gene_records = makeModels(
+        gene_model,
+        None,
+        verbose=nspace.verbose,
+        graphDirs=None,
+        exonic=False,
+        procs=nspace.procs,
+    )
 
     writeStatus('Computing depths')
     ofile = open(nspace.outfile, 'w')
     ofile.write('geneID\tf1Exp_gene\tf2Exp_gene\tf1Exp_IR\tf2Exp_IR\n')
     IRs = [ ]
     IEs = [ ]
-    for gene in geneRecords:
+    for gene in gene_records:
         f1EV, f2EV, f1Juncs, f2Juncs =  getDepthsFromBamfiles( gene,
                                                                nspace.factor1bamfiles,
                                                                nspace.factor2bamfiles

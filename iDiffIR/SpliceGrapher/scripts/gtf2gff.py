@@ -1,118 +1,177 @@
 #! /usr/bin/env python
-# Copyright (C) 2010 by Colorado State University
-# Contact: Mark Rogers <rogersma@cs.colostate.edu>
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or (at
-# your option) any later version.
-#
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
-# USA.
-from iDiffIR.SpliceGrapher.shared.utils import *
-from iDiffIR.SpliceGrapher.formats.gtf  import *
+"""Convert an ENSEMBL-style GTF annotation file into GFF3 output."""
+
+from __future__ import annotations
+
 import argparse
-from sys import maxsize as MAXINT
-import os,sys,gzip
+import gzip
+from pathlib import Path
+import tempfile
+import sys
+
+from iDiffIR.SpliceGrapher.formats.loader import loadGeneModels
+from iDiffIR.SpliceGrapher.shared.utils import ezopen
+
 
 USAGE = """%(prog)s GTF-file [options]
 
 Converts an ENSEMBL GTF gene model annotation file into its GFF3 equivalent.
 Note that it only accepts records with the protein_coding tag by default."""
 
-# Establish command-line options:
-parser = argparse.ArgumentParser(usage=USAGE)
-parser.add_argument('-A', dest='alltypes', default=False, help='Accept all source types (overrides -E and -S) [default: %(default)s]', action='store_true')
-parser.add_argument('-o', dest='output',   default=None,  help='Output file [default: stdout]')
-parser.add_argument('-E', dest='ensembl',  default=False, help='Accept all ENSEMBL source types (see --show-types) [default: %(default)s]', action='store_true')
-parser.add_argument('-S', dest='sources',  default=PROTEIN_CODING,  help='Comma-separated list of GTF source types to accept [default: %(default)s]')
-parser.add_argument('-v', dest='verbose',  default=False, help='Verbose mode [default: %(default)s]', action='store_true')
-parser.add_argument('-z', dest='gzip',     default=False, help='Use gzip compression on output [default: %(default)s]', action='store_true')
-parser.add_argument('--show-types', dest='showtypes', default=False, help='Outputs ENSEMBLE source types and exits. [default: %(default)s]', action='store_true')
-def _parse_opts_and_args(parser, argv):
-    parser.add_argument('args', nargs='*')
+ALL_ENSEMBL_SOURCES = [
+    "3prime_overlapping_ncrna",
+    "ambiguous_orf",
+    "antisense",
+    "disrupted_domain",
+    "IG_C_gene",
+    "IG_C_pseudogene",
+    "IG_D_gene",
+    "IG_J_gene",
+    "IG_J_pseudogene",
+    "IG_M_gene",
+    "IG_V_gene",
+    "IG_V_pseudogene",
+    "IG_Z_gene",
+    "lincRNA",
+    "miRNA",
+    "miRNA_pseudogene",
+    "misc_RNA",
+    "misc_RNA_pseudogene",
+    "Mt_rRNA",
+    "Mt_tRNA",
+    "Mt_tRNA_pseudogene",
+    "ncRNA",
+    "ncrna_host",
+    "non_coding",
+    "nonsense_mediated_decay",
+    "non_stop_decay",
+    "polymorphic_pseudogene",
+    "processed_pseudogene",
+    "processed_transcript",
+    "protein_coding",
+    "pseudogene",
+    "retained_intron",
+    "retrotransposed",
+    "rRNA",
+    "rRNA_pseudogene",
+    "scRNA_pseudogene",
+    "sense_intronic",
+    "sense_overlapping",
+    "snlRNA",
+    "snoRNA",
+    "snoRNA_pseudogene",
+    "snRNA",
+    "snRNA_pseudogene",
+    "TEC",
+    "transcribed_processed_pseudogene",
+    "transcribed_unprocessed_pseudogene",
+    "TR_C_gene",
+    "TR_D_gene",
+    "TR_J_gene",
+    "TR_J_pseudogene",
+    "tRNA",
+    "tRNA_pseudogene",
+    "TR_V_gene",
+    "TR_V_pseudogene",
+    "unitary_pseudogene",
+    "unprocessed_pseudogene",
+]
+PROTEIN_CODING = "protein_coding"
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """Build the command-line parser for the conversion script."""
+    parser = argparse.ArgumentParser(usage=USAGE)
+    parser.add_argument("gtf_file", help="Input GTF file")
+    parser.add_argument(
+        "-A",
+        dest="alltypes",
+        default=False,
+        help="Accept all source types (overrides -E and -S) [default: %(default)s]",
+        action="store_true",
+    )
+    parser.add_argument("-o", dest="output", default=None, help="Output file [default: stdout]")
+    parser.add_argument(
+        "-E",
+        dest="ensembl",
+        default=False,
+        help="Accept all ENSEMBL source types (see --show-types) [default: %(default)s]",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-S",
+        dest="sources",
+        default=PROTEIN_CODING,
+        help="Comma-separated list of GTF source types to accept [default: %(default)s]",
+    )
+    parser.add_argument("-v", dest="verbose", default=False, help="Verbose mode [default: %(default)s]", action="store_true")
+    parser.add_argument("-z", dest="gzip_output", default=False, help="Use gzip compression on output [default: %(default)s]", action="store_true")
+    parser.add_argument("--show-types", dest="showtypes", default=False, help="Outputs ENSEMBLE source types and exits. [default: %(default)s]", action="store_true")
+    return parser
+
+
+def _filtered_gtf(input_path: Path, allowed_sources: set[str]) -> Path:
+    """Write a temporary GTF filtered to source types listed in ``allowed_sources``."""
+    tmp = tempfile.NamedTemporaryFile(mode="w", prefix="idiffir_gtf_filter_", suffix=".gtf", delete=False)
+    tmp_path = Path(tmp.name)
+    with tmp:
+        for line in ezopen(str(input_path)):
+            if not line or line.startswith("#"):
+                tmp.write(line)
+                continue
+            fields = line.rstrip("\n").split("\t")
+            if len(fields) < 9:
+                continue
+            if fields[1] in allowed_sources:
+                tmp.write(line)
+    return tmp_path
+
+
+def _get_output_stream(output: str | None, gzip_output: bool):
+    """Return an output stream for stdout/plain text/gzip output paths."""
+    if output is None:
+        return sys.stdout
+    if gzip_output:
+        return gzip.open(output, "wt", encoding="utf-8")
+    return open(output, "w", encoding="utf-8")
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Convert a GTF file to GFF3 output using the shared loader backend."""
+    parser = build_parser()
     opts = parser.parse_args(argv)
-    args = opts.args
-    delattr(opts, 'args')
-    return opts, args
 
-opts, args = _parse_opts_and_args(parser, sys.argv[1:])
-if opts.showtypes :
-    print("Known ENSEMBL source types:")
-    for t in ALL_ENSEMBL_SOURCES :
-        print("  ", t)
-    sys.exit(0)
+    if opts.showtypes:
+        print("Known ENSEMBL source types:")
+        for source_type in ALL_ENSEMBL_SOURCES:
+            print("  ", source_type)
+        return 0
 
-if len(args) != 1 :
-    parser.print_help()
-    sys.exit(1)
+    gtf_path = Path(opts.gtf_file)
+    if not gtf_path.exists():
+        parser.error(f"Input GTF file not found: {gtf_path}")
 
-outStream = sys.stdout
-if opts.output :
-    outStream = gzip.open(opts.output,'w') if opts.gzip else open(opts.output,'w')
+    temp_gtf_path: Path | None = None
+    model_input = gtf_path
+    if not opts.alltypes:
+        known_sources = opts.sources.split(",") if not opts.ensembl else ALL_ENSEMBL_SOURCES
+        model_input = _filtered_gtf(gtf_path, set(known_sources))
+        temp_gtf_path = model_input
 
-KNOWN_SOURCES = opts.sources.split(',') if not opts.ensembl else ALL_ENSEMBL_SOURCES
+    try:
+        gene_model = loadGeneModels(str(model_input), verbose=opts.verbose, alltypes=True)
+        out_stream = _get_output_stream(opts.output, opts.gzip_output)
+        try:
+            gene_model.writeGFF(out_stream, verbose=opts.verbose)
+        finally:
+            if out_stream is not sys.stdout:
+                out_stream.close()
+    finally:
+        if temp_gtf_path and temp_gtf_path.exists():
+            temp_gtf_path.unlink()
 
-# First load all records from the input GTF file and
-# store them as GTF_Line records:
-indicator = ProgressIndicator(1000000, verbose=opts.verbose)
-chromDict = {}
-skipped   = {}
-lineNo    = 0
-for line in ezopen(args[0]) :
-    indicator.update()
-    lineNo += 1
-    if line.startswith('#') : continue
-    rec = GTF_Line(line)
+    return 0
 
-    # If filtering is on, ignore records associated with unrecognized gene types
-    if (not opts.alltypes) and (rec.source() not in KNOWN_SOURCES) :
-        try :
-            skipped[rec.source()] += 1
-        except KeyError :
-            skipped[rec.source()] = 1
-            if opts.verbose : sys.stderr.write('skipping %s records\n' % rec.source())
-        continue
 
-    chrom = rec.seqname()
-    chromDict.setdefault(chrom, GTF_Chromosome(chrom))
-
-    # Ignore any records not associated with a gene (regardless of type)
-    key = rec.gene_name()
-    if not key : continue
-
-    chromDict[chrom].append(rec)
-indicator.finish()
-
-# Sort records by chromosome before writing them to GFF3 file
-keys = sorted(chromDict.keys())
-if opts.verbose :
-    print("Stored information for %d chromosomes:" % len(keys))
-    if skipped :
-        print("  skipped the following record types:")
-        for k in sorted(skipped.keys()) :
-            print("   %s (%s records)" % (k, commaFormat(skipped[k])))
-
-for k in keys :
-    # Search chromosome for invalid genes
-    invalid = False
-    for g in chromDict[k].keys() :
-        if not chromDict[k][g].valid :
-            invalid = True
-            break
-
-    if opts.verbose :
-        if invalid :
-            print("  chromosome %s: %12d genes (%d invalid **)" % (k, len(chromDict[k]), invalid))
-        else :
-            print("  chromosome %s: %12d genes" % (k, len(chromDict[k])))
-
-    # Write out entire chromosome
-    chromDict[k].writeGFF3(outStream)
+if __name__ == "__main__":
+    raise SystemExit(main())

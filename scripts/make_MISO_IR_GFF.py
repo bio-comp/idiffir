@@ -10,6 +10,7 @@ from iDiffIR.SpliceGrapher.formats.loader import loadGeneModels
 from glob     import glob
 import argparse
 import os, sys, warnings, numpy
+from pathlib import Path
 
 def writeIntrons( gene, introns, label, outstream ):
     i = 0
@@ -160,38 +161,44 @@ def parse_args(argv=None):
 
 
 def main(argv=None):
+    """Generate MISO intron-retention GFF records from a gene model."""
     opts, _ = parse_args(argv)
-    geneModel = loadGeneModels(opts.model, verbose=opts.verbose, alltypes=True)
+    gene_model = loadGeneModels(
+        opts.model,
+        verbose=opts.verbose,
+        alltypes=True,
+        outdir=Path(opts.outfile).parent,
+    )
 
     irs = 0
     ies = 0
-    with open(opts.outfile, 'w') as outStream:
-        for chrm in geneModel.getChromosomes():
+    with open(opts.outfile, 'w') as out_stream:
+        for chrm in gene_model.getChromosomes():
             if opts.verbose:
                 sys.stderr.write('Processing genes from chromosome: %s\n' % chrm)
-            indicatorG = ProgressIndicator(10000, description=' genes', verbose=opts.verbose)
-            genes = geneModel.getGeneRecords(chrm, geneFilter=gene_type_filter)
+            indicator_g = ProgressIndicator(10000, description=' genes', verbose=opts.verbose)
+            genes = gene_model.getGeneRecords(chrm, geneFilter=gene_type_filter)
             genes.sort()
 
             for g in genes:
                 chrom = g.gffString().split('\t')[0]
                 if opts.verbose:
-                    indicatorG.update()
+                    indicator_g.update()
 
-                geneGraph = makeSpliceGraph(g)
-                geneGraph.annotate()
+                gene_graph = makeSpliceGraph(g)
+                gene_graph.annotate()
 
                 # get introns from gene models
-                irGM, ieGM = getGraphIntrons(geneGraph, chrom)
-                writeIntrons(g, irGM, 'K', outStream)
-                writeIntrons(g, ieGM, 'P', outStream)
+                ir_gm, ie_gm = getGraphIntrons(gene_graph, chrom)
+                writeIntrons(g, ir_gm, 'K', out_stream)
+                writeIntrons(g, ie_gm, 'P', out_stream)
 
-                irs += len(irGM)
-                ies += len(ieGM)
+                irs += len(ir_gm)
+                ies += len(ie_gm)
 
             if opts.verbose:
-                indicatorG.finish()
-                sys.stderr.write('%d genes\n' % indicatorG.ctr)
+                indicator_g.finish()
+                sys.stderr.write('%d genes\n' % indicator_g.ctr)
 
     if opts.verbose:
         sys.stderr.write('Found %d retained introns and %d excised introns\n' % (irs, ies))
