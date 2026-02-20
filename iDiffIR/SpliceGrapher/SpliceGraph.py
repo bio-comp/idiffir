@@ -173,7 +173,7 @@ def altSiteEventList(nodes, siteType, verbose=False) :
 
     # Sorting nodes ensures that overlapping nodes will
     # not be stored in distinct sets to be merged later
-    eventNodes.sort()
+    eventNodes.sort(key=lambda node: (node.minpos, node.maxpos, node.id))
     eventList = []
     stored    = set()
     for n in eventNodes :
@@ -957,7 +957,7 @@ class SpliceGraph(object) :
         try :
             # Look for another node with the same start/end positions
             tmpNode  = NullNode(start,end)
-            allNodes = self.nodeDict.values()
+            allNodes = list(self.nodeDict.values())
             idx      = allNodes.index(tmpNode)
             node     = allNodes[idx]
         except ValueError :
@@ -1216,7 +1216,10 @@ class SpliceGraph(object) :
         keyed to a sorted list of nodes in the isoform."""
         result = {}
         nodes  = self.resolvedNodes()
-        nodes.sort(reverse=(self.strand=='-'))
+        nodes.sort(
+            key=lambda node: (node.minpos, node.maxpos, node.id),
+            reverse=(self.strand=='-'),
+        )
         for n in nodes :
             for iso in n.isoformSet :
                 result.setdefault(iso,[])

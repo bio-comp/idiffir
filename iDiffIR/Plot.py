@@ -182,9 +182,14 @@ def writeGeneExpression( genes, odir ):
         for gene in genes:
             fout.write( '%s\t%f\t%f\t%f\n' % (gene.gid, gene.f1exp, gene.f2exp, gene.fc))
 
+
+def _union_len(collections):
+    return len(set.union(*collections)) if collections else 0
+
+
 def fullTexTable( summaryTable, odir=os.getcwd() ):
     handle = open( os.path.join(odir, 'dirTable.tex'), 'w' )
-    ks = sorted(summaryTable.keys())[:-2]
+    ks = sorted([key for key in summaryTable.keys() if type(key) == int])
     # upregulated
     handle.write('& Up')
     for key in ks:
@@ -193,7 +198,7 @@ def fullTexTable( summaryTable, odir=os.getcwd() ):
                                     len(summaryTable[key]['novel']['upirs']) ))
     k = [summaryTable[key]['known']['upirs'] for key in ks if type(key) == int]
     n = [summaryTable[key]['novel']['upirs'] for key in ks if type(key) == int]
-    handle.write( '& %d/%d' % (len( set.union(*k)), len( set.union(*n))) )
+    handle.write( '& %d/%d' % (_union_len(k), _union_len(n)) )
     handle.write('\\\\')
     handle.write('\n')
 
@@ -205,7 +210,7 @@ def fullTexTable( summaryTable, odir=os.getcwd() ):
                                     len(summaryTable[key]['novel']['downirs']) ))
     k = [summaryTable[key]['known']['downirs'] for key in ks if type(key) == int ]
     n = [summaryTable[key]['novel']['downirs'] for key in ks if type(key) == int ]
-    handle.write( '& %d/%d' % (len( set.union(*k)), len( set.union(*n))) )
+    handle.write( '& %d/%d' % (_union_len(k), _union_len(n)) )
     handle.write('\\\\')
     handle.write('\n')
 
@@ -218,7 +223,7 @@ def fullTexTable( summaryTable, odir=os.getcwd() ):
 
     k = [summaryTable[key]['known']['downirs'] for key in ks if type(key) == int]+[summaryTable[key]['known']['upirs'] for key in ks if type(key) == int]
     n = [summaryTable[key]['novel']['downirs'] for key in ks if type(key) == int]+[summaryTable[key]['novel']['upirs'] for key in ks if type(key) == int]
-    handle.write( '& %d/%d' % (len( set.union(*k)), len( set.union(*n))) )
+    handle.write( '& %d/%d' % (_union_len(k), _union_len(n)) )
     handle.write('\\\\')
     handle.write('\n')
 
@@ -230,7 +235,7 @@ def fullTexTable( summaryTable, odir=os.getcwd() ):
     k = [summaryTable[key]['known']['upgenes'] for key in ks]
     n = [summaryTable[key]['novel']['upgenes'] for key in ks]
 
-    handle.write( '& %d/%d' % (len( set.union(*k)), len( set.union(*n))) )
+    handle.write( '& %d/%d' % (_union_len(k), _union_len(n)) )
     handle.write('\\\\')
     handle.write('\n')
 
@@ -241,7 +246,7 @@ def fullTexTable( summaryTable, odir=os.getcwd() ):
                                     len(summaryTable[key]['novel']['downgenes']) ))
     k = [summaryTable[key]['known']['downgenes'] for key in ks]
     n = [summaryTable[key]['novel']['downgenes'] for key in ks]
-    handle.write( '& %d/%d' % (len( set.union(*k)), len( set.union(*n))) )
+    handle.write( '& %d/%d' % (_union_len(k), _union_len(n)) )
     handle.write('\\\\')
     handle.write('\n')
 
@@ -252,14 +257,14 @@ def fullTexTable( summaryTable, odir=os.getcwd() ):
                                     len(summaryTable[key]['novel']['downgenes'])+len(summaryTable[key]['novel']['upgenes']) ))
     k = [summaryTable[key]['known']['downgenes'] for key in ks]+[summaryTable[key]['known']['upgenes'] for key in ks]
     n = [summaryTable[key]['novel']['downgenes'] for key in ks]+[summaryTable[key]['novel']['upgenes'] for key in ks]
-    handle.write( '& %d/%d' % (len( set.union(*k)), len( set.union(*n))) )
+    handle.write( '& %d/%d' % (_union_len(k), _union_len(n)) )
     handle.write('\\\\')
     handle.write('\n')
 
 
 def fullTexTableSE( summaryTable, odir=os.getcwd() ):
     handle = open( os.path.join(odir, 'dirTableSE.tex'), 'w' )
-    ks = sorted(summaryTable.keys())[:-1]
+    ks = sorted([key for key in summaryTable.keys() if type(key) == int])
     # upregulated
     handle.write('& Up')
     for key in ks:
@@ -268,7 +273,7 @@ def fullTexTableSE( summaryTable, odir=os.getcwd() ):
 
     k = [summaryTable[key]['upirs'] for key in ks if type(key) == int]
 
-    handle.write( '& %d' % (len( set.union(*k))))
+    handle.write( '& %d' % (_union_len(k)))
     handle.write('\\\\')
     handle.write('\n')
 
@@ -279,7 +284,7 @@ def fullTexTableSE( summaryTable, odir=os.getcwd() ):
         handle.write( " & %d" % (len(summaryTable[key]['downirs'])))
 
     k = [summaryTable[key]['downirs'] for key in ks if type(key) == int ]
-    handle.write( '& %d' % (len( set.union(*k))))
+    handle.write( '& %d' % (_union_len(k)))
     handle.write('\\\\')
     handle.write('\n')
 
@@ -292,7 +297,7 @@ def fullTexTableSE( summaryTable, odir=os.getcwd() ):
 
     k = [summaryTable[key]['downirs'] for key in ks if type(key) == int]+[summaryTable[key]['upirs'] for key in ks if type(key) == int]
 
-    handle.write( '& %d' % (len( set.union(*k))))
+    handle.write( '& %d' % (_union_len(k)))
     handle.write('\\\\')
     handle.write('\n')
 
@@ -1094,5 +1099,4 @@ def plotMVASE_smear(geneRecords, aVals, odir=os.getcwd(), ext='pdf'):
     plt.savefig(os.path.join(odir,'mvaSE.%s') % (ext))
     plt.autoscale(True)
     plt.close()
-
 

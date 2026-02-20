@@ -121,13 +121,16 @@ def geneModelToSpliceGraph(gene, **args) :
     else :
         nodeSet.update(gene.exons)
 
-    nodeList = sorted(list(nodeSet)) # Needed for debugging
-    badForms = set([])
+    nodeList = sorted(
+        nodeSet,
+        key=lambda exon: (exon.minpos, exon.maxpos, exon.strand),
+    )
+    badForms = set()
     for exon in nodeList :
         exon_key = makeKey(exon)
         if exon_key in exonDict : continue
         if len(exon) < minexon :
-            badForms.update(exon.parents)
+            badForms.update(parent.id for parent in exon.parents)
             continue
 
         eid  = next(exonIds)
@@ -138,7 +141,7 @@ def geneModelToSpliceGraph(gene, **args) :
             node.addIsoform(p.id)
 
     featureList = gene.mrna.values() if useCDS else gene.isoforms.values()
-    featureList = [f for f in featureList if f not in badForms]
+    featureList = [f for f in featureList if f.id not in badForms]
     if not featureList :
         isoLen = len(gene.isoforms)
         rnaLen = len(gene.mrna)
