@@ -11,13 +11,12 @@ name = "iDiffIR"
 version = "0.3.2"
 description = "Identifying differential intron retention from RNA-seq"
 readme = "README"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "GNU General Public License" }
 authors = [{ name = "Mike Hamilton", email = "mike.hamilton7@gmail.com" }]
 
 classifiers = [
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
