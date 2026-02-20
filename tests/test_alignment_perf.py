@@ -1,0 +1,55 @@
+import statistics
+import sys
+import time
+from pathlib import Path
+
+import numpy
+
+from iDiffIR.BamfileIO import getDepthsFromBam
+
+TESTS_DIR = Path(__file__).resolve().parent
+if str(TESTS_DIR) not in sys.path:
+    sys.path.insert(0, str(TESTS_DIR))
+
+from helpers.alignment_fixture_builder import build_alignment_fixture
+from helpers.legacy_depth_reference import compute_depths_and_junctions
+
+
+def _median_runtime_seconds(func, *, warmup: int = 1, repeats: int = 7) -> float:
+    for _ in range(warmup):
+        func()
+
+    samples = []
+    for _ in range(repeats):
+        start = time.perf_counter()
+        func()
+        samples.append(time.perf_counter() - start)
+    return statistics.median(samples)
+
+
+def test_depth_counting_path_meets_relative_performance_gate(tmp_path: Path):
+    fixture = build_alignment_fixture(tmp_path, repeat_scale=800)
+
+    def legacy_runner():
+        return compute_depths_and_junctions(
+            fixture.bam, fixture.chrom, fixture.region_start, fixture.region_end
+        )
+
+    def current_runner():
+        return getDepthsFromBam(
+            str(fixture.bam), fixture.chrom, fixture.region_start, fixture.region_end
+        )
+
+    legacy_depths, legacy_junctions = legacy_runner()
+    current_depths, current_junctions = current_runner()
+
+    assert numpy.array_equal(current_depths, legacy_depths)
+    assert current_junctions == legacy_junctions
+
+    legacy_median = _median_runtime_seconds(legacy_runner)
+    current_median = _median_runtime_seconds(current_runner)
+
+    assert current_median <= legacy_median * 0.5, (
+        f"Expected >=2x speedup over legacy baseline; "
+        f"current={current_median:.6f}s legacy={legacy_median:.6f}s"
+    )

@@ -51,4 +51,4 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 
 [dependency-groups]
-dev = ["mypy>=1.19.1", "pytest>=8.4.2", "ruff>=0.15.2", "build>=1.2"]
+dev = ["mypy>=1.19.1", "pytest>=8.4.2", "pytest-cov>=7.0.0", "ruff>=0.15.2", "build>=1.2"]
