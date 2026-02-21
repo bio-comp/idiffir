@@ -176,17 +176,37 @@ def _open_alignment_file(path, **args) :
 
 
 def _tokenize_cigar_tuples(cigar_tuples) :
-    """Convert pysam cigar tuples into M/N tokens compatible with legacy APIs."""
+    """Convert pysam CIGAR tuples into normalized depth tokens.
+
+    The token stream uses:
+    - ``M`` for match/equal/diff (reference-consuming aligned blocks),
+    - ``N`` for reference skips (splice junction introns),
+    - ``D`` for deletions (reference-consuming but not aligned sequence).
+
+    Query-only operations (``I/S/H``) and pads (``P``) are ignored for
+    reference-coordinate depth stepping.
+    """
     if not cigar_tuples :
         return []
 
-    merged = pysamMergeCigar(cigar_tuples)
     tokens = []
-    for op, size in merged :
-        if op == BAM_CREF_SKIP :
-            tokens.append('%dN' % size)
-        elif op in [BAM_CMATCH, BAM_CEQUAL, BAM_CDIFF] :
-            tokens.append('%dM' % size)
+    for op, size in cigar_tuples :
+        if op in [BAM_CMATCH, BAM_CEQUAL, BAM_CDIFF] :
+            code = 'M'
+        elif op == BAM_CREF_SKIP :
+            code = 'N'
+        elif op == BAM_CDEL :
+            code = 'D'
+        elif op in [BAM_CINS, BAM_CSOFT_CLIP, BAM_CHARD_CLIP, BAM_CPAD] :
+            continue
+        else :
+            continue
+
+        if tokens and tokens[-1][-1] == code :
+            prev_size = int(tokens[-1][:-1])
+            tokens[-1] = f'{prev_size + size}{code}'
+        else :
+            tokens.append(f'{size}{code}')
     return tokens
 
 
@@ -198,35 +218,72 @@ def _pysam_record_to_tokens(rec) :
     if not tokens :
         read_len = rec.query_length or 0
         if read_len > 0 :
-            return ['%dM' % read_len]
+            return [f'{read_len}M']
     return tokens
 
 
-def _build_splice_junctions(chromosome, start_pos, tokens, strand, jct_code='') :
-    """Build SpliceJunction objects from normalized ``M/N`` CIGAR tokens."""
-    if len(tokens) < 2 :
+def _next_match_anchor(cigar_tuples, start_idx) :
+    """Return the contiguous downstream match length used as junction anchor."""
+    anchor = 0
+    for op, size in cigar_tuples[start_idx:] :
+        if op in [BAM_CMATCH, BAM_CEQUAL, BAM_CDIFF] :
+            anchor += size
+            continue
+        if op in [BAM_CINS, BAM_CSOFT_CLIP, BAM_CHARD_CLIP, BAM_CPAD] :
+            continue
+        break
+    return anchor
+
+
+def _build_splice_junctions(chromosome, start_pos, cigar_tuples, strand, jct_code='') :
+    """Build splice junctions directly from pysam CIGAR tuples.
+
+    Junction coordinates are 1-based closed intervals:
+    - donor is the last reference base before an ``N`` skip
+    - acceptor is the first reference base after the skip
+    """
+    if not cigar_tuples :
         return []
 
-    sizes = [int(t[:-1]) for t in tokens]
-    pos = [start_pos + sizes[0] - 1]
-    for block in sizes[1:-1] :
-        pos.append(pos[-1] + block)
+    junctions = []
+    reference_pos = start_pos
+    left_anchor = 0
 
-    exons = [int(t[:-1]) for t in tokens if t.endswith('M')]
-    result = []
-    exon_idx = 0
-    for i in range(0, len(pos), 2) :
-        junction = SpliceJunction(
-            chromosome,
-            pos[i],
-            pos[i + 1] + 1,
-            [exons[exon_idx], exons[exon_idx + 1]],
-            jct_code,
-            strand,
-        )
-        result.append(junction)
-        exon_idx += 1
-    return result
+    for idx, (op, size) in enumerate(cigar_tuples) :
+        if op in [BAM_CMATCH, BAM_CEQUAL, BAM_CDIFF] :
+            left_anchor += size
+            reference_pos += size
+            continue
+
+        if op in [BAM_CINS, BAM_CSOFT_CLIP, BAM_CHARD_CLIP, BAM_CPAD] :
+            continue
+
+        if op == BAM_CDEL :
+            reference_pos += size
+            left_anchor = 0
+            continue
+
+        if op != BAM_CREF_SKIP :
+            continue
+
+        donor = reference_pos - 1
+        reference_pos += size
+        acceptor = reference_pos
+        right_anchor = _next_match_anchor(cigar_tuples, idx + 1)
+        if left_anchor > 0 and right_anchor > 0 :
+            junctions.append(
+                SpliceJunction(
+                    chromosome,
+                    donor,
+                    acceptor,
+                    [left_anchor, right_anchor],
+                    jct_code,
+                    strand,
+                )
+            )
+        left_anchor = 0
+
+    return junctions
 
 
 def _collect_pysam_data(path, **args) :
@@ -285,10 +342,19 @@ def _collect_pysam_data(path, **args) :
 
             limit[chrom] = max(limit[chrom], cur_pos + 1)
 
-            if get_junctions and len(tokens) > 1 :
-                strand = rec.get_tag(STRAND_TAG) if rec.has_tag(STRAND_TAG) else ('-' if rec.is_reverse else '+')
+            if get_junctions and rec.cigartuples :
+                if rec.has_tag(STRAND_TAG) :
+                    strand = rec.get_tag(STRAND_TAG)
+                else :
+                    strand = '-' if rec.is_reverse else '+'
                 jct_code = rec.get_tag(JCT_CODE_TAG) if rec.has_tag(JCT_CODE_TAG) else ''
-                jct_list = _build_splice_junctions(chrom, start_pos, tokens, strand, jct_code)
+                jct_list = _build_splice_junctions(
+                    chrom,
+                    start_pos,
+                    rec.cigartuples,
+                    strand,
+                    jct_code,
+                )
                 if not jct_list :
                     continue
 
