@@ -3,20 +3,107 @@
 
 Bamfile I/O operations for **iDiffIR**
 """
-import pysam, sys, numpy
+import sys
 from collections import defaultdict
+from enum import IntEnum
+from typing import Protocol
 
-MATCH    = 0   #M
-INSERT   = 1   #I
-DELETE   = 2   #D
-GAP      = 3   #N
-SOFT_CLIP= 4   #4
-HARD_CLIP= 5   #H
-PAD      = 6   #P
-EQUAL    = 7   #=
-DIFF     = 8   #X
+import numpy
+import pysam
 
-def processRead( read, depths, junctions, minIdx, maxIdx ):
+
+class CigarOp(IntEnum):
+    """Pysam CIGAR operation codes with symbol lookup."""
+
+    MATCH = 0
+    INSERT = 1
+    DELETE = 2
+    GAP = 3
+    SOFT_CLIP = 4
+    HARD_CLIP = 5
+    PAD = 6
+    EQUAL = 7
+    DIFF = 8
+
+    @property
+    def symbol(self) -> str:
+        """Return the canonical SAM CIGAR symbol for this op."""
+        return {
+            CigarOp.MATCH: "M",
+            CigarOp.INSERT: "I",
+            CigarOp.DELETE: "D",
+            CigarOp.GAP: "N",
+            CigarOp.SOFT_CLIP: "S",
+            CigarOp.HARD_CLIP: "H",
+            CigarOp.PAD: "P",
+            CigarOp.EQUAL: "=",
+            CigarOp.DIFF: "X",
+        }[self]
+
+    @property
+    def consumes_query(self) -> bool:
+        """Return whether this CIGAR operation consumes query sequence."""
+        return self in {
+            CigarOp.MATCH,
+            CigarOp.INSERT,
+            CigarOp.SOFT_CLIP,
+            CigarOp.EQUAL,
+            CigarOp.DIFF,
+        }
+
+    @property
+    def consumes_reference(self) -> bool:
+        """Return whether this CIGAR operation consumes reference coordinates."""
+        return self in {
+            CigarOp.MATCH,
+            CigarOp.DELETE,
+            CigarOp.GAP,
+            CigarOp.EQUAL,
+            CigarOp.DIFF,
+        }
+
+    @classmethod
+    def from_code(cls, code: int) -> "CigarOp | None":
+        """Resolve a raw pysam CIGAR opcode to an enum value."""
+        try:
+            return cls(code)
+        except ValueError:
+            return None
+
+
+REFERENCE_MATCH_OPS = {CigarOp.MATCH, CigarOp.EQUAL, CigarOp.DIFF}
+JunctionCounts = dict[tuple[int, int], int]
+DepthsAndJunctions = tuple[numpy.ndarray, JunctionCounts]
+ReplicateDepthsAndJunctions = tuple[
+    numpy.ndarray,
+    numpy.ndarray,
+    list[JunctionCounts],
+    list[JunctionCounts],
+]
+
+
+class GeneBounds(Protocol):
+    """Minimal shape required for depth extraction from gene-like records."""
+
+    chrom: str | bytes
+    minpos: int
+    maxpos: int
+
+
+def _normalize_reference_name(name: str | bytes) -> str:
+    """Return a lowercase chromosome name as text."""
+    if isinstance(name, bytes):
+        return name.decode("utf-8").lower()
+    return str(name).lower()
+
+
+def processRead(
+    read: pysam.AlignedSegment,
+    depths: numpy.ndarray,
+    junctions: JunctionCounts,
+    min_idx: int,
+    max_idx: int,
+) -> None:
     """Get read depths and junctions from read
 
     Get read depths and junctions for aligned read
@@ -35,36 +122,49 @@ def processRead( read, depths, junctions, minIdx, maxIdx ):
                      for the read depth vector.  len(depths)
                      must equal maxIdx - minIdx
     """
+    del max_idx
+    if read.cigartuples is None:
+        return
+
     # current genomic position in read
-    pos = read.pos
+    pos = read.reference_start
     # iterate through alignment CIGAR fields
-    for i,rec in enumerate(read.cigar):
-        t,l = rec
+    for op_code, op_length in read.cigartuples:
+        cigar_op = CigarOp.from_code(op_code)
+        if cigar_op is None:
+            continue
+
         # contiguous match in reference,
         # increment all mathed positions in
         # gene depths
-        if t == MATCH:
-            start = max(0, pos-minIdx)
-            end   = min(len(depths), max(0, (pos+l)-minIdx))
+        if cigar_op in REFERENCE_MATCH_OPS:
+            start = max(0, pos - min_idx)
+            end = min(len(depths), max(0, (pos + op_length) - min_idx))
             depths[start:end] += 1
-            pos = pos+ l
+            pos = pos + op_length
 
         #insertion
-        elif t == INSERT:
+        elif cigar_op in {CigarOp.INSERT, CigarOp.SOFT_CLIP, CigarOp.HARD_CLIP, CigarOp.PAD}:
             pass
         #deletion
-        elif t == DELETE:
-            adjPosition = pos-minIdx
-            if adjPosition >= 0 and adjPosition < len(depths):
-                depths[adjPosition] += 1
-            pos += l
+        elif cigar_op == CigarOp.DELETE:
+            adj_position = pos - min_idx
+            if adj_position >= 0 and adj_position < len(depths):
+                depths[adj_position] += 1
+            pos += op_length
         # junction
-        elif t == GAP:
-            jct = (pos-minIdx, (pos+l)-minIdx)
+        elif cigar_op == CigarOp.GAP:
+            jct = (pos - min_idx, (pos + op_length) - min_idx)
             junctions[jct] += 1
-            pos += l
+            pos += op_length
 
-def getDepthsFromBam( bamfile, chrom, start, end ):
+
+def getDepthsFromBam(
+    bamfile: str,
+    chrom: str | bytes,
+    start: int,
+    end: int,
+) -> DepthsAndJunctions:
     """Get read depths in bamfile for specific location
 
     Get read depths from a single bamfile.  Helper function
@@ -91,23 +191,34 @@ def getDepthsFromBam( bamfile, chrom, start, end ):
         Read depth vector for given location
 
     """
-    bamfile = pysam.Samfile(bamfile, 'rb')
-    chromMap = { }
-    for ref in bamfile.references:
-        chromMap[ref.lower()] = ref
-        chromMap[ref] = ref
-    if chrom not in chromMap:
-        sys.stderr.write('Chromosome %s not found in bamfile\n' % chrom)
-        return numpy.empty(0), {}
+    if start > end:
+        raise ValueError("start must be <= end")
 
-    depths = numpy.zeros( end-start+1, int)
-    junctions = defaultdict(int)
-    readItr = bamfile.fetch(chromMap[chrom], start, end)
-    for read in readItr:
-        processRead( read, depths, junctions, start-1, end )
+    with pysam.AlignmentFile(bamfile, "rb") as bam_stream:
+        chrom_map = {}
+        for ref in bam_stream.references:
+            normalized = _normalize_reference_name(ref)
+            chrom_map[normalized] = ref
+            chrom_map[str(ref)] = ref
+
+        normalized_chrom = _normalize_reference_name(chrom)
+        if normalized_chrom not in chrom_map:
+            sys.stderr.write(f"Chromosome {chrom} not found in bamfile\n")
+            return numpy.empty(0), {}
+
+        depths = numpy.zeros(end - start + 1, int)
+        junctions = defaultdict(int)
+        fetch_start = max(0, start - 1)
+        fetch_end = end
+        for read in bam_stream.fetch(chrom_map[normalized_chrom], fetch_start, fetch_end):
+            processRead(read, depths, junctions, start - 1, end)
     return depths, junctions
 
-def getDepthsFromBamfiles( gene, f1files, f2files ):
+def getDepthsFromBamfiles(
+    gene: GeneBounds,
+    f1files: list[str],
+    f2files: list[str],
+) -> ReplicateDepthsAndJunctions:
     """Get read depths from bamfiles
 
     Wrapper function for getting read depths from bamfiles
@@ -141,18 +252,18 @@ def getDepthsFromBamfiles( gene, f1files, f2files ):
                                  (minpos, maxpos) -> count
 
     """
-    factor1djs = [getDepthsFromBam(bamfile, gene.chrom,
-                                   gene.minpos, gene.maxpos) \
-                     for bamfile in f1files]
-    factor2djs = [getDepthsFromBam(bamfile, gene.chrom,
-                                   gene.minpos, gene.maxpos) \
-                     for bamfile in f2files]
-    factor1depths = numpy.array( [ t[0] for t in factor1djs])
-    factor2depths = numpy.array( [ t[0] for t in factor2djs])
+    factor1djs = [
+        getDepthsFromBam(bamfile, gene.chrom, gene.minpos, gene.maxpos)
+        for bamfile in f1files
+    ]
+    factor2djs = [
+        getDepthsFromBam(bamfile, gene.chrom, gene.minpos, gene.maxpos)
+        for bamfile in f2files
+    ]
+    factor1depths = numpy.array([entry[0] for entry in factor1djs])
+    factor2depths = numpy.array([entry[0] for entry in factor2djs])
 
-    factor1juncs = [ t[1] for t in factor1djs]
-    factor2juncs = [ t[1] for t in factor2djs]
+    factor1juncs = [entry[1] for entry in factor1djs]
+    factor2juncs = [entry[1] for entry in factor2djs]
 
     return numpy.array(factor1depths), numpy.array(factor2depths), factor1juncs, factor2juncs
-
-
