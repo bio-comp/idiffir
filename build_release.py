@@ -38,10 +38,16 @@ def main():
     status_copy = subprocess.call(cmd % ('LICENSE', nspace.outdir),
                                   shell=True)
     # copy README
-    status_copy = subprocess.call(cmd % ('README', nspace.outdir),
+    status_copy = subprocess.call(cmd % ('README.md', nspace.outdir),
+                                  shell=True)
+    # copy contributing guide
+    status_copy = subprocess.call(cmd % ('CONTRIBUTING.md', nspace.outdir),
+                                  shell=True)
+    # copy code of conduct
+    status_copy = subprocess.call(cmd % ('CODE_OF_CONDUCT.md', nspace.outdir),
                                   shell=True)
     # copy CONTRIBUTORS
-    status_copy = subprocess.call(cmd % ('CONTRIBUTORS', nspace.outdir),
+    status_copy = subprocess.call(cmd % ('CONTRIBUTORS.md', nspace.outdir),
                                   shell=True)
 
     # copy setup.py

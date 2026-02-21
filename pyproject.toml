@@ -10,7 +10,7 @@ Repository = "https://github.com/bio-comp/iDiffIR"
 name = "iDiffIR"
 version = "0.3.2"
 description = "Identifying differential intron retention from RNA-seq"
-readme = "README"
+readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "GNU General Public License" }
 authors = [{ name = "Mike Hamilton", email = "mike.hamilton7@gmail.com" }]

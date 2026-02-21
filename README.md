@@ -40,13 +40,27 @@ Use `uv tool` for standalone CLI tools that are not project dependencies, for ex
 uv tool run ruff --version
 ```
 
+## Contributing
+
+Contribution guidelines are in `CONTRIBUTING.md`.
+Community expectations are in `CODE_OF_CONDUCT.md`.
+
 ## Packaging
 
-The project uses PEP 621 metadata in `pyproject.toml` with the `setuptools.build_meta` backend.
+The project uses PEP 621 metadata in `pyproject.toml`.
 
 Runtime dependencies are declared in `project.dependencies`, with optional groups in:
 
 - `[dependency-groups].dev`
+
+## Documentation
+
+- Project docs source lives under `doc/`.
+- Read the Docs hosting is tracked in backlog issue `#47`.
+
+## License
+
+This project is distributed under the GNU GPL; see `LICENSE`.
 
 ## Release Notes
 
