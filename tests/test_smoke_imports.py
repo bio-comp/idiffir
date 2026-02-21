@@ -2,6 +2,8 @@ import importlib
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -14,6 +16,7 @@ def load_script_module(module_name: str, relative_path: str):
     return module
 
 
+@pytest.mark.smoke
 def test_core_modules_import():
     modules = [
         "iDiffIR",

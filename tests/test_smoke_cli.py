@@ -6,6 +6,7 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
 SCRIPTS = [
     "iDiffIR/SpliceGrapher/scripts/build_classifiers.py",
     "iDiffIR/SpliceGrapher/scripts/classify_sites.py",
@@ -62,6 +63,7 @@ def run_help(script_path: str, cwd: Path | None = None):
     )
 
 
+@pytest.mark.smoke
 @pytest.mark.parametrize("script_path", SCRIPTS)
 def test_script_help_runs(script_path):
     result = run_help(script_path)
@@ -69,6 +71,7 @@ def test_script_help_runs(script_path):
     assert "usage" in result.stdout.lower()
 
 
+@pytest.mark.smoke
 def test_make_miso_as_help_has_no_side_effect_files(tmp_path: Path):
     result = run_help("scripts/make_MISO_AS_GFF.py", cwd=tmp_path)
     assert result.returncode == 0, result.stderr

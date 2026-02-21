@@ -1,7 +1,6 @@
-import os
 import statistics
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy
@@ -10,20 +9,6 @@ import pytest
 from iDiffIR.BamfileIO import getDepthsFromBam
 from tests.helpers.alignment_fixture_builder import build_alignment_fixture
 from tests.helpers.legacy_depth_reference import compute_depths_and_junctions
-
-
-def _running_in_github_actions(env: Mapping[str, str] | None = None) -> bool:
-    """Return True when tests are executing inside a GitHub Actions runner."""
-    source = os.environ if env is None else env
-    return source.get("GITHUB_ACTIONS", "").lower() == "true"
-
-
-def test_running_in_github_actions_detection() -> None:
-    """Guardrail: CI-environment detection used for perf-gate skipping."""
-    assert _running_in_github_actions({"GITHUB_ACTIONS": "true"})
-    assert _running_in_github_actions({"GITHUB_ACTIONS": "TRUE"})
-    assert not _running_in_github_actions({"GITHUB_ACTIONS": "false"})
-    assert not _running_in_github_actions({})
 
 
 def _median_runtime_seconds(
@@ -43,13 +28,8 @@ def _median_runtime_seconds(
     return statistics.median(samples)
 
 
-@pytest.mark.skipif(
-    _running_in_github_actions(),
-    reason=(
-        "Relative perf gate is noisy on shared GitHub runners; "
-        "run locally for performance checks."
-    ),
-)
+@pytest.mark.integration
+@pytest.mark.performance
 def test_depth_counting_path_meets_relative_performance_gate(tmp_path: Path) -> None:
     # Keep workload large enough that compute dominates setup/IO jitter in CI.
     fixture = build_alignment_fixture(tmp_path, repeat_scale=6000)

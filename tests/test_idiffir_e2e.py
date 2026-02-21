@@ -4,6 +4,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from iDiffIR.SpliceGrapher.formats.GeneModel import GeneModel
 from iDiffIR.SpliceGrapher.shared.GeneModelConverter import makeSpliceGraph
 
@@ -75,6 +77,7 @@ def _run_gff3_fixture(tmp_path: Path) -> list[dict[str, str]]:
     return _read_introns_table(out_dir / "lists" / "allIntrons.txt")
 
 
+@pytest.mark.integration
 def test_idiffir_gff3_end_to_end_outputs_directional_ir_metrics(tmp_path: Path):
     fixture = build_fixture(tmp_path)
     out_dir = tmp_path / "out"
@@ -102,6 +105,7 @@ def test_idiffir_gff3_end_to_end_outputs_directional_ir_metrics(tmp_path: Path):
     assert float(row["IRRratio_1"]) > float(row["IRRratio_2"])
 
 
+@pytest.mark.integration
 def test_gtf_loader_regression_path_processes_gene_and_builds_graph(tmp_path: Path):
     fixture = build_fixture(tmp_path)
     model = GeneModel(str(fixture.gtf))
@@ -112,6 +116,7 @@ def test_gtf_loader_regression_path_processes_gene_and_builds_graph(tmp_path: Pa
     assert len(graph.nodeDict) > 0
 
 
+@pytest.mark.integration
 def test_idiffir_gtf_end_to_end_runs_and_writes_introns_table(tmp_path: Path):
     fixture = build_fixture(tmp_path)
     strict_gtf = _write_strict_gtf(tmp_path / "strict_model.gtf")
@@ -132,6 +137,7 @@ def test_idiffir_gtf_end_to_end_runs_and_writes_introns_table(tmp_path: Path):
     _assert_bounded_probability_fields(rows)
 
 
+@pytest.mark.integration
 def test_idiffir_gff3_end_to_end_is_deterministic_for_core_invariants(tmp_path: Path):
     run_one_rows = _run_gff3_fixture(tmp_path / "run_one")
     run_two_rows = _run_gff3_fixture(tmp_path / "run_two")
