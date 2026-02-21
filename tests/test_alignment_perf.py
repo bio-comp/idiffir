@@ -1,21 +1,21 @@
 import statistics
-import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy
 
 from iDiffIR.BamfileIO import getDepthsFromBam
-
-TESTS_DIR = Path(__file__).resolve().parent
-if str(TESTS_DIR) not in sys.path:
-    sys.path.insert(0, str(TESTS_DIR))
-
-from helpers.alignment_fixture_builder import build_alignment_fixture
-from helpers.legacy_depth_reference import compute_depths_and_junctions
+from tests.helpers.alignment_fixture_builder import build_alignment_fixture
+from tests.helpers.legacy_depth_reference import compute_depths_and_junctions
 
 
-def _median_runtime_seconds(func, *, warmup: int = 1, repeats: int = 7) -> float:
+def _median_runtime_seconds(
+    func: Callable[[], object],
+    *,
+    warmup: int = 1,
+    repeats: int = 7,
+) -> float:
     for _ in range(warmup):
         func()
 
@@ -27,15 +27,16 @@ def _median_runtime_seconds(func, *, warmup: int = 1, repeats: int = 7) -> float
     return statistics.median(samples)
 
 
-def test_depth_counting_path_meets_relative_performance_gate(tmp_path: Path):
-    fixture = build_alignment_fixture(tmp_path, repeat_scale=800)
+def test_depth_counting_path_meets_relative_performance_gate(tmp_path: Path) -> None:
+    # Keep workload large enough that compute dominates setup/IO jitter in CI.
+    fixture = build_alignment_fixture(tmp_path, repeat_scale=6000)
 
-    def legacy_runner():
+    def legacy_runner() -> tuple[numpy.ndarray, dict[tuple[int, int], int]]:
         return compute_depths_and_junctions(
             fixture.bam, fixture.chrom, fixture.region_start, fixture.region_end
         )
 
-    def current_runner():
+    def current_runner() -> tuple[numpy.ndarray, dict[tuple[int, int], int]]:
         return getDepthsFromBam(
             str(fixture.bam), fixture.chrom, fixture.region_start, fixture.region_end
         )

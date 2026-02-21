@@ -7,7 +7,7 @@ import json
 import tempfile
 import zipfile
 from dataclasses import dataclass
-from enum import StrEnum
+from enum import Enum
 from pathlib import Path
 from typing import Protocol, TypedDict, TypeVar
 
@@ -22,7 +22,7 @@ from iDiffIR.SpliceGrapher.predict.model_schema import (
 )
 
 
-class LegacyCompareStatus(StrEnum):
+class LegacyCompareStatus(str, Enum):
     """Report status for legacy fixture comparison."""
 
     COMPLETED = "completed"
