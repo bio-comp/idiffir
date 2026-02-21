@@ -1,12 +1,21 @@
 #! /usr/bin/env python
 
-from argparse import ArgumentParser, ArgumentTypeError
-import os, sys, subprocess, shutil
-"""
-Create a release package for distribution
-"""
+"""Create a release package for distribution."""
 
-def main():
+import os
+import shutil
+import subprocess
+import sys
+from argparse import ArgumentParser
+
+
+def copy_path(command: str, source: str, target: str) -> None:
+    """Copy one file or directory to the given release target directory."""
+    subprocess.call(command % (source, target), shell=True)
+
+
+def main() -> None:
+    """Build the release directory layout and copy expected project artifacts."""
     parser = ArgumentParser(description='Build iDiffIR release')
     parser.add_argument('version', type=str, help='version number')
     parser.add_argument('-v', '--verbose', dest='verbose', 
@@ -19,11 +28,11 @@ def main():
     
     nspace = parser.parse_args()
 
-    nspace.outdir = 'iDiffIR_v%s/' % nspace.version
+    nspace.outdir = f'iDiffIR_v{nspace.version}/'
 
     if os.path.exists(nspace.outdir):
         if not nspace.force:
-            sys.exit('%s exists, use -f to overwrite\n' % nspace.outdir)
+            sys.exit(f'{nspace.outdir} exists, use -f to overwrite\n')
         else:
             shutil.rmtree(nspace.outdir)
             os.makedirs(nspace.outdir)
@@ -35,45 +44,37 @@ def main():
     cmd = 'cp -R %s %s' 
 
     # copy license
-    status_copy = subprocess.call(cmd % ('LICENSE', nspace.outdir),
-                                  shell=True)
+    copy_path(cmd, 'LICENSE', nspace.outdir)
     # copy README
-    status_copy = subprocess.call(cmd % ('README.md', nspace.outdir),
-                                  shell=True)
+    copy_path(cmd, 'README.md', nspace.outdir)
     # copy contributing guide
-    status_copy = subprocess.call(cmd % ('CONTRIBUTING.md', nspace.outdir),
-                                  shell=True)
+    copy_path(cmd, 'CONTRIBUTING.md', nspace.outdir)
     # copy code of conduct
-    status_copy = subprocess.call(cmd % ('CODE_OF_CONDUCT.md', nspace.outdir),
-                                  shell=True)
+    copy_path(cmd, 'CODE_OF_CONDUCT.md', nspace.outdir)
     # copy CONTRIBUTORS
-    status_copy = subprocess.call(cmd % ('CONTRIBUTORS.md', nspace.outdir),
-                                  shell=True)
+    copy_path(cmd, 'CONTRIBUTORS.md', nspace.outdir)
 
-    # copy setup.py
-    status_copy = subprocess.call(cmd % ('setup.py', nspace.outdir),
-                                  shell=True)
+    # copy modern build metadata
+    copy_path(cmd, 'pyproject.toml', nspace.outdir)
+    # copy lockfile for reproducible environments
+    copy_path(cmd, 'uv.lock', nspace.outdir)
 
     # copy scripts dir
-    status_copy = subprocess.call(cmd % ('scripts', nspace.outdir),
-                                  shell=True)
+    copy_path(cmd, 'scripts', nspace.outdir)
 
     # copy iDiffIR dir
-    status_copy = subprocess.call(cmd % ('iDiffIR', nspace.outdir),
-                                  shell=True)
+    copy_path(cmd, 'iDiffIR', nspace.outdir)
     
 
     # copy documentation build
     if os.path.exists('doc/_build/html') and \
        os.path.exists('doc/_build/latex/iDiffIR.pdf'):
-        status_copy = subprocess.call(cmd % ('doc/_build/html', 
-                                             os.path.join(nspace.outdir, 
-                                                          'doc')),
-                                      shell=True)
-        status_copy = subprocess.call(cmd % ('doc/_build/latex/iDiffIR.pdf', 
-                                             os.path.join(nspace.outdir, 
-                                                          'doc', 'pdf')),
-                                      shell=True)
+        copy_path(cmd, 'doc/_build/html', os.path.join(nspace.outdir, 'doc'))
+        copy_path(
+            cmd,
+            'doc/_build/latex/iDiffIR.pdf',
+            os.path.join(nspace.outdir, 'doc', 'pdf'),
+        )
     else:
         sys.stderr.write('Missing documentation directories\n')
 
