@@ -96,3 +96,31 @@ Each migration PR should satisfy:
 2. classifier loading tests using metadata schema round-trip
 3. deterministic inference checks for fixed synthetic inputs
 4. no user-facing CLI flag changes
+
+Archive Migration Tooling
+-------------------------
+The repository now includes a migration utility:
+
+1. module: ``iDiffIR.SpliceGrapher.predict.sklearn_migration``
+2. CLI: ``scripts/migrate_classifier_archives.py``
+
+The CLI writes:
+
+1. migrated ``.joblib`` artifacts grouped by species
+2. per-model metadata JSON files
+3. an aggregate migration report JSON containing summary and per-model metrics
+
+Legacy Fixture Comparison Contract
+----------------------------------
+To compare migrated models against reference outputs, each classifier config may include:
+
+1. fixture filename: ``<cfg_stem>.legacy_fixture.json`` inside the classifier zip
+2. fixture schema:
+   - ``schema_version`` (currently ``"1"``)
+   - ``sequences`` (list of sequence strings)
+   - ``legacy_predictions`` (list of ``0/1`` labels aligned with ``sequences``)
+
+Comparison output is reported per model as:
+
+1. ``legacy_compare_status`` (``completed``, ``missing_fixture``, ``invalid_fixture``)
+2. ``legacy_fixture_records`` and ``legacy_fixture_agreement`` when comparison runs
