@@ -37,6 +37,7 @@ dependencies = ["scipy", "numpy", "matplotlib", "pysam", "gffutils>=0.13"]
 "get_gene_expression.py" = "scripts.get_gene_expression:main"
 "get_intron_expression.py" = "scripts.get_intron_expression:main"
 "run_miso_ir.py" = "scripts.run_miso_ir:main"
+"migrate_classifier_archives.py" = "scripts.migrate_classifier_archives:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["iDiffIR", "scripts"]
@@ -47,6 +48,12 @@ packages = ["iDiffIR", "scripts"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+markers = [
+  "unit: Fast, isolated unit-level tests.",
+  "integration: Cross-module or IO-involving integration tests.",
+  "smoke: Fast high-level behavior checks for critical paths.",
+  "performance: Performance-sensitive tests intended for local or dedicated runners.",
+]
 
 [tool.ruff]
 target-version = "py310"
@@ -68,4 +75,12 @@ suppress-dummy-args = true
 max-complexity = 12
 
 [dependency-groups]
-dev = ["mypy>=1.19.1", "pytest>=8.4.2", "pytest-cov>=7.0.0", "ruff>=0.15.2", "build>=1.2"]
+dev = [
+    "mypy>=1.19.1",
+    "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.15.2",
+    "build>=1.2",
+    "scikit-learn>=1.7.2",
+    "joblib>=1.5.3",
+]

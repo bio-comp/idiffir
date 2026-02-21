@@ -39,4 +39,4 @@ jobs:
           .wheel-venv/bin/python -c "import iDiffIR"
 
       - name: Run tests
-        run: uv run pytest --cov=iDiffIR --cov-report=term --cov-report=xml
+        run: uv run pytest -m "not performance" --cov=iDiffIR --cov-report=term --cov-report=xml
