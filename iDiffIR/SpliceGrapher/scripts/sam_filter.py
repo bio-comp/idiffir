@@ -16,44 +16,35 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307,
 # USA.
-from iDiffIR.SpliceGrapher.predict.SpliceSiteValidator import *
-from iDiffIR.SpliceGrapher.formats.loader              import *
-from iDiffIR.SpliceGrapher.formats.FastaLoader         import *
-from iDiffIR.SpliceGrapher.shared.config               import *
-from iDiffIR.SpliceGrapher.shared.utils                import *
-from iDiffIR.SpliceGrapher.shared.streams              import *
-from iDiffIR.SpliceGrapher.formats.alignment_io                 import *
-import iDiffIR.SpliceGrapher.formats.alignment_io as alignment_io
-
-import sys, gzip, zipfile
 import argparse
+import gzip
+import sys
 
-def _require_pyml():
-    try:
-        from PyML.containers import SequenceData
-        from iDiffIR.SpliceGrapher.predict.SiteClassifier import (
-            SiteClassifier,
-            positionalKmerData,
-            unzipClassifiers,
-        )
-    except ImportError:
-        sys.stderr.write('\n** Unable to load PyML modules required for this script.\n')
-        sys.exit(1)
-
-    globals().update(
-        {
-            "SequenceData": SequenceData,
-            "SiteClassifier": SiteClassifier,
-            "positionalKmerData": positionalKmerData,
-            "unzipClassifiers": unzipClassifiers,
-        }
-    )
-
-try :
-    from pysam import *
-    PYSAM_LOADED = True
-except ImportError :
-    PYSAM_LOADED = False
+import iDiffIR.SpliceGrapher.formats.alignment_io as alignment_io
+from iDiffIR.splice_core.filtering import (
+    SpliceSiteType,
+    extract_sequence_context,
+    load_splice_site_model,
+)
+from iDiffIR.SpliceGrapher.formats.alignment_io import (
+    CIGAR,
+    KNOWN_JCT_TAG,
+    PREDICTED_JCT_TAG,
+    RECOMBINED_JCT_TAG,
+    acceptSAMRecord,
+    recordToSpliceJunction,
+)
+from iDiffIR.SpliceGrapher.formats.GeneModel import gene_type_filter
+from iDiffIR.SpliceGrapher.formats.loader import loadGeneModels
+from iDiffIR.SpliceGrapher.predict.SpliceSite import ACCEPTOR_SITE, DONOR_SITE
+from iDiffIR.SpliceGrapher.shared.config import SG_FASTA_REF, SG_GENE_MODEL
+from iDiffIR.SpliceGrapher.shared.utils import (
+    ProgressIndicator,
+    commaFormat,
+    getAttribute,
+    validateFile,
+    writeStartupMessage,
+)
 
 # Match patterns of valid CIGAR symbol sequences
 EXACT_CIGAR = '='
@@ -104,8 +95,8 @@ def validSpliceSite(chrom, strand, pos, classifiers, storedValues, **args) :
     duplicating predictions for the same location.  Note: the classifiers
     and stored values for donor and acceptor sites should be distinct.
     """
-    verbose  = getAttribute('verbose', False, **args)
     siteType = getAttribute('siteType', DONOR_SITE, **args)
+    site_enum = SpliceSiteType.DONOR if siteType == DONOR_SITE else SpliceSiteType.ACCEPTOR
 
     try :
         return (storedValues[chrom][strand][pos] > 0)
@@ -119,43 +110,36 @@ def validSpliceSite(chrom, strand, pos, classifiers, storedValues, **args) :
         ## storedValues[chrom][strand][pos] = NOMINAL_POSITIVE
         storedValues[chrom][strand][pos] = 0.0
 
-    for svm in classifiers.values() :
-        # The intron/exon size both depend on which classifier is used;
-        # unless there are more than 2 classifiers for a site type,
-        # this approach is faster in the long run than getting the
-        # dimer first and then finding the appropriate classifier.
-        (exonSeq, intronSeq, dimer) = getSpliceSiteParts(chrom, pos, siteType, strand, getSequence,
-                                                         exonWindow=svm.config.exonSize(),
-                                                         intronWindow=svm.config.intronSize())
-        if dimer.lower() != svm.config.dimer().lower() : continue
+    for model in classifiers :
+        if model.metadata.site_type != site_enum :
+            continue
+        try :
+            context = extract_sequence_context(
+                fasta_path=reference_fasta_path,
+                chrom=chrom,
+                position=pos,
+                strand=strand,
+                site_type=site_enum,
+                exon_window=model.metadata.exon_window,
+                intron_window=model.metadata.intron_window,
+            )
+        except (KeyError, ValueError) :
+            continue
 
-        newSeq = intronSeq + exonSeq if siteType == ACCEPTOR_SITE else exonSeq + intronSeq
+        if context.dimer.lower() != model.metadata.dimer.lower() :
+            continue
 
-        hideStdout() # Hide PyML C stream
-        if svm.config.mismatchProfile() :
-            ssData = positionalKmerData(svm.config, [newSeq])
-        else :
-            ssData = SequenceData([newSeq], mink=svm.config.mink(), maxk=svm.config.maxk(), maxShift=svm.config.maxShift())
-
-        if svm.config.normalize() :
-            ssData.attachKernel('cosine')
-
-        (ssClass,score) = svm.classify(ssData,0)
-        showStdout() # Reinstate stream
-
+        _, score = model.classify_context(context)
         storedValues[chrom][strand][pos] = score
         break
 
     return (storedValues[chrom][strand][pos] > 0)
 
-def getSequence(chrom, pos1, pos2, strand) :
-    return seqDict.subsequence(chrom, pos1, pos2, reverse=(strand=='-'))
-
 USAGE = """%(prog)s SAM/BAM-file classifiers [options]
 
 Removes false-positive spliced alignments from a SAM or BAM file.
-The classifers may be given as a zip-file or as a list of classifier
-configuration (.cfg) files."""
+Classifiers must be sklearn/skops model bundles given as .skops
+files or .metadata.json sidecars."""
 
 # Establish command-line options:
 parser = argparse.ArgumentParser(usage=USAGE)
@@ -189,17 +173,12 @@ if opts.gzip and not opts.output :
     sys.stderr.write('You must specify an output file if you want to use GZIP compression.\n')
     sys.exit(1)
 
-_require_pyml()
 for f in args : validateFile(f)
 
 # Check SAM/BAM formats
 samFile   = args[0]
 bamFormat = samFile.lower().endswith('.bam')
 if bamFormat : sys.stderr.write('\nUsing BAM format for input file\n')
-if bamFormat and not PYSAM_LOADED :
-    parser.print_help()
-    sys.stderr.write('Pysam (required for BAM files) not found on your system.\n')
-    sys.exit(1)
 
 if opts.model :
     validateFile(opts.model)
@@ -212,37 +191,32 @@ writeStartupMessage()
 
 cigarStream = open(opts.cigar,'w') if opts.cigar else None
 badStream   = None if not opts.fpsites else open(opts.fpsites,'w')
-seqDict     = FastaLoader(opts.fasta, verbose=opts.verbose)
+reference_fasta_path = opts.fasta
 
-# Accept either regular config files or zip archives
-duplicates = set()
-cfgFiles   = set()
-for f in args[1:] :
-    if zipfile.is_zipfile(f) :
-        newFiles = set(unzipClassifiers(f))
-    else :
-        newFiles = set([f])
-    duplicates.update(newFiles & cfgFiles)
-    cfgFiles |= newFiles
+# Accept either .skops artifact paths or metadata sidecar paths.
+duplicate_specs = set()
+model_specs = set()
+for model_spec in args[1:] :
+    if model_spec in model_specs :
+        duplicate_specs.add(model_spec)
+    model_specs.add(model_spec)
 
-if duplicates :
-    sys.stderr.write('** Warning: found duplicate configurations for %s\n' % ', '.join(duplicates))
+if duplicate_specs :
+    sys.stderr.write('** Warning: found duplicate model specs for %s\n' % ', '.join(sorted(duplicate_specs)))
 
 # Load splice site classifiers for each kind of site
-donModels = {}
-accModels = {}
-hideStdout()
-for cfg in sorted(cfgFiles) :
-    model = SiteClassifier(cfg, verbose=opts.verbose)
-    if model.config.acceptor() :
-        accModels[cfg] = model
+donModels = []
+accModels = []
+for model_spec in sorted(model_specs) :
+    model = load_splice_site_model(model_spec)
+    if model.metadata.site_type == SpliceSiteType.ACCEPTOR :
+        accModels.append(model)
     else :
-        donModels[cfg] = model
+        donModels.append(model)
 
     if opts.verbose :
-        stype = 'acceptor' if model.config.acceptor() else 'donor'
-        sys.stderr.write("loaded classifier for '%s' %s sites\n" % (model.config.dimer(),stype))
-showStdout()
+        stype = model.metadata.site_type.value
+        sys.stderr.write("loaded classifier for '%s' %s sites\n" % (model.metadata.dimer, stype))
 
 # Dictionaries for storing splice site classification results on the fly:
 donSites = {}
@@ -295,7 +269,7 @@ for line in samIterator(samFile, isBam=bamFormat) :
 
     try :
         rec, matches = acceptSAMRecord(s, indicator.ctr)
-    except ValueError as ve:
+    except ValueError:
         invalidCigar += 1
         continue
 
